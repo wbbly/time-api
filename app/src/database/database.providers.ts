@@ -13,11 +13,11 @@ export const databaseProviders = [
         useFactory: async () => {
             const sequelize = new Sequelize({
                 dialect: 'mysql',
-                host: 'localhost',
+                host: 'db',
                 port: 3306,
                 username: 'root',
-                password: '',
-                database: 'lazy',
+                password: 'root',
+                database: 'lazy_time',
             });
             sequelize.addModels([User, Timer, Team, Project, UserProject, TeamProject, TeamUser]);
             await sequelize.sync();
