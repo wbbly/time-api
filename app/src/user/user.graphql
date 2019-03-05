@@ -1,0 +1,22 @@
+#import "../project/project.graphql"
+#import "../timer/timer.graphql"
+#import "../team/team.graphql"
+
+type User{
+    id: ID!
+    email: String!
+    role: String!
+    password: String!
+    fullName: String!
+    projects: [Project]!
+    timers: [Time]!
+    teams: [Team]!
+    projectsCreate: [Project]!
+    createAt: Date!
+}
+
+
+
+type Query {
+    users: [User!]
+}
