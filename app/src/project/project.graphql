@@ -1,0 +1,18 @@
+#import "../user/user.graphql"
+#import "../timer/timer.graphql"
+#import "../team/team.graphql"
+
+scalar Date
+
+type Project
+{
+    id: ID!
+    createDate: Date!
+    updateDate: Date!
+    color: String
+    title: String!
+    creator: User!
+    users: [User]!
+    timers: [Time]!
+    teams: [Team]!
+}

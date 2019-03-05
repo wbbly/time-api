@@ -1,0 +1,14 @@
+#import "../user/user.graphql"
+#import "../project/project.graphql"
+
+scalar Date
+
+type Time {
+    id: ID!
+    startDate: Date!
+    endDate: Date
+    title: String!
+    timezoneOffset: String!
+    user: User
+    project: Project
+}
