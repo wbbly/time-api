@@ -6,8 +6,6 @@ type Team{
     fullName: String!
 }
 
-
-
 type Query {
     users: [User!]
 }

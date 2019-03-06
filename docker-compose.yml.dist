@@ -2,7 +2,7 @@ version: '3.0'
 
 services:
     lt_nodejs:
-        build: Docker/nodejs
+        build: docker/nodejs
         restart: always
         container_name: lt_nodejs
         volumes:
@@ -10,11 +10,11 @@ services:
         stdin_open: true
         tty: true
         depends_on:
-          - db
+            - db
 
     db:
         image: mysql:5.7
-        container_name: lazy_time_db
+        container_name: tl_db
         environment:
             MYSQL_ROOT_PASSWORD: root
             MYSQL_DATABASE: lazy_time
@@ -22,4 +22,4 @@ services:
             MYSQL_PASSWORD: root
         command: mysqld --sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
         volumes:
-        - ./dbdata:/var/lib/mysql
+            - ./dbdata:/var/lib/mysql

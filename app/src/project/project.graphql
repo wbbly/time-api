@@ -1,6 +1,6 @@
-#import "../user/user.graphql"
-#import "../timer/timer.graphql"
-#import "../team/team.graphql"
+# import "src/user/user.graphql"
+# import "src/timer/timer.graphql"
+# import "src/team/team.graphql"
 
 scalar Date
 

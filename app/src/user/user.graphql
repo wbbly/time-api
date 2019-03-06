@@ -1,6 +1,6 @@
-#import "../project/project.graphql"
-#import "../timer/timer.graphql"
-#import "../team/team.graphql"
+# import "src/project/project.graphql"
+# import "src/timer/timer.graphql"
+# import "src/team/team.graphql"
 
 type User{
     id: ID!
@@ -14,8 +14,6 @@ type User{
     projectsCreate: [Project]!
     createAt: Date!
 }
-
-
 
 type Query {
     users: [User!]

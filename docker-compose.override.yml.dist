@@ -3,11 +3,11 @@ version: '3.0'
 services:
     lt_nodejs:
         ports:
-          - '8080:3000'
+            - 8080:3000
 
     db:
         ports:
-        - 3307:3306
+            - 3307:3306
 
     lt_phpmyadmin:
         container_name: lt_phpmyadmin
@@ -19,6 +19,6 @@ services:
             MYSQL_PASSWORD: root
             PMA_HOST: db
         links:
-        - db
+            - db
         ports:
-        - 3032:80
+            - 3032:80
