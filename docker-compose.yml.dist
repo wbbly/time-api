@@ -14,7 +14,7 @@ services:
 
     db:
         image: mysql:5.7
-        container_name: tl_db
+        container_name: lt_db
         environment:
             MYSQL_ROOT_PASSWORD: root
             MYSQL_DATABASE: lazy_time
