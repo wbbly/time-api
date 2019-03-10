@@ -15,6 +15,15 @@ type User{
     createAt: Date!
 }
 
+type Auth{
+    email: String!
+    token: String!
+}
+
 type Query {
     users: [User!]
+}
+
+type Mutation{
+    register(email: String!, password: String!): Auth!
 }

@@ -5,15 +5,11 @@ import {
     CreatedAt,
     UpdatedAt,
     PrimaryKey,
-    Unique,
     AutoIncrement,
     HasMany,
     BelongsToMany,
     DataType,
-    ForeignKey,
-    BelongsTo,
-    Scopes,
-    DefaultScope,
+    BeforeValidate,
 } from 'sequelize-typescript';
 
 import { Project } from '../project/project.entity';
@@ -21,6 +17,10 @@ import { Team } from '../team/team.entity';
 import { Timer } from '../timer/timer.entity';
 import { UserProject } from './user.project.entity';
 import { TeamUser } from '../team/team.user.entity';
+import * as bcrypt from 'bcryptjs';
+
+const ROLE_USER = 'ROLE_USER';
+const ROLE_ADMIN = 'ROLE_ADMIN';
 
 @Table({
     timestamps: true,
@@ -52,11 +52,35 @@ export class User extends Model<User> {
     fullName: string;
 
     @HasMany(() => Timer)
-    timers: Timer[]; // TODO: add TDO
+    timers: Timer[];
 
     @BelongsToMany(() => Team, () => TeamUser)
-    teams: Team[]; // TODO: add TDO
+    teams: Team[];
 
-    @BelongsToMany(() => Project, () => UserProject, 'projectId', 'userId')
-    projects: Project[]; // TODO: add TDO
+    @BelongsToMany(() => Project, () => UserProject)
+    projects: Project[];
+
+    @BeforeValidate
+    static async hashPassword(user: User) {
+        user.password = await bcrypt.hash(user.password, 10);
+    }
+
+    @BeforeValidate
+    static async setRole(user: User) {
+        if (user.role == null) {
+            user.role = ROLE_USER;
+        }
+    }
+    isAdmin() {
+        return this.role == ROLE_ADMIN;
+    }
+
+    async comparePassword(attempt: string): Promise<boolean> {
+        return await bcrypt.compare(attempt, this.password);
+    }
+
+    toResponseObject(showToken: boolean = false) {
+        const { id, email, role } = this;
+        return;
+    }
 }

@@ -9,7 +9,6 @@ import {
     BelongsTo,
     HasMany,
     BelongsToMany,
-    Unique,
     DataType,
     AutoIncrement,
 } from 'sequelize-typescript';
@@ -42,10 +41,13 @@ export class Project extends Model<Project> {
     creator: User;
 
     @BelongsToMany(() => User, () => UserProject)
-    users: []; // TODO: add TDO
+    users: User[];
 
     @BelongsToMany(() => Team, () => TeamProject)
-    teams: []; // TODO: add TDO
+    teams: Team[];
+
+    @HasMany(() => Timer)
+    timers: Timer[];
 
     @CreatedAt
     @Column

@@ -9,8 +9,7 @@ import {
     BelongsTo,
     AllowNull,
     DataType,
-    HasMany,
-    AutoIncrement,
+    AutoIncrement
 } from 'sequelize-typescript';
 
 import { User } from '../user/user.entity';
@@ -41,7 +40,7 @@ export class Timer extends Model<Timer> {
     @Column({ type: DataType.STRING })
     title: string;
 
-    @Column({ type: DataType.STRING, unique: true, allowNull: false })
+    @Column({ type: DataType.STRING, allowNull: false })
     timezoneOffset: string;
 
     @ForeignKey(() => User)
@@ -50,7 +49,7 @@ export class Timer extends Model<Timer> {
     userId: number;
 
     @BelongsTo(() => User)
-    user; // TODO: add TDO
+    user: User;
 
     @ForeignKey(() => Project)
     @PrimaryKey
@@ -58,5 +57,5 @@ export class Timer extends Model<Timer> {
     projectId: number;
 
     @BelongsTo(() => Project)
-    project; // TODO: add TDO
+    project: Project;
 }

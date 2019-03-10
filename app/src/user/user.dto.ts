@@ -1,3 +1,9 @@
+import { IsNotEmpty } from 'class-validator'
+
 export class UserDTO {
-    comment: string;
+    @IsNotEmpty()
+    email: string;
+
+    @IsNotEmpty()
+    password: string
 }
