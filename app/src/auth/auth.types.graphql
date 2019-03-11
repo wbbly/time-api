@@ -1,0 +1,19 @@
+
+
+type LoginResult {
+  user: User!
+  token: String!
+}
+
+type RegisterResult{
+  user: User!
+  token: String!
+}
+type AuthLogin{
+    email: String!
+    token: String!
+}
+
+type Mutation{
+    login(email: String!, password: String!): AuthLogin!
+}
