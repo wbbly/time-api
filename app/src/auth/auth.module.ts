@@ -7,17 +7,17 @@ import { UserModule } from 'src/user/user.module';
 import { AuthResolver } from './auth.resolver';
 
 @Module({
-  imports: [
-    PassportModule.register({ defaultStrategy: 'jwt', session: false }),
-    JwtModule.register({
-      secretOrPrivateKey: 'secretKey',
-      signOptions: {
-        expiresIn: 3,//600
-      },
-    }),
-    UserModule
-  ],
-  providers: [AuthService, JwtStrategy, AuthResolver],
-  exports: []
+    imports: [
+        PassportModule.register({ defaultStrategy: 'jwt', session: false }),
+        JwtModule.register({
+            secretOrPrivateKey: 'secretKey',
+            signOptions: {
+                expiresIn: 3, //600
+            },
+        }),
+        UserModule,
+    ],
+    providers: [AuthService, JwtStrategy, AuthResolver],
+    exports: [],
 })
-export class AuthModule { }
+export class AuthModule {}

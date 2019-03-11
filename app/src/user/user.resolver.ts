@@ -9,7 +9,7 @@ import { AdminGuard } from 'src/auth/guard/admin.guard';
 
 @Resolver()
 export class UserResolver {
-    constructor(private userService: UserService) { }
+    constructor(private userService: UserService) {}
 
     @Query()
     @UseGuards(JwtAuthGuard, AdminGuard)
@@ -19,7 +19,7 @@ export class UserResolver {
 
     @Mutation()
     register(@Args('email') email: string, @Args('password') password: string) {
-        const user: UserDTO = { email, password }
-        return this.userService.register(user)
+        const user: UserDTO = { email, password };
+        return this.userService.register(user);
     }
 }

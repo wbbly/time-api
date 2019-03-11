@@ -1,9 +1,9 @@
 export interface JwtPayload {
-  email: string;
-  isAdmin: boolean;
+    email: string;
+    isAdmin: boolean;
 }
 
 export interface LoginResult {
-  email: string;
-  token: string;
+    email: string;
+    token: string;
 }

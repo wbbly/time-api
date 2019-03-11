@@ -10,6 +10,6 @@ import { UserResolver } from './user.resolver';
     imports: [DatabaseModule],
     controllers: [UserController],
     providers: [UserService, UserResolver, ...userProviders],
-    exports: [UserService]
+    exports: [UserService],
 })
-export class UserModule { }
+export class UserModule {}

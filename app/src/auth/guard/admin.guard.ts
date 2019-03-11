@@ -7,17 +7,16 @@ import { UserService } from 'src/user/user.service';
 // or if the user is admin
 @Injectable()
 export class AdminGuard implements CanActivate {
-  constructor(private usersService: UserService) {
-  }
+    constructor(private usersService: UserService) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const ctx = GqlExecutionContext.create(context);
-    const request = ctx.getContext().req;
+    canActivate(context: ExecutionContext): boolean {
+        const ctx = GqlExecutionContext.create(context);
+        const request = ctx.getContext().req;
 
-    if (request.user && request.user.isAdmin()) {
-      return true;
+        if (request.user && request.user.isAdmin()) {
+            return true;
+        }
+
+        throw new HttpException('Access denied', HttpStatus.FORBIDDEN);
     }
-
-    throw new HttpException('Access denied', HttpStatus.FORBIDDEN);
-  }
 }

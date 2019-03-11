@@ -33,7 +33,7 @@ export class UserService {
             throw new HttpException('Invalit credentials', HttpStatus.BAD_REQUEST);
         }
 
-        if (!await user.comparePassword(password)) {
+        if (!(await user.comparePassword(password))) {
             throw new HttpException('Invalit credentials data', HttpStatus.BAD_REQUEST);
         }
 
@@ -46,7 +46,7 @@ export class UserService {
         if (user) {
             throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
         }
-        user = await this.userRepository.create(data)
+        user = await this.userRepository.create(data);
 
         return user.toResponseObject(true);
     }

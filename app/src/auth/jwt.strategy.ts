@@ -7,24 +7,21 @@ import { AuthenticationError } from 'apollo-server-core';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly authService: AuthService) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: 'secretKey',
-    });
-
-  }
-
-  async validate(payload: JwtPayload) {
-    // This is called to validate the user in the token exists
-    const user = await this.authService.validateJwtPayload(payload);
-
-    if (!user) {
-      throw new AuthenticationError(
-        'Could not log-in with the provided credentials',
-      );
+    constructor(private readonly authService: AuthService) {
+        super({
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            secretOrKey: 'secretKey',
+        });
     }
 
-    return user;
-  }
+    async validate(payload: JwtPayload) {
+        // This is called to validate the user in the token exists
+        const user = await this.authService.validateJwtPayload(payload);
+
+        if (!user) {
+            throw new AuthenticationError('Could not log-in with the provided credentials');
+        }
+
+        return user;
+    }
 }

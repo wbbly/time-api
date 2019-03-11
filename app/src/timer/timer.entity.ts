@@ -9,7 +9,7 @@ import {
     BelongsTo,
     AllowNull,
     DataType,
-    AutoIncrement
+    AutoIncrement,
 } from 'sequelize-typescript';
 
 import { User } from '../user/user.entity';
