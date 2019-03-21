@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Websocket timer</title>
+        <script src="socket.io.js"></script>
+    </head>
+    <body>
+        <button id="start">Start timer</button>
+        <button id="stop">Stop timer</button>
+        <span id="timer"></span>
+        <script>
+            let startedTimer;
+            const drawTimer = timeDiff =>
+                (document.querySelector('#timer').innerHTML = `${Math.floor(
+                    timeDiff / 1000
+                )} sec`);
+            const startTimer = timeDiff => (
+                stopTimer(),
+                startedTimer = setInterval(() => {
+                    timeDiff += 1000;
+                    drawTimer(timeDiff);
+                }, 1000)
+            );
+            const stopTimer = () => (
+                clearInterval(startedTimer),
+                startedTimer = undefined
+            );
+
+            const socket = io('https://api.time.lazy-ants.com/');
+            socket.on('connect', function() {
+                console.log('Connected');
+
+                socket.emit(
+                    'join',
+                    {
+                        email: 'alex.garmatenko@lazy-ants.com'
+                    },
+                    res => {
+                        console.log(res);
+                        socket.emit('check-timer', {
+                            email: 'alex.garmatenko@lazy-ants.com'
+                        });
+                    }
+                );
+            });
+            socket.on('check-timer', function(data) {
+                console.log('check-timer', data);
+                if (data) {
+                    let timeDiff = +new Date() - new Date(data.startTime);
+                    drawTimer(timeDiff);
+                    startTimer(timeDiff);
+                }
+            });
+            socket.on('start-timer', function(data) {
+                console.log('start-timer', data);
+            });
+            socket.on('stop-timer', function(data) {
+                console.log('stop-timer', data);
+                stopTimer();
+            });
+            socket.on('disconnect', function() {
+                console.log('Disconnected');
+            });
+
+            document.querySelector('#start').addEventListener('click', () => {
+                console.log('Start timer');
+                socket.emit('start-timer', {
+                    email: 'alex.garmatenko@lazy-ants.com',
+                    title: 'Working on the project',
+                    project: 'Lorem ipsum'
+                });
+            });
+            document.querySelector('#stop').addEventListener('click', () => {
+                console.log('Stop timer');
+                socket.emit('stop-timer', {
+                    email: 'alex.garmatenko@lazy-ants.com'
+                });
+            });
+        </script>
+    </body>
+</html>
