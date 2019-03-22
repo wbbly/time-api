@@ -33,12 +33,12 @@
                 socket.emit(
                     'join',
                     {
-                        email: 'alex.garmatenko@lazy-ants.com'
+                        userEmail: 'alex.garmatenko@lazy-ants.com'
                     },
                     res => {
                         console.log(res);
                         socket.emit('check-timer', {
-                            email: 'alex.garmatenko@lazy-ants.com'
+                            userEmail: 'alex.garmatenko@lazy-ants.com'
                         });
                     }
                 );
@@ -46,7 +46,7 @@
             socket.on('check-timer', function(data) {
                 console.log('check-timer', data);
                 if (data) {
-                    let timeDiff = +new Date() - new Date(data.startTime);
+                    let timeDiff = +new Date() - new Date(data.dateFrom);
                     drawTimer(timeDiff);
                     startTimer(timeDiff);
                 }
@@ -65,15 +65,15 @@
             document.querySelector('#start').addEventListener('click', () => {
                 console.log('Start timer');
                 socket.emit('start-timer', {
-                    email: 'alex.garmatenko@lazy-ants.com',
-                    title: 'Working on the project',
-                    project: 'Lorem ipsum'
+                    userEmail: 'alex.garmatenko@lazy-ants.com',
+                    issue: 'Working on the project',
+                    projectId: 52
                 });
             });
             document.querySelector('#stop').addEventListener('click', () => {
                 console.log('Stop timer');
                 socket.emit('stop-timer', {
-                    email: 'alex.garmatenko@lazy-ants.com'
+                    userEmail: 'alex.garmatenko@lazy-ants.com'
                 });
             });
         </script>

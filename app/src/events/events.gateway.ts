@@ -1,93 +1,68 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
 
-interface StartedTimer {
-    email: string;
-    startTime: string;
-    title: string;
-    project: string;
-}
-
-interface StopedTimer {
-    email: string;
-    startTime: string;
-    endTime: string;
-    title: string;
-    project: string;
-}
+import { EventsService } from './events.service';
+import { StartedTimer } from './interfaces/started-timer.interface';
+import { StoppedTimer } from './interfaces/stopped-timer.interface';
 
 @WebSocketGateway()
 export class EventsGateway {
     @WebSocketServer()
     server: Server;
 
+    constructor(private readonly eventsService: EventsService) {}
+
     @SubscribeMessage('join')
-    async onRoomJoin(client: Socket, data: { email: string }): Promise<string> {
-        const { email } = data;
-        client.join(email);
+    async onRoomJoin(client: Socket, data: { userEmail: string }): Promise<string> {
+        const { userEmail } = data;
+        client.join(userEmail);
 
         return 'Join success';
     }
 
     @SubscribeMessage('leave')
-    async onLeaveJoin(client: Socket, data: { email: string }): Promise<string> {
-        const { email } = data;
-        client.leave(email);
+    async onLeaveJoin(client: Socket, data: { userEmail: string }): Promise<string> {
+        const { userEmail } = data;
+        client.leave(userEmail);
 
         return 'Leave success';
     }
 
     @SubscribeMessage('check-timer')
-    async checkTimer(client: Socket, data: { email: string }): Promise<string> {
-        const { email } = data;
-
-        // @TODO: GET by email request to get startedTimer object on Hashura
-        const startedTimer: StartedTimer = {
-            email: 'alex.garmatenko@lazy-ants.com',
-            startTime: 'Thu, 21 Mar 2019 14:15:49 GMT',
-            title: 'Working on the project',
-            project: 'Lorem ipsum',
-        };
-
-        this.server.in(email).emit('check-timer', startedTimer);
+    async checkTimer(client: Socket, data: { userEmail: string }): Promise<string> {
+        const { userEmail } = data;
+        this.eventsService
+            .getTimer(userEmail)
+            .subscribe(
+                (res: StartedTimer) => this.server.in(userEmail).emit('check-timer', res),
+                _ => this.server.in(userEmail).emit('check-timer', null)
+            );
 
         return 'Check timer';
     }
 
     @SubscribeMessage('start-timer')
-    async startTimer(client: Socket, data: { email: string; title: string; project: string }): Promise<string> {
-        const { email } = data;
-        const startedTimer: StartedTimer = { ...data, ...{ startTime: new Date().toUTCString() } };
-
-        // @TODO: POST request to save startedTimer object on Hashura
-
-        this.server.in(email).emit('check-timer', startedTimer);
+    async startTimer(client: Socket, data: { userEmail: string; issue: string; projectId: number }): Promise<string> {
+        const { userEmail } = data;
+        this.eventsService
+            .addTimer(data)
+            .subscribe(
+                (res: StartedTimer) => this.server.in(userEmail).emit('check-timer', res),
+                _ => this.server.in(userEmail).emit('check-timer', null)
+            );
 
         return 'Start timer';
     }
 
     @SubscribeMessage('stop-timer')
-    async endTimer(client: Socket, data: { email: string }): Promise<string> {
-        const { email } = data;
-
-        // @TODO: GET by email request to get startedTimer object on Hashura
-        const startedTimer: StartedTimer = {
-            email: 'alex.garmatenko@lazy-ants.com',
-            startTime: 'Thu, 21 Mar 2019 14:15:49 GMT',
-            title: 'Working on the project',
-            project: 'Lorem ipsum',
-        };
-
-        // Extend with endTime
-        const stopedTimer: StopedTimer = {
-            ...startedTimer,
-            ...{
-                endTime: new Date().toUTCString(),
-            },
-        };
-
-        // @TODO: DELETE request to remove startedTimer object on Hashura
-        this.server.in(email).emit('stop-timer', stopedTimer);
+    async endTimer(client: Socket, data: { userEmail: string }): Promise<string> {
+        const { userEmail } = data;
+        this.eventsService
+            .deleteTimer(userEmail)
+            .subscribe(
+                (res: StoppedTimer) => this.server.in(userEmail).emit('stop-timer', res),
+                _ => this.server.in(userEmail).emit('stop-timer', null)
+            );
 
         return 'Stop timer';
     }
