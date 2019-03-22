@@ -4,6 +4,7 @@ export interface StoppedTimer {
     dateFrom: string;
     dateTo: string;
     project: {
+        id: number;
         name: string;
         colorProject: string;
     };

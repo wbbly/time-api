@@ -3,6 +3,7 @@ export interface StartedTimer {
     issue: string;
     dateFrom: string;
     project: {
+        id: number;
         name: string;
         colorProject: string;
     };

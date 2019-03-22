@@ -19,6 +19,7 @@ export class EventsService {
                 issue
                 date_from
                 project {
+                    id
                     name
                     colorProject
                 }
@@ -34,12 +35,13 @@ export class EventsService {
                     const data = res.data.timer_current.shift();
                     if (data) {
                         const { user_email, issue, date_from, project } = data;
-                        const { name, colorProject } = project;
+                        const { id, name, colorProject } = project;
                         startedTimer = {
                             userEmail: user_email,
                             issue: issue,
                             dateFrom: date_from,
                             project: {
+                                id,
                                 name,
                                 colorProject,
                             },
