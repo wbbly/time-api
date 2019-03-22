@@ -1,4 +1,4 @@
-import { Component, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { ProjectDTO } from './project.dto';
 import { Project } from './project.entity';

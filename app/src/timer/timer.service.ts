@@ -1,4 +1,4 @@
-import { Component, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { TimerDTO } from './timer.dto';
 import { Timer } from './timer.entity';
