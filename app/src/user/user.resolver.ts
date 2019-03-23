@@ -1,6 +1,5 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { Guard, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { UseGuards } from '@nestjs/common';
 
 import { UserService } from './user.service';
 import { UserDTO } from './user.dto';
