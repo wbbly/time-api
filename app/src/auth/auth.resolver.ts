@@ -1,7 +1,8 @@
 import { Resolver, Args, Query, Mutation } from '@nestjs/graphql';
-import { AuthService } from './auth.service';
 import { AuthenticationError } from 'apollo-server-core';
-import { UserService } from 'src/user/user.service';
+
+import { AuthService } from './auth.service';
+import { UserService } from './../user/user.service';
 import { LoginResult } from './interfaces/jwt-payload.interface';
 
 @Resolver('Auth')

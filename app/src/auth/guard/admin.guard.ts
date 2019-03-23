@@ -1,7 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthenticationError } from 'apollo-server-core';
-import { UserService } from 'src/user/user.service';
+
+import { UserService } from './../../user/user.service';
 
 // Check if username in field for query matches authenticated user's username
 // or if the user is admin

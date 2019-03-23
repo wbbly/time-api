@@ -1,9 +1,10 @@
 import { JwtService } from '@nestjs/jwt';
 import { Injectable } from '@nestjs/common';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { UserService } from 'src/user/user.service';
-import { User } from 'src/user/user.entity';
 import { AuthenticationError } from 'apollo-server-core';
+
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { UserService } from './../user/user.service';
+import { User } from './../user/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -15,8 +16,10 @@ export class AuthService {
             if (user.comparePassword(password)) {
                 return user;
             }
+
             throw new AuthenticationError('Invalit credentials');
         }
+
         throw new AuthenticationError('Could not log-in with the provided credentials');
     }
 

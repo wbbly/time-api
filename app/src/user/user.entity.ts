@@ -11,13 +11,13 @@ import {
     DataType,
     BeforeValidate,
 } from 'sequelize-typescript';
+import * as bcrypt from 'bcryptjs';
 
 import { Project } from '../project/project.entity';
 import { Team } from '../team/team.entity';
 import { Timer } from '../timer/timer.entity';
 import { UserProject } from './user.project.entity';
 import { TeamUser } from '../team/team.user.entity';
-import * as bcrypt from 'bcryptjs';
 
 const ROLE_USER = 'ROLE_USER';
 const ROLE_ADMIN = 'ROLE_ADMIN';
@@ -71,6 +71,7 @@ export class User extends Model<User> {
             user.role = ROLE_USER;
         }
     }
+
     isAdmin() {
         return this.role == ROLE_ADMIN;
     }
@@ -81,6 +82,7 @@ export class User extends Model<User> {
 
     toResponseObject(showToken: boolean = false) {
         const { id, email, role } = this;
-        return;
+
+        return this;
     }
 }

@@ -1,5 +1,5 @@
-# import "src/user/user.graphql"
-# import "src/project/project.graphql"
+# import "./../user/user.graphql"
+# import "./../project/project.graphql"
 
 scalar Date
 

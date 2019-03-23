@@ -1,11 +1,11 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import { Guard, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 
 import { UserService } from './user.service';
 import { UserDTO } from './user.dto';
-import { Guard, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { JwtAuthGuard } from 'src/auth/guard/jwt.auth.guard';
-import { AdminGuard } from 'src/auth/guard/admin.guard';
+import { JwtAuthGuard } from './../auth/guard/jwt.auth.guard';
+import { AdminGuard } from './../auth/guard/admin.guard';
 
 @Resolver()
 export class UserResolver {
@@ -20,6 +20,7 @@ export class UserResolver {
     @Mutation()
     register(@Args('email') email: string, @Args('password') password: string) {
         const user: UserDTO = { email, password };
+
         return this.userService.register(user);
     }
 }

@@ -42,7 +42,9 @@ export class UserService {
 
     async register(data: UserDTO) {
         const { email } = data;
+
         let user = await this.userRepository.findOne({ where: { email } });
+
         if (user) {
             throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
         }

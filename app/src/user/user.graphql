@@ -1,6 +1,6 @@
-# import "src/project/project.graphql"
-# import "src/timer/timer.graphql"
-# import "src/team/team.graphql"
+# import "./../project/project.graphql"
+# import "./../timer/timer.graphql"
+# import "./../team/team.graphql"
 
 type User{
     id: ID!
