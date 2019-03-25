@@ -92,6 +92,40 @@ export class EventsService {
         });
     }
 
+    updateTimer(data: { userEmail: string; issue: string; projectId: number }): Observable<StartedTimer | null> {
+        const { userEmail, issue, projectId } = data;
+
+        const query = `mutation {
+            update_timer_current(
+                where: {user_email: {_eq: "${userEmail}"}},
+                _set: {
+                    issue: "${issue}",
+                    project_id: "${projectId}"
+                }
+            ){
+                affected_rows
+            }
+        }
+        `;
+
+        return new Observable(observer => {
+            this.request(query).subscribe(
+                _ => {
+                    this.getTimer(userEmail).subscribe(
+                        (res: StartedTimer) => observer.next(res),
+                        _ => observer.error(null)
+                    );
+                },
+                _ => {
+                    this.getTimer(userEmail).subscribe(
+                        (res: StartedTimer) => observer.next(res),
+                        _ => observer.error(null)
+                    );
+                }
+            );
+        });
+    }
+
     deleteTimer(userEmail: string): Observable<StoppedTimer | null> {
         const query = `mutation {
             delete_timer_current (
