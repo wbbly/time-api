@@ -54,6 +54,19 @@ export class EventsGateway {
         return 'Start timer';
     }
 
+    @SubscribeMessage('update-timer')
+    async updateTimer(client: Socket, data: { userEmail: string; issue: string; projectId: number }): Promise<string> {
+        const { userEmail } = data;
+        this.eventsService
+            .updateTimer(data)
+            .subscribe(
+                (res: StartedTimer) => this.server.in(userEmail).emit('check-timer', res),
+                _ => this.server.in(userEmail).emit('check-timer', null)
+            );
+
+        return 'Start timer';
+    }
+
     @SubscribeMessage('stop-timer')
     async endTimer(client: Socket, data: { userEmail: string }): Promise<string> {
         const { userEmail } = data;
