@@ -31,30 +31,30 @@
                 console.log('Connected');
 
                 socket.emit(
-                    'join',
+                    'join-v2',
                     {
-                        userEmail: 'alex.garmatenko@lazy-ants.com'
+                        userId: '59f0ebec-8431-4384-aabe-7c168ab822f3'
                     },
                     res => {
                         console.log(res);
-                        socket.emit('check-timer', {
-                            userEmail: 'alex.garmatenko@lazy-ants.com'
+                        socket.emit('check-timer-v2', {
+                            userId: '59f0ebec-8431-4384-aabe-7c168ab822f3'
                         });
                     }
                 );
             });
-            socket.on('check-timer', function(data) {
+            socket.on('check-timer-v2', function(data) {
                 console.log('check-timer', data);
                 if (data) {
-                    let timeDiff = +new Date() - new Date(data.dateFrom);
+                    let timeDiff = +new Date() - new Date(data.startDatetime);
                     drawTimer(timeDiff);
                     startTimer(timeDiff);
                 }
             });
-            socket.on('start-timer', function(data) {
+            socket.on('start-timer-v2', function(data) {
                 console.log('start-timer', data);
             });
-            socket.on('stop-timer', function(data) {
+            socket.on('stop-timer-v2', function(data) {
                 console.log('stop-timer', data);
                 stopTimer();
             });
@@ -64,16 +64,16 @@
 
             document.querySelector('#start').addEventListener('click', () => {
                 console.log('Start timer');
-                socket.emit('start-timer', {
-                    userEmail: 'alex.garmatenko@lazy-ants.com',
+                socket.emit('start-timer-v2', {
+                    userId: '59f0ebec-8431-4384-aabe-7c168ab822f3',
                     issue: 'Working on the project',
-                    projectId: 52
+                    projectId: '90b39d1d-cb56-4cb8-91d2-dcc8fe63ef53'
                 });
             });
             document.querySelector('#stop').addEventListener('click', () => {
                 console.log('Stop timer');
-                socket.emit('stop-timer', {
-                    userEmail: 'alex.garmatenko@lazy-ants.com'
+                socket.emit('stop-timer-v2', {
+                    userId: '59f0ebec-8431-4384-aabe-7c168ab822f3'
                 });
             });
         </script>

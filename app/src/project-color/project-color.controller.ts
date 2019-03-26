@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 
-@Controller('project')
-export class ProjectController {
+@Controller('project-color')
+export class ProjectColorController {
     constructor() {}
 }

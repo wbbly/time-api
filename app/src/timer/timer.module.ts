@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 
+import { CoreModule } from '../core/core.module';
 import { TimerController } from './timer.controller';
 import { TimerService } from './timer.service';
-import { timerProviders } from './timer.providers';
-import { DatabaseModule } from '../database/database.module';
 
 @Module({
-    imports: [DatabaseModule],
+    imports: [CoreModule],
     controllers: [TimerController],
-    providers: [TimerService, ...timerProviders],
+    providers: [TimerService],
+    exports: [TimerService],
 })
 export class TimerModule {}

@@ -1,24 +1,24 @@
 import { Module } from '@nestjs/common';
-import { GraphQLModule } from '@nestjs/graphql';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProjectModule } from './project/project.module';
-import { UserModule } from './user/user.module';
+import { ProjectColorModule } from './project-color/project-color.module';
+import { RoleModule } from './role/role.module';
 import { TimerModule } from './timer/timer.module';
-import { TeamModule } from './team/team.module';
-import { EventsModule } from './events/events.module';
+import { TimerCurrentModule } from './timer-current/timer-current.module';
+import { TimerCurrentV2Module } from './timer-current-v2/timer-current-v2.module';
+import { UserModule } from './user/user.module';
 
 @Module({
     imports: [
-        GraphQLModule.forRoot({
-            typePaths: ['./**/*.graphql'],
-        }),
-        UserModule,
-        TimerModule,
         ProjectModule,
-        TeamModule,
-        EventsModule,
+        ProjectColorModule,
+        RoleModule,
+        TimerModule,
+        TimerCurrentModule,
+        TimerCurrentV2Module,
+        UserModule,
     ],
     controllers: [AppController],
     providers: [AppService],

@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 
-@Controller('project')
-export class ProjectController {
+@Controller('role')
+export class RoleController {
     constructor() {}
 }
