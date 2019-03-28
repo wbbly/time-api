@@ -14,7 +14,7 @@ export class TimerCurrentV2Service {
 
     getTimerCurrent(userId: string): Promise<TimerCurrentV2 | null> {
         const query = `{
-            timer_current_v2(where: { user_id: { _eq: "${userId}" } }) {
+            timer_current_v2(where: { user_id: { _eq: "${userId}" } }, order_by: {created_at: desc}, limit: 1) {
                 id
                 issue
                 start_datetime
