@@ -10,7 +10,11 @@ export class TimerCurrentV2Gateway {
     @WebSocketServer()
     server: Server;
 
-    constructor(private readonly timerCurrentV2Service: TimerCurrentV2Service) {}
+    constructor(private readonly timerCurrentV2Service: TimerCurrentV2Service) {
+        this.timerCurrentV2Service._endTimerFlowSubject.subscribe(({ userId }) => {
+            this.endTimerFlow({ userId });
+        });
+    }
 
     @SubscribeMessage('join-v2')
     async onRoomJoin(client: Socket, data: { userId: string }): Promise<string> {
@@ -90,6 +94,12 @@ export class TimerCurrentV2Gateway {
 
     @SubscribeMessage('stop-timer-v2')
     async endTimer(client: Socket, data: { userId: string }): Promise<string> {
+        this.endTimerFlow(data);
+
+        return 'Stop timer';
+    }
+
+    private async endTimerFlow(data: { userId: string }) {
         const { userId } = data;
 
         let timer: Timer = null;
@@ -104,7 +114,5 @@ export class TimerCurrentV2Gateway {
         } else {
             this.server.in(userId).emit('stop-timer-v2', null);
         }
-
-        return 'Stop timer';
     }
 }

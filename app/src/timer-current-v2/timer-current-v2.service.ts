@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Subject } from 'rxjs';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TimerService } from '../timer/timer.service';
@@ -7,6 +8,8 @@ import { Timer } from '../timer/interfaces/timer.interface';
 
 @Injectable()
 export class TimerCurrentV2Service {
+    _endTimerFlowSubject = new Subject<any>();
+
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly timerService: TimerService
@@ -18,6 +21,7 @@ export class TimerCurrentV2Service {
                 id
                 start_datetime
                 user {
+                    id
                     email
                     username
                 }
@@ -34,12 +38,13 @@ export class TimerCurrentV2Service {
                     for (let index = 0; index < data.length; index++) {
                         const item = data[index];
                         const { id, start_datetime: startDatetime, user } = item;
-                        const { email: userEmail, username: userUsername } = user;
+                        const { id: userId, email: userEmail, username: userUsername } = user;
 
                         startedTimers.push({
                             id,
                             startDatetime,
                             user: {
+                                id: userId,
                                 email: userEmail,
                                 username: userUsername,
                             },

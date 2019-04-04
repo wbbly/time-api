@@ -37,4 +37,25 @@ export class ScheduleService extends NestSchedule {
             )
             .catch(_ => {});
     }
+
+    @Cron('* * * * *')
+    async autostopTask() {
+        const autostopTaskDuration = 8 * 60 * 60 * 1000; // 8hrs
+        const startDatetime = new Date(new Date().getTime() - autostopTaskDuration).toISOString().slice(0, -1);
+
+        this.timerCurrentV2Service
+            .getTimersCurrentByStartDatetime(startDatetime)
+            .then(
+                (res: TimerCurrentV2[]) => {
+                    for (let index = 0; index < res.length; index++) {
+                        const item = res[index];
+                        const userId = item.user.id;
+
+                        this.timerCurrentV2Service._endTimerFlowSubject.next({ userId });
+                    }
+                },
+                _ => {}
+            )
+            .catch(_ => {});
+    }
 }
