@@ -27,6 +27,7 @@
         }
     },
     "dependencies": {
+        "@nest-modules/mailer": "1.0.4",
         "@nestjs/common": "6.0.2",
         "@nestjs/core": "6.0.2",
         "@nestjs/graphql": "6.0.2",
@@ -39,6 +40,7 @@
         "graphql": "14.1.1",
         "graphql-tools": "4.0.4",
         "mysql2": "1.6.5",
+        "nest-schedule": "^0.4.6",
         "reflect-metadata": "0.1.13",
         "rimraf": "2.6.3",
         "rxjs": "6.4.0",

@@ -12,6 +12,47 @@ export class TimerCurrentV2Service {
         private readonly timerService: TimerService
     ) {}
 
+    getTimersCurrentByStartDatetime(startDatetime: string): Promise<TimerCurrentV2[]> {
+        const query = `{
+            timer_current_v2(where: { start_datetime: { _lt: "${startDatetime}" } }, order_by: {created_at: asc}) {
+                id
+                start_datetime
+                user {
+                    email
+                    username
+                }
+            }
+        }
+        `;
+
+        let startedTimers: TimerCurrentV2[] = [];
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(
+                res => {
+                    const data = res.data.timer_current_v2;
+                    for (let index = 0; index < data.length; index++) {
+                        const item = data[index];
+                        const { id, start_datetime: startDatetime, user } = item;
+                        const { email: userEmail, username: userUsername } = user;
+
+                        startedTimers.push({
+                            id,
+                            startDatetime,
+                            user: {
+                                email: userEmail,
+                                username: userUsername,
+                            },
+                        });
+                    }
+
+                    resolve(startedTimers);
+                },
+                _ => reject(startedTimers)
+            );
+        });
+    }
+
     getTimerCurrent(userId: string): Promise<TimerCurrentV2 | null> {
         const query = `{
             timer_current_v2(where: { user_id: { _eq: "${userId}" } }, order_by: {created_at: desc}, limit: 1) {

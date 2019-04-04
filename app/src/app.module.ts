@@ -9,6 +9,7 @@ import { TimerModule } from './timer/timer.module';
 import { TimerCurrentModule } from './timer-current/timer-current.module';
 import { TimerCurrentV2Module } from './timer-current-v2/timer-current-v2.module';
 import { UserModule } from './user/user.module';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { UserModule } from './user/user.module';
         TimerCurrentModule,
         TimerCurrentV2Module,
         UserModule,
+        ScheduleModule,
     ],
     controllers: [AppController],
     providers: [AppService],

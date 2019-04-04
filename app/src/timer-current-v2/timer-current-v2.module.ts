@@ -8,5 +8,6 @@ import { TimerCurrentV2Service } from './timer-current-v2.service';
 @Module({
     imports: [CoreModule, TimerModule],
     providers: [TimerCurrentV2Gateway, TimerCurrentV2Service],
+    exports: [TimerCurrentV2Service],
 })
 export class TimerCurrentV2Module {}
