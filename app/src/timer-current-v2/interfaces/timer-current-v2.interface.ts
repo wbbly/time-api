@@ -7,6 +7,7 @@ export interface TimerCurrentV2 {
     userId?: string;
     projectId?: string;
     startDatetime?: string;
+    notification6hrs?: boolean;
     project?: Project;
     user?: User;
 }
