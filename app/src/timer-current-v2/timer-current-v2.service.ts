@@ -15,6 +15,49 @@ export class TimerCurrentV2Service {
         private readonly timerService: TimerService
     ) {}
 
+    getTimersCurrentNotification6hrs(startDatetime: string): Promise<TimerCurrentV2[]> {
+        const query = `{
+            timer_current_v2(where: { start_datetime: { _lt: "${startDatetime}" }, notification_6hrs: { _eq: false } }, order_by: {created_at: asc}) {
+                id
+                start_datetime
+                user {
+                    id
+                    email
+                    username
+                }
+            }
+        }
+        `;
+
+        let startedTimers: TimerCurrentV2[] = [];
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(
+                res => {
+                    const data = res.data.timer_current_v2;
+                    for (let index = 0; index < data.length; index++) {
+                        const item = data[index];
+                        const { id, start_datetime: startDatetime, user } = item;
+                        const { id: userId, email: userEmail, username: userUsername } = user;
+
+                        startedTimers.push({
+                            id,
+                            startDatetime,
+                            user: {
+                                id: userId,
+                                email: userEmail,
+                                username: userUsername,
+                            },
+                        });
+                    }
+
+                    resolve(startedTimers);
+                },
+                _ => reject(startedTimers)
+            );
+        });
+    }
+
     getTimersCurrentByStartDatetime(startDatetime: string): Promise<TimerCurrentV2[]> {
         const query = `{
             timer_current_v2(where: { start_datetime: { _lt: "${startDatetime}" } }, order_by: {created_at: asc}) {
@@ -181,6 +224,29 @@ export class TimerCurrentV2Service {
                         .catch(_ => reject(null));
                 }
             );
+        });
+    }
+
+    updateTimerCurrentNotification6hrs(data: {
+        userId: string;
+        notification6hrs: boolean;
+    }): Promise<TimerCurrentV2 | null> {
+        const { userId, notification6hrs } = data;
+
+        const query = `mutation {
+            update_timer_current_v2(
+                where: {user_id: {_eq: "${userId}"}},
+                _set: {
+                    notification_6hrs: ${notification6hrs}
+                }
+            ){
+                affected_rows
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(res => resolve(res), _ => reject(null));
         });
     }
 

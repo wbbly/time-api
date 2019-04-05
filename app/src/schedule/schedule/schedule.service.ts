@@ -20,17 +20,37 @@ export class ScheduleService extends NestSchedule {
         const startDatetime = new Date(new Date().getTime() - longTaskDuration).toISOString().slice(0, -1);
 
         this.timerCurrentV2Service
-            .getTimersCurrentByStartDatetime(startDatetime)
+            .getTimersCurrentNotification6hrs(startDatetime)
             .then(
                 (res: TimerCurrentV2[]) => {
                     for (let index = 0; index < res.length; index++) {
                         const item = res[index];
+                        const userId = item.user.id;
                         const userEmail = item.user.email;
-                        this.mailService.send(
-                            userEmail,
-                            'Current task goes over the 6h',
-                            'Hi! You current task goes over the 6h!'
-                        );
+                        this.mailService
+                            .send(
+                                userEmail,
+                                'Current task goes over the 6 hours',
+                                `Hi! You current task goes over the 6 hours!
+                            <br />
+                            It will be stop automatically after the time goes out of 8 hours.
+                            <br /><br />
+                            --
+                            <br />
+                            Wobbly.me
+                            <br />
+                            Time Tracking
+                            `
+                            )
+                            .then(res => {
+                                this.timerCurrentV2Service.updateTimerCurrentNotification6hrs({
+                                    userId,
+                                    notification6hrs: true,
+                                });
+                            })
+                            .catch(err => {
+                                console.log(err);
+                            });
                     }
                 },
                 _ => {}
@@ -50,8 +70,21 @@ export class ScheduleService extends NestSchedule {
                     for (let index = 0; index < res.length; index++) {
                         const item = res[index];
                         const userId = item.user.id;
+                        const userEmail = item.user.email;
 
                         this.timerCurrentV2Service._endTimerFlowSubject.next({ userId });
+                        this.mailService.send(
+                            userEmail,
+                            'Current task was stopped automatically after 8 hours!',
+                            `Hi! You current task was stopped automatically after 8 hours!
+                            <br /><br />
+                            --
+                            <br />
+                            Wobbly.me
+                            <br />
+                            Time Tracking
+                            `
+                        );
                     }
                 },
                 _ => {}

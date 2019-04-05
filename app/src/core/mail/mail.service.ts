@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nest-modules/mailer';
+import { SentMessageInfo } from 'nodemailer';
 
 import { ConfigService } from '../config/config.service';
 
@@ -9,15 +10,8 @@ export class MailService {
 
     constructor(private readonly configService: ConfigService) {}
 
-    send(to: string, subject: string, text: string): void {
-        this.createConnection()
-            .sendMail({ to, subject, text })
-            .then(res => {
-                console.log(res);
-            })
-            .catch(err => {
-                console.log(err);
-            });
+    send(to: string, subject: string, html: string): Promise<SentMessageInfo> {
+        return this.createConnection().sendMail({ to, subject, html });
     }
 
     private createConnection(): MailerService {
