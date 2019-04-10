@@ -4,19 +4,23 @@ import { Injectable } from '@nestjs/common';
 export class TimeService {
     constructor() {}
 
-    getISOTime() {
+    getISOTime(): string {
         return new Date().toISOString();
     }
 
-    getUTCTime() {
+    getUTCTime(): string {
         return new Date().toUTCString();
     }
 
-    getISOTimeInPast(timeInPast: number) {
-        return new Date(new Date().getTime() - timeInPast).toISOString();
+    getISOTimeInPast(timeInPast: number): string {
+        return new Date(this.getTimestamp() - timeInPast).toISOString();
     }
 
-    getUTCTimeInPast(timeInPast: number) {
-        return new Date(new Date().getTime() - timeInPast).toUTCString();
+    getUTCTimeInPast(timeInPast: number): string {
+        return new Date(this.getTimestamp() - timeInPast).toUTCString();
+    }
+
+    getTimestamp(): number {
+        return new Date().getTime();
     }
 }
