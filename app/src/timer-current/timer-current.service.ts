@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
+import { TimeService } from '../time/time.service';
 import { StartedTimer } from './interfaces/started-timer.interface';
 import { StoppedTimer } from './interfaces/stopped-timer.interface';
 
 @Injectable()
 export class TimerCurrentService {
-    constructor(private readonly httpRequestsService: HttpRequestsService) {}
+    constructor(private readonly httpRequestsService: HttpRequestsService, private readonly timeService: TimeService) {}
 
     getTimer(userEmail: string): Observable<StartedTimer | null> {
         const query = `{
@@ -61,7 +62,7 @@ export class TimerCurrentService {
                     {
                         user_email: "${userEmail}"
                         issue: "${issue}",
-                        date_from: "${new Date().toUTCString()}",
+                        date_from: "${this.timeService.getUTCTime()}",
                         project_id: "${projectId}"
                     }
                 ]
@@ -141,7 +142,7 @@ export class TimerCurrentService {
                     stopedTimer = {
                         ...res,
                         ...{
-                            dateTo: new Date().toUTCString(),
+                            dateTo: this.timeService.getUTCTime(),
                         },
                     };
 

@@ -3,13 +3,15 @@ import { Cron, NestSchedule } from 'nest-schedule';
 
 import { MailService } from '../../core/mail/mail.service';
 import { TimerCurrentV2Service } from '../../timer-current-v2/timer-current-v2.service';
+import { TimeService } from '../../time/time.service';
 import { TimerCurrentV2 } from '../../timer-current-v2/interfaces/timer-current-v2.interface';
 
 @Injectable()
 export class ScheduleService extends NestSchedule {
     constructor(
         private readonly mailService: MailService,
-        private readonly timerCurrentV2Service: TimerCurrentV2Service
+        private readonly timerCurrentV2Service: TimerCurrentV2Service,
+        private readonly timeService: TimeService
     ) {
         super();
     }
@@ -17,7 +19,7 @@ export class ScheduleService extends NestSchedule {
     @Cron('*/15 * * * *')
     async longTaskNotification() {
         const longTaskDuration = 6 * 60 * 60 * 1000; // 6hrs
-        const startDatetime = new Date(new Date().getTime() - longTaskDuration).toISOString().slice(0, -1);
+        const startDatetime = this.timeService.getISOTimeInPast(longTaskDuration).slice(0, -1);
 
         this.timerCurrentV2Service
             .getTimersCurrentNotification6hrs(startDatetime)
@@ -61,7 +63,7 @@ export class ScheduleService extends NestSchedule {
     @Cron('* * * * *')
     async autostopTask() {
         const autostopTaskDuration = 8 * 60 * 60 * 1000; // 8hrs
-        const startDatetime = new Date(new Date().getTime() - autostopTaskDuration).toISOString().slice(0, -1);
+        const startDatetime = this.timeService.getISOTimeInPast(autostopTaskDuration).slice(0, -1);
 
         this.timerCurrentV2Service
             .getTimersCurrentByStartDatetime(startDatetime)
