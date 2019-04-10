@@ -3,6 +3,7 @@ import { Subject } from 'rxjs';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TimerService } from '../timer/timer.service';
+import { TimeService } from '../time/time.service';
 import { TimerCurrentV2 } from './interfaces/timer-current-v2.interface';
 import { Timer } from '../timer/interfaces/timer.interface';
 
@@ -12,7 +13,8 @@ export class TimerCurrentV2Service {
 
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly timerService: TimerService
+        private readonly timerService: TimerService,
+        private readonly timeService: TimeService
     ) {}
 
     getTimersCurrentNotification6hrs(startDatetime: string): Promise<TimerCurrentV2[]> {
@@ -170,7 +172,7 @@ export class TimerCurrentV2Service {
                         issue: "${issue}",
                         user_id: "${userId}"
                         project_id: "${projectId}"
-                        start_datetime: "${new Date().toISOString()}",
+                        start_datetime: "${this.timeService.getISOTime()}",
                     }
                 ]
             ){
@@ -271,7 +273,7 @@ export class TimerCurrentV2Service {
                                     .addTimer({
                                         issue,
                                         startDatetime,
-                                        endDatetime: new Date().toISOString(),
+                                        endDatetime: this.timeService.getISOTime(),
                                         userId: user.id,
                                         projectId: project.id,
                                     })

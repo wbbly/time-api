@@ -7,5 +7,6 @@ import { TimeService } from './time.service';
     imports: [HttpModule],
     controllers: [TimeController],
     providers: [TimeService],
+    exports: [TimeService],
 })
 export class TimeModule {}
