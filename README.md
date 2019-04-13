@@ -1,4 +1,4 @@
-# Lazy Time API
+# Wobbly Time API
 
 ## CLONE REPO
 
