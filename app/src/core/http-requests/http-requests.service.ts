@@ -1,6 +1,7 @@
 import { Injectable, HttpService } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { AxiosResponse, AxiosError } from 'axios';
 
 import { ConfigService } from '../config/config.service';
 
@@ -8,7 +9,7 @@ import { ConfigService } from '../config/config.service';
 export class HttpRequestsService {
     constructor(private readonly httpService: HttpService, private readonly configService: ConfigService) {}
 
-    request(query: any): Observable<any> {
+    request(query: any): Observable<AxiosResponse | AxiosError> {
         return this.httpService
             .post(
                 this.configService.get('GRAPHQL_URL'),

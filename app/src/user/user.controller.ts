@@ -1,4 +1,5 @@
-import { Controller, Post, HttpStatus, Response, Body } from '@nestjs/common';
+import { Controller, Get, Post, HttpStatus, Response, Body } from '@nestjs/common';
+import { AxiosError } from 'axios';
 
 import { UserService } from '../user/user.service';
 import { User } from './interfaces/user.interface';
@@ -6,6 +7,17 @@ import { User } from './interfaces/user.interface';
 @Controller('user')
 export class UserController {
     constructor(private readonly userService: UserService) {}
+
+    @Get('list')
+    async userList(@Response() res: any) {
+        try {
+            const userListRes = await this.userService.getUserList();
+            return res.status(HttpStatus.OK).json(userListRes);
+        } catch (e) {
+            const error: AxiosError = e;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
 
     @Post('login')
     async loginUser(@Response() res: any, @Body() body: User) {

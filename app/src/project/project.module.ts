@@ -1,10 +1,12 @@
-import { Module, HttpModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
+import { CoreModule } from '../core/core.module';
+import { TimeModule } from '../time/time.module';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 
 @Module({
-    imports: [HttpModule],
+    imports: [CoreModule, TimeModule],
     controllers: [ProjectController],
     providers: [ProjectService],
 })

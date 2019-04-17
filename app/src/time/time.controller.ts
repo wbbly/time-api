@@ -8,7 +8,7 @@ export class TimeController {
     constructor(private readonly timeService: TimeService) {}
 
     @Get('current')
-    async loginUser(@Response() res: any) {
+    async timeCurrent(@Response() res: any) {
         const time: Time = { timeISO: this.timeService.getISOTime() };
 
         return res.status(HttpStatus.OK).json(time);

@@ -1,10 +1,11 @@
-import { Module, HttpModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
+import { CoreModule } from '../core/core.module';
 import { ProjectColorController } from './project-color.controller';
 import { ProjectColorService } from './project-color.service';
 
 @Module({
-    imports: [HttpModule],
+    imports: [CoreModule],
     controllers: [ProjectColorController],
     providers: [ProjectColorService],
 })

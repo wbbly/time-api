@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
+import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TimerService } from '../timer/timer.service';
@@ -35,7 +36,7 @@ export class TimerCurrentV2Service {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
-                res => {
+                (res: AxiosResponse) => {
                     const data = res.data.timer_current_v2;
                     for (let index = 0; index < data.length; index++) {
                         const item = data[index];
@@ -78,7 +79,7 @@ export class TimerCurrentV2Service {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
-                res => {
+                (res: AxiosResponse) => {
                     const data = res.data.timer_current_v2;
                     for (let index = 0; index < data.length; index++) {
                         const item = data[index];
@@ -129,7 +130,7 @@ export class TimerCurrentV2Service {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
-                res => {
+                (res: AxiosResponse) => {
                     const data = res.data.timer_current_v2.shift();
                     if (data) {
                         const { id, issue, start_datetime: startDatetime, project, user } = data;
@@ -232,7 +233,7 @@ export class TimerCurrentV2Service {
     updateTimerCurrentNotification6hrs(data: {
         userId: string;
         notification6hrs: boolean;
-    }): Promise<TimerCurrentV2 | null> {
+    }): Promise<AxiosResponse | null> {
         const { userId, notification6hrs } = data;
 
         const query = `mutation {
@@ -248,13 +249,13 @@ export class TimerCurrentV2Service {
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(res => resolve(res), _ => reject(null));
+            this.httpRequestsService.request(query).subscribe((res: AxiosResponse) => resolve(res), _ => reject(null));
         });
     }
 
     deleteTimerCurrent(userId: string): Promise<Timer | null> {
         const query = `mutation {
-            delete_timer_current_v2 (
+            delete_timer_current_v2(
                 where: { user_id: { _eq: "${userId}" } }
             ) {
                 affected_rows

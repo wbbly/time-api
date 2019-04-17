@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AxiosResponse, AxiosError } from 'axios';
 import * as bcrypt from 'bcrypt';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
@@ -9,6 +10,27 @@ export class UserService {
     private salt = 10;
 
     constructor(private readonly httpRequestsService: HttpRequestsService) {}
+
+    getUserList() {
+        const query = `{
+            user(order_by: {username: asc}) {
+                    id,
+                    username,
+                    email,
+                    role {
+                        title
+                    },
+                    is_active
+                }
+            }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
 
     async getUser(data: { email: string }): Promise<User | null> {
         const { email } = data;
@@ -30,7 +52,7 @@ export class UserService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
-                res => {
+                (res: AxiosResponse) => {
                     const data = res.data.user.shift();
                     if (data) {
                         const { id: userId, username, email, password, role } = data;
@@ -49,7 +71,7 @@ export class UserService {
 
                     resolve(user);
                 },
-                error => reject(error)
+                (error: AxiosError) => reject(error)
             );
         });
     }
@@ -66,11 +88,11 @@ export class UserService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
-                res => {
+                (res: AxiosResponse) => {
                     const users = res.data.user || [];
                     resolve(users.length > 0);
                 },
-                error => reject(error)
+                (error: AxiosError) => reject(error)
             );
         });
     }
@@ -80,7 +102,7 @@ export class UserService {
         email: string;
         password: string;
         roleId: string;
-    }): Promise<User | null> {
+    }): Promise<AxiosResponse | AxiosError> {
         const { username, email, password, roleId } = data;
         const passwordHash = await this.getHash(password);
 
@@ -101,7 +123,9 @@ export class UserService {
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(res => resolve(res), error => reject(error));
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 

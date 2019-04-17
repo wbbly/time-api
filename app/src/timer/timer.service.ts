@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { Timer } from './interfaces/timer.interface';
+import { TimeService } from '../time/time.service';
 
 @Injectable()
 export class TimerService {
-    constructor(private readonly httpRequestsService: HttpRequestsService) {}
+    constructor(private readonly httpRequestsService: HttpRequestsService, private readonly timeService: TimeService) {}
 
     getTimer(userId: string): Promise<Timer | null> {
         const query = `{
@@ -34,7 +36,7 @@ export class TimerService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
-                res => {
+                (res: AxiosResponse) => {
                     const data = res.data.timer_v2.shift();
                     if (data) {
                         const {
@@ -114,6 +116,101 @@ export class TimerService {
                         .catch(_ => reject(null));
                 }
             );
+        });
+    }
+
+    getUserTimerList(userId: string) {
+        const query = `{
+            timer_v2(where: {user_id: {_eq: "${userId}"}}, order_by: {created_at: desc}, limit: 50) {
+                id,
+                start_datetime,
+                end_datetime,
+                issue,
+                project {
+                    name,
+                    id,
+                    project_color {
+                        name
+                    }
+                }
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    getReportsTimerList(userEmail: string, projectNames: string[], startDate: string, endDate: string) {
+        const projectWhereStatement = projectNames.length
+            ? `project: {name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}}`
+            : '';
+
+        const timerStatementArray = [
+            `user: {email: {_in: ["${userEmail}"]}}`,
+            `start_datetime: {_gte: "${this.timeService.getISOTimeByGivenValue(startDate).slice(0, -1)}"}`,
+            `end_datetime: {_lt: "${this.timeService
+                .getISOTimeByGivenValue(this.timeService.getTimestampByGivenValue(endDate) + 24 * 60 * 60 * 1000 - 1)
+                .slice(0, -1)}"}`,
+        ];
+
+        if (projectWhereStatement) {
+            timerStatementArray.push(projectWhereStatement);
+        }
+
+        const query = `{
+            timer_v2(where: {${timerStatementArray.join(',')}}) {
+                start_datetime
+                end_datetime
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    updateTimerById(id: string, timer: Timer) {
+        const { issue, projectId, startDatetime, endDatetime } = timer;
+        const query = `mutation {
+            update_timer_v2(
+                where: {id: {_eq: "${id}"}},
+                _set: {
+                    issue: "${issue}",
+                    project_id: "${projectId}",
+                    start_datetime: "${startDatetime}",
+                    end_datetime: "${endDatetime}"
+                }
+            ) {
+                affected_rows
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    deleteTimerById(id: string) {
+        const query = `mutation {
+            delete_timer_v2(where: {id: {_eq: "${id}"}}) {
+                affected_rows
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 }
