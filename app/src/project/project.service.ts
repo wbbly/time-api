@@ -173,6 +173,26 @@ export class ProjectService {
         });
     }
 
+    getProjectById(id: string) {
+        const query = `{
+            project_v2 (where: {id: {_eq: "${id}"}}) {
+                id
+                name
+                project_color{ 
+                    id
+                    name
+                }
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
     updateProjectById(id: string, project: Project) {
         const { name, projectColorId } = project;
 

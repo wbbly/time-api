@@ -106,8 +106,19 @@ export class ProjectController {
         }
     }
 
+    @Get(':id')
+    async getProjectById(@Param() param, @Response() res: any) {
+        try {
+            const getProjectByIdRes = await this.projectService.getProjectById(param.id);
+            return res.status(HttpStatus.OK).json(getProjectByIdRes);
+        } catch (e) {
+            const error: AxiosError = e;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
     @Patch(':id')
-    async updateProject(@Param() param, @Response() res: any, @Body() body: Project) {
+    async updateProjectById(@Param() param, @Response() res: any, @Body() body: Project) {
         if (!(body && body.name && body.projectColorId)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
         }

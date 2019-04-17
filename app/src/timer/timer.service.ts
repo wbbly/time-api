@@ -121,7 +121,7 @@ export class TimerService {
 
     getUserTimerList(userId: string) {
         const query = `{
-            timer_v2(where: {user_id: {_eq: "${userId}"}}, order_by: {created_at: desc}, limit: 50) {
+            timer_v2(where: {user_id: {_eq: "${userId}"}}, order_by: {start_datetime: desc}, limit: 50) {
                 id,
                 start_datetime,
                 end_datetime,
