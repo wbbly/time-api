@@ -5,6 +5,9 @@ import * as bcrypt from 'bcrypt';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { User } from './interfaces/user.interface';
 
+const ROLE_ADMIN = 'ROLE_ADMIN';
+const ROLE_USER = 'ROLE_USER';
+
 @Injectable()
 export class UserService {
     private salt = 10;
@@ -32,15 +35,45 @@ export class UserService {
         });
     }
 
-    async getUser(data: { email: string }): Promise<User | null> {
-        const { email } = data;
+    async getUserById(id: string, isActive: boolean = true): Promise<User | AxiosError> {
+        const whereStatements = [`id: { _eq: "${id}" }`];
 
+        if (isActive) {
+            whereStatements.push(`is_active: { _eq: true } `);
+        }
+
+        return new Promise((resolve, reject) => {
+            this.getUser(whereStatements.join(',')).then(
+                (res: User) => resolve(res),
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async getUserByEmail(email: string, isActive: boolean = true): Promise<User | AxiosError> {
+        const whereStatements = [`email: { _eq: "${email}" }`];
+
+        if (isActive) {
+            whereStatements.push(`is_active: { _eq: true } `);
+        }
+
+        return new Promise((resolve, reject) => {
+            this.getUser(whereStatements.join(',')).then(
+                (res: User) => resolve(res),
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async getUser(whereStatement: string): Promise<User | null | AxiosError> {
         const query = `{
-            user(where: { email: { _eq: "${email}" }, is_active: { _eq: true } }) {
+            user(where: {${whereStatement}}) {
                 id
                 username
                 email
                 password
+                is_active
+                role_id
                 role {
                     title
                 }
@@ -55,15 +88,24 @@ export class UserService {
                 (res: AxiosResponse) => {
                     const data = res.data.user.shift();
                     if (data) {
-                        const { id: userId, username, email, password, role } = data;
-                        const { id: roleId, title } = role;
+                        const {
+                            id: userId,
+                            username,
+                            email,
+                            password,
+                            is_active: isActive,
+                            role_id: roleId,
+                            role,
+                        } = data;
+                        const { title } = role;
                         user = {
                             id: userId,
                             username,
                             email,
                             password,
+                            isActive,
+                            roleId,
                             role: {
-                                id: roleId,
                                 title,
                             },
                         };
@@ -81,6 +123,25 @@ export class UserService {
 
         const query = `{
             user(where: { email: { _eq: "${email}" } }) {
+                id
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    const users = res.data.user || [];
+                    resolve(users.length > 0);
+                },
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async checkUserIsAdmin(id: string): Promise<boolean> {
+        const query = `{
+            user(where: { id: { _eq: "${id}" }, role: { title: { _eq: "${ROLE_ADMIN}" } } }) {
                 id
             }
         }
@@ -121,6 +182,38 @@ export class UserService {
             }
         }
         `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async updateUser(
+        id: string,
+        data: {
+            username: string;
+            email: string;
+            roleId: string;
+            isActive: boolean;
+        }
+    ): Promise<AxiosResponse | AxiosError> {
+        const { username, email, roleId, isActive } = data;
+
+        const query = `mutation {
+            update_user(
+                where: {id: {_eq: "${id}"}},
+                _set: {
+                    username: "${username}"
+                    email: "${email}",
+                    role_id: "${roleId}",
+                    is_active: ${isActive}
+                }
+            ) {
+                affected_rows
+            }
+        }`;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService

@@ -50,7 +50,7 @@ export class TimerController {
     }
 
     @Patch(':id')
-    async updateTimerById(@Param() param, @Response() res: any, @Body() body: Timer) {
+    async updateTimerById(@Param() param: any, @Response() res: any, @Body() body: Timer) {
         if (!(body && body.issue && body.projectId && body.startDatetime && body.endDatetime)) {
             return res
                 .status(HttpStatus.FORBIDDEN)
@@ -67,7 +67,7 @@ export class TimerController {
     }
 
     @Delete(':id')
-    async deleteTimerById(@Param() param, @Response() res: any) {
+    async deleteTimerById(@Param() param: any, @Response() res: any) {
         try {
             const deleteTimerByIdRes = await this.timerService.deleteTimerById(param.id);
             return res.status(HttpStatus.OK).json(deleteTimerByIdRes);

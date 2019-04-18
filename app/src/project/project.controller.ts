@@ -107,7 +107,7 @@ export class ProjectController {
     }
 
     @Get(':id')
-    async getProjectById(@Param() param, @Response() res: any) {
+    async getProjectById(@Param() param: any, @Response() res: any) {
         try {
             const getProjectByIdRes = await this.projectService.getProjectById(param.id);
             return res.status(HttpStatus.OK).json(getProjectByIdRes);
@@ -118,7 +118,7 @@ export class ProjectController {
     }
 
     @Patch(':id')
-    async updateProjectById(@Param() param, @Response() res: any, @Body() body: Project) {
+    async updateProjectById(@Param() param: any, @Response() res: any, @Body() body: Project) {
         if (!(body && body.name && body.projectColorId)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
         }
@@ -133,7 +133,7 @@ export class ProjectController {
     }
 
     @Delete(':id')
-    async deleteProjectById(@Param() param, @Response() res: any) {
+    async deleteProjectById(@Param() param: any, @Response() res: any) {
         try {
             const deleteProjectByIdRes = await this.projectService.deleteProjectById(param.id);
             return res.status(HttpStatus.OK).json(deleteProjectByIdRes);

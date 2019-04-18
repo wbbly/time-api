@@ -1,4 +1,4 @@
-import { Controller, Get, Post, HttpStatus, Response, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, HttpStatus, Headers, Param, Response, Body } from '@nestjs/common';
 import { AxiosError } from 'axios';
 
 import { UserService } from '../user/user.service';
@@ -27,7 +27,7 @@ export class UserController {
 
         let user = null;
         try {
-            user = await this.userService.getUser({ email: body.email });
+            user = await this.userService.getUserByEmail(body.email);
         } catch (error) {
             console.log(error);
         }
@@ -43,8 +43,8 @@ export class UserController {
 
     @Post('register')
     async registerUser(@Response() res: any, @Body() body: User) {
-        if (!(body && body.email && body.password)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email, password and role are required!' });
+        if (!(body && body.email && body.password && body.roleId)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email, password and roleId are required!' });
         }
 
         let userExists = false;
@@ -77,5 +77,52 @@ export class UserController {
         return res
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .json({ message: 'An error occurred while creating the user!' });
+    }
+
+    @Patch(':id')
+    async updateUser(@Headers() header: any, @Param() param: any, @Response() res: any, @Body() body: User) {
+        if (!(header && header['x-admin-id'])) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-admin-id header is required!' });
+        }
+
+        let userIsAdmin = false;
+        try {
+            userIsAdmin = await this.userService.checkUserIsAdmin(header['x-admin-id']);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (!userIsAdmin) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: "You don't have a permissions to update the user!" });
+        }
+
+        let user = null;
+        try {
+            user = await this.userService.getUserById(param.id, false);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (!user) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
+        }
+
+        const { username, email, roleId, isActive } = user;
+        const userData = { username, email, roleId, isActive };
+        Object.keys(userData).forEach(prop => {
+            const value = body && body[prop];
+            userData[prop] = typeof value === 'undefined' || value === null ? userData[prop] : value;
+        });
+
+        try {
+            const updateUserRes = await this.userService.updateUser(param.id, userData);
+
+            return res.status(HttpStatus.OK).json(updateUserRes);
+        } catch (e) {
+            const error: AxiosError = e;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
     }
 }
