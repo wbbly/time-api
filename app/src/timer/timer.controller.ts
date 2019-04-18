@@ -25,10 +25,14 @@ export class TimerController {
 
     @Get('reports-list')
     async reportsTimerList(@Response() res: any, @Query() params) {
-        if (!(params && params.userEmail && params.startDate && params.endDate)) {
+        if (!(params && params.userEmails && params.startDate && params.endDate)) {
             return res
                 .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'Parameters userEmail, startDate and endDate are required!' });
+                .json({ message: 'Parameters userEmails, startDate and endDate are required!' });
+        }
+
+        if (params && params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
         if (params && params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
@@ -37,7 +41,7 @@ export class TimerController {
 
         try {
             const userTimerListRes = await this.timerService.getReportsTimerList(
-                params.userEmail,
+                params.userEmails,
                 params.projectNames || [],
                 params.startDate,
                 params.endDate
