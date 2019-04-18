@@ -1,7 +1,7 @@
 import { Controller, Post, HttpStatus, Response, Body } from '@nestjs/common';
 
 import { MailService } from '../core/mail/mail.service';
-import { ConfigService } from 'src/core/config/config.service';
+import { ConfigService } from '../core/config/config.service';
 
 @Controller('email')
 export class EmailController {
