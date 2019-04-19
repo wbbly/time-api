@@ -181,7 +181,7 @@ export class TimerService {
             update_timer_v2(
                 where: {id: {_eq: "${id}"}},
                 _set: {
-                    issue: "${issue}",
+                    issue: "${issue || ''}",
                     project_id: "${projectId}",
                     start_datetime: "${startDatetime}",
                     end_datetime: "${endDatetime}"
