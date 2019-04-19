@@ -71,14 +71,22 @@ export class ProjectService {
         });
     }
 
-    getReportsProject(projectName: string, userEmail: string, startDate: string, endDate: string) {
+    getReportsProject(projectName: string, userEmails: string[], startDate: string, endDate: string) {
+        const timerStatementArray = [`start_datetime: {_gte: "${startDate}"}`, `end_datetime: {_lt: "${endDate}"}`];
+
+        const userWhereStatement = userEmails.length
+            ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
+            : '';
+        if (userWhereStatement) {
+            timerStatementArray.push(userWhereStatement);
+        }
+
+        const timerStatementString = timerStatementArray.join(', ');
+        const timerWhereStatement = timerStatementString ? `(where: {${timerStatementString}})` : '';
+
         const query = `{
             project_v2(where: {name: {_eq: "${projectName}"}}) {
-                timer(where: {
-                    user: {email: {_in: ["${userEmail}"]}},
-                    start_datetime: {_gte: "${startDate}"},
-                    end_datetime: {_lt: "${endDate}"}
-                }) {
+                timer ${timerWhereStatement} {
                     issue
                     start_datetime
                     end_datetime

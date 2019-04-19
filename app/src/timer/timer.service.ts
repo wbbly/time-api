@@ -145,17 +145,24 @@ export class TimerService {
     }
 
     getReportsTimerList(userEmails: string[], projectNames: string[], startDate: string, endDate: string) {
+        const userWhereStatement = userEmails.length
+            ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
+            : '';
+
         const projectWhereStatement = projectNames.length
             ? `project: {name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}}`
             : '';
 
         const timerStatementArray = [
-            `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`,
             `start_datetime: {_gte: "${this.timeService.getISOTimeByGivenValue(startDate).slice(0, -1)}"}`,
             `end_datetime: {_lt: "${this.timeService
                 .getISOTimeByGivenValue(this.timeService.getTimestampByGivenValue(endDate) + 24 * 60 * 60 * 1000 - 1)
                 .slice(0, -1)}"}`,
         ];
+
+        if (userWhereStatement) {
+            timerStatementArray.push(userWhereStatement);
+        }
 
         if (projectWhereStatement) {
             timerStatementArray.push(projectWhereStatement);

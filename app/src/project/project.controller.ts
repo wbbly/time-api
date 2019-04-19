@@ -47,16 +47,20 @@ export class ProjectController {
 
     @Get('reports-project')
     async reportsProjectList(@Response() res: any, @Query() params) {
-        if (!(params && params.projectName && params.userEmail && params.startDate && params.endDate)) {
+        if (!(params && params.projectName && params.startDate && params.endDate)) {
             return res
                 .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'Parameters projectName, userEmail, startDate and endDate are required!' });
+                .json({ message: 'Parameters projectName, startDate and endDate are required!' });
+        }
+
+        if (params && params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
         try {
             const reportsProjectRes = await this.projectService.getReportsProject(
                 params.projectName,
-                params.userEmail,
+                params.userEmails || [],
                 params.startDate,
                 params.endDate
             );

@@ -25,10 +25,8 @@ export class TimerController {
 
     @Get('reports-list')
     async reportsTimerList(@Response() res: any, @Query() params) {
-        if (!(params && params.userEmails && params.startDate && params.endDate)) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'Parameters userEmails, startDate and endDate are required!' });
+        if (!(params && params.startDate && params.endDate)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters startDate and endDate are required!' });
         }
 
         if (params && params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
@@ -41,7 +39,7 @@ export class TimerController {
 
         try {
             const userTimerListRes = await this.timerService.getReportsTimerList(
-                params.userEmails,
+                params.userEmails || [],
                 params.projectNames || [],
                 params.startDate,
                 params.endDate
