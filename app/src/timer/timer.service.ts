@@ -164,7 +164,7 @@ export class TimerService {
         }
 
         const query = `{
-            timer_v2(where: {${timerStatementArray.join(',')}}) {
+            timer_v2(where: {${timerStatementArray.join(',')}}, order_by: {start_datetime: asc}) {
                 start_datetime
                 end_datetime
             }
