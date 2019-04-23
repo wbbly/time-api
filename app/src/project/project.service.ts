@@ -118,10 +118,6 @@ export class ProjectService {
         if (startDate) {
             endDate = endDate ? endDate : startDate;
 
-            startDate = this.timeService.getISOTimeByGivenValue(startDate).slice(0, -1);
-            endDate = this.timeService
-                .getISOTimeByGivenValue(this.timeService.getTimestampByGivenValue(endDate) + 24 * 60 * 60 * 1000 - 1)
-                .slice(0, -1);
             startDateStatement = `start_datetime: {_gte: "${startDate}"}`;
             endDateStatement = `end_datetime: {_lt: "${endDate}"}`;
         }

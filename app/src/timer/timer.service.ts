@@ -154,10 +154,8 @@ export class TimerService {
             : '';
 
         const timerStatementArray = [
-            `start_datetime: {_gte: "${this.timeService.getISOTimeByGivenValue(startDate).slice(0, -1)}"}`,
-            `end_datetime: {_lt: "${this.timeService
-                .getISOTimeByGivenValue(this.timeService.getTimestampByGivenValue(endDate) + 24 * 60 * 60 * 1000 - 1)
-                .slice(0, -1)}"}`,
+            `start_datetime: {_gte: "${startDate}"}`,
+            `end_datetime: {_lt: "${endDate}"}`,
         ];
 
         if (userWhereStatement) {
