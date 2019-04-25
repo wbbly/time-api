@@ -19,7 +19,7 @@ export class ReportService {
         startDate: string,
         endDate: string,
         timezoneOffset?: number
-    ): Promise<string | AxiosError> {
+    ): Promise<{ path: string } | AxiosError> {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
             : '';
@@ -58,7 +58,7 @@ export class ReportService {
                 (res: AxiosResponse) => {
                     const report = this.prepareReport(res.data);
                     const reportPath = this.generateReport(report, timezoneOffset);
-                    resolve(reportPath);
+                    resolve({ path: reportPath });
                 },
                 (error: AxiosError) => reject(error)
             );
