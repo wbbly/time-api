@@ -9,17 +9,9 @@ services:
             - ./app:/var/www/lazy-tile-api/app
         stdin_open: true
         tty: true
-        depends_on:
-            - db
 
-    db:
-        image: mysql:5.7
-        container_name: lt_db
-        environment:
-            MYSQL_ROOT_PASSWORD: root
-            MYSQL_DATABASE: lazy_time
-            MYSQL_USER: root
-            MYSQL_PASSWORD: root
-        command: mysqld --sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+    lt_nginx:
+        build: docker/nginx
+        restart: always
         volumes:
-            - ./dbdata:/var/lib/mysql
+            - ./app:/var/www/lazy-tile-api/app

@@ -3,22 +3,8 @@ version: '3.0'
 services:
     lt_nodejs:
         ports:
-            - 8080:3000
+            - 3000:3000
 
-    db:
+    lt_nginx:
         ports:
-            - 3307:3306
-
-    lt_phpmyadmin:
-        container_name: lt_phpmyadmin
-        image: phpmyadmin/phpmyadmin
-        environment:
-            MYSQL_ROOT_PASSWORD: root
-            MYSQL_DATABASE: lazy_time
-            MYSQL_USER: root
-            MYSQL_PASSWORD: root
-            PMA_HOST: db
-        links:
-            - db
-        ports:
-            - 3032:80
+            - 8080:80
