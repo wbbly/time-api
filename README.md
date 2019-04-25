@@ -10,6 +10,7 @@ cd lazy-time-api
 ## CREATE APP CONFIG FILES
 
 ```
+cp docker/nginx/nginx.conf.dist docker/nginx/nginx.conf
 cp docker-compose.override.yml.dist docker-compose.override.yml
 cp docker-compose.yml.dist docker-compose.yml
 cp app/.env.dist app/.env
