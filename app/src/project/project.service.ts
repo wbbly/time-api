@@ -88,6 +88,9 @@ export class ProjectService {
             project_v2(where: {name: {_eq: "${projectName}"}}) {
                 timer ${timerWhereStatement} {
                     issue
+                    user {
+                        username
+                    }
                     start_datetime
                     end_datetime
                 }
