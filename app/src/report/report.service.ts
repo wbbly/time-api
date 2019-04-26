@@ -56,7 +56,7 @@ export class ReportService {
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    const reportData = this.prepareReportData(res.data);
+                    const reportData = this.prepareReportData(res.data, timezoneOffset);
                     const reportPath = this.generateReport(reportData, timezoneOffset);
                     resolve({ path: reportPath });
                 },
