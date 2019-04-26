@@ -53,10 +53,8 @@ export class TimerController {
 
     @Patch(':id')
     async updateTimerById(@Param() param: any, @Response() res: any, @Body() body: Timer) {
-        if (!(body && body.projectId && body.startDatetime && body.endDatetime)) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'Timer projectId, startDatetime and endDatetime are required!' });
+        if (!(body && body.projectId)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Timer projectId is required!' });
         }
 
         try {

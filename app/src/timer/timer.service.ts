@@ -179,15 +179,21 @@ export class TimerService {
 
     updateTimerById(id: string, timer: Timer) {
         const { issue, projectId, startDatetime, endDatetime } = timer;
+
+        const setParams = [`issue: "${issue || ''}"`, `project_id: "${projectId}"`];
+
+        if (startDatetime) {
+            setParams.push(`start_datetime: "${startDatetime}"`);
+        }
+
+        if (endDatetime) {
+            setParams.push(`end_datetime: "${endDatetime}"`);
+        }
+
         const query = `mutation {
             update_timer_v2(
                 where: {id: {_eq: "${id}"}},
-                _set: {
-                    issue: "${issue || ''}",
-                    project_id: "${projectId}",
-                    start_datetime: "${startDatetime}",
-                    end_datetime: "${endDatetime}"
-                }
+                _set: {${setParams.join(', ')}}
             ) {
                 affected_rows
             }
