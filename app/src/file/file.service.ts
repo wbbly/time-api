@@ -8,7 +8,19 @@ export class FileService {
 
     constructor() {}
 
-    jsonToCsv(data: any[]): string {
+    saveCsvFile(data: any[], filePath: string): string {
+        const file = `${this.PUBLIC_DIR_PATH}${filePath}`;
+
+        try {
+            fs.outputFileSync(file, `\ufeff${this.jsonToCsv(data)}\n`, { encoding: 'utf8' }); // '\ufeff' means add BOM to the file (taken here https://stackoverflow.com/a/13859239/1335142)
+        } catch (e) {
+            console.log(e);
+        }
+
+        return file;
+    }
+
+    private jsonToCsv(data: any[]): string {
         let csv = '';
         try {
             csv = json2csv(data);
@@ -17,17 +29,5 @@ export class FileService {
         }
 
         return csv;
-    }
-
-    saveFile(data: string, filePath: string): string {
-        const file = `${this.PUBLIC_DIR_PATH}${filePath}`;
-
-        try {
-            fs.outputFileSync(file, `\ufeff${data}\n`, { encoding: 'utf8' }); // '\ufeff' means add BOM to the file (taken here https://stackoverflow.com/a/13859239/1335142)
-        } catch (e) {
-            console.log(e);
-        }
-
-        return file;
     }
 }

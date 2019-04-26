@@ -56,8 +56,8 @@ export class ReportService {
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    const report = this.prepareReport(res.data);
-                    const reportPath = this.generateReport(report, timezoneOffset);
+                    const reportData = this.prepareReportData(res.data);
+                    const reportPath = this.generateReport(reportData, timezoneOffset);
                     resolve({ path: reportPath });
                 },
                 (error: AxiosError) => reject(error)
@@ -65,7 +65,7 @@ export class ReportService {
         });
     }
 
-    private prepareReport(data: any, timezoneOffset?: number): any[] {
+    private prepareReportData(data: any, timezoneOffset?: number): any[] {
         const { timer_v2: timerV2 } = data;
         const timerEntriesReport = {};
         for (let i = 0, timerV2Length = timerV2.length; i < timerV2Length; i++) {
@@ -107,8 +107,8 @@ export class ReportService {
     }
 
     private generateReport(data: any[], timezoneOffset?: number): string {
-        const filePath = this.fileService.saveFile(
-            this.fileService.jsonToCsv(data),
+        const filePath = this.fileService.saveCsvFile(
+            data,
             `reports/report_${this.timeService.getReadableTime(this.timeService.getTimestamp(), timezoneOffset)}.csv`
         );
 
