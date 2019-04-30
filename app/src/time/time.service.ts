@@ -37,8 +37,8 @@ export class TimeService {
         return new Date(value).getTime();
     }
 
-    getReadableTime(value: string | number, timezoneOffset: number = 0): string {
-        return this.getISOTimeByGivenValue(this.getTimestampByGivenValue(value) - timezoneOffset * 60 * 1000)
+    getReadableTime(value: string | number, timeInPast: number): string {
+        return this.getISOTimeByGivenValue(this.getTimestampByGivenValue(value) - timeInPast)
             .replace('T', ' ')
             .split('.')[0]; // 2019-01-01 00:00:00
     }

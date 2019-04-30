@@ -155,8 +155,8 @@ export class TimerService {
 
         const timerStatementArray = [
             `_or: [
-            {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
-            {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}}
+            {start_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
+            {end_datetime: {_gte: "${startDate}", _lt: "${endDate}"}}
         ]`,
         ];
 
@@ -176,9 +176,14 @@ export class TimerService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    this.limitTimeEntriesByStartEndDates(res.data.timer_v2, startDate, endDate);
+
+                    resolve(res);
+                },
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 
@@ -225,5 +230,28 @@ export class TimerService {
                 .request(query)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
+    }
+
+    limitTimeEntriesByStartEndDates(timeEntries: any[], startDate: string, endDate: string) {
+        for (let i = 0; i < timeEntries.length; i++) {
+            const timeEntry = timeEntries[i];
+            this.limitTimeEntryByStartEndDates(timeEntry, startDate, endDate);
+        }
+    }
+
+    limitTimeEntryByStartEndDates(timeEntry: any, startDate: string, endDate: string) {
+        if (
+            this.timeService.getTimestampByGivenValue(timeEntry.start_datetime) <
+            this.timeService.getTimestampByGivenValue(startDate)
+        ) {
+            timeEntry.start_datetime = startDate;
+        }
+
+        if (
+            this.timeService.getTimestampByGivenValue(timeEntry.end_datetime) >
+            this.timeService.getTimestampByGivenValue(endDate)
+        ) {
+            timeEntry.end_datetime = endDate;
+        }
     }
 }
