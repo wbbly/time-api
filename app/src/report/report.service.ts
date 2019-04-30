@@ -32,8 +32,9 @@ export class ReportService {
 
         const timerStatementArray = [
             `_or: [
-            {start_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
-            {end_datetime: {_gte: "${startDate}", _lt: "${endDate}"}}
+            {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+            {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+            {start_datetime: {_lt: "${startDate}"}, end_datetime: {_gt: "${endDate}"}}
         ]`,
         ];
 

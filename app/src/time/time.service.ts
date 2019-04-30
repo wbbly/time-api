@@ -64,4 +64,19 @@ export class TimeService {
         const duration = shortEnglishHumanizer(number).replace(/,/g, ''); // 2w 2d 45m
         return duration;
     }
+
+    getDatePeriodsBetweenStartEndDates(startDate: string, endDate: string): any[] {
+        let datesList = [];
+        let startDateTimestamp = this.getTimestampByGivenValue(startDate);
+        const endDateTimestamp = this.getTimestampByGivenValue(endDate);
+        while (startDateTimestamp < endDateTimestamp) {
+            datesList.push({
+                startPeriod: this.getISOTimeByGivenValue(startDateTimestamp),
+                endPeriod: this.getISOTimeByGivenValue(startDateTimestamp + 24 * 60 * 60 * 1000),
+            });
+            startDateTimestamp += 24 * 60 * 60 * 1000;
+        }
+
+        return datesList;
+    }
 }

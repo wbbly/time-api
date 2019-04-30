@@ -155,8 +155,9 @@ export class TimerService {
 
         const timerStatementArray = [
             `_or: [
-            {start_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
-            {end_datetime: {_gte: "${startDate}", _lt: "${endDate}"}}
+            {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+            {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+            {start_datetime: {_lt: "${startDate}"}, end_datetime: {_gt: "${endDate}"}}
         ]`,
         ];
 
@@ -179,6 +180,9 @@ export class TimerService {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     this.limitTimeEntriesByStartEndDates(res.data.timer_v2, startDate, endDate);
+
+                    const datePeriods = this.timeService.getDatePeriodsBetweenStartEndDates(startDate, endDate);
+                    res.data.timer_v2 = this.cutTimeEntriesPartsByDatePeriods(res.data.timer_v2, datePeriods);
 
                     resolve(res);
                 },
@@ -253,5 +257,49 @@ export class TimerService {
         ) {
             timeEntry.end_datetime = endDate;
         }
+    }
+
+    cutTimeEntriesPartsByDatePeriods(timeEntries: any[], datePeriods: any[]): any[] {
+        const timeEntriesPartsByDatePeriods = [];
+        for (let i = 0; i < timeEntries.length; i++) {
+            const timeEntry = timeEntries[i];
+            for (let j = 0; j < datePeriods.length; j++) {
+                const period = datePeriods[j];
+                const timeEntryPart = this.cutTimeEntryPartBetweenStartEndDates(
+                    {
+                        start_datetime: timeEntry.start_datetime,
+                        end_datetime: timeEntry.end_datetime,
+                    },
+                    period.startPeriod,
+                    period.endPeriod
+                );
+
+                if (timeEntryPart) {
+                    timeEntriesPartsByDatePeriods.push(timeEntryPart);
+                }
+            }
+        }
+
+        return timeEntriesPartsByDatePeriods;
+    }
+
+    cutTimeEntryPartBetweenStartEndDates(timeEntry: any, startDate: string, endDate: string): any {
+        if (
+            this.timeService.getTimestampByGivenValue(timeEntry.start_datetime) >
+            this.timeService.getTimestampByGivenValue(endDate)
+        ) {
+            return null;
+        }
+
+        if (
+            this.timeService.getTimestampByGivenValue(timeEntry.end_datetime) <
+            this.timeService.getTimestampByGivenValue(startDate)
+        ) {
+            return null;
+        }
+
+        this.limitTimeEntryByStartEndDates(timeEntry, startDate, endDate);
+
+        return timeEntry;
     }
 }
