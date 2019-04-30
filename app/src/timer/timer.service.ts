@@ -153,7 +153,7 @@ export class TimerService {
             ? `project: {name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}}`
             : '';
 
-        const timerStatementArray = [`start_datetime: {_gte: "${startDate}"}`, `end_datetime: {_lt: "${endDate}"}`];
+        const timerStatementArray = [`start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}`];
 
         if (userWhereStatement) {
             timerStatementArray.push(userWhereStatement);

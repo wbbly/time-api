@@ -72,7 +72,7 @@ export class ProjectService {
     }
 
     getReportsProject(projectName: string, userEmails: string[], startDate: string, endDate: string) {
-        const timerStatementArray = [`start_datetime: {_gte: "${startDate}"}`, `end_datetime: {_lt: "${endDate}"}`];
+        const timerStatementArray = [`start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}`];
 
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -116,13 +116,11 @@ export class ProjectService {
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
             : '';
         let startDateStatement = '';
-        let endDateStatement = '';
 
         if (startDate) {
             endDate = endDate ? endDate : startDate;
 
-            startDateStatement = `start_datetime: {_gte: "${startDate}"}`;
-            endDateStatement = `end_datetime: {_lt: "${endDate}"}`;
+            startDateStatement = `start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}`;
         }
 
         let timerStatementArray = [];
@@ -131,9 +129,6 @@ export class ProjectService {
         }
         if (startDateStatement) {
             timerStatementArray.push(startDateStatement);
-        }
-        if (endDateStatement) {
-            timerStatementArray.push(endDateStatement);
         }
         const timerStatementString = timerStatementArray.join(', ');
         const timerWhereStatement = timerStatementString ? `(where: {${timerStatementString}})` : '';
