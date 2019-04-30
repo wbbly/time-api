@@ -28,7 +28,12 @@ export class ReportService {
             ? `project: {name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}}`
             : '';
 
-        const timerStatementArray = [`start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}`];
+        const timerStatementArray = [
+            `_or: [
+            {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+            {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}}
+        ]`,
+        ];
 
         if (userWhereStatement) {
             timerStatementArray.push(userWhereStatement);

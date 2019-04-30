@@ -72,7 +72,12 @@ export class ProjectService {
     }
 
     getReportsProject(projectName: string, userEmails: string[], startDate: string, endDate: string) {
-        const timerStatementArray = [`start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}`];
+        const timerStatementArray = [
+            `_or: [
+            {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+            {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}}
+        ]`,
+        ];
 
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -115,20 +120,23 @@ export class ProjectService {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
             : '';
-        let startDateStatement = '';
+        let dateStatement = '';
 
         if (startDate) {
             endDate = endDate ? endDate : startDate;
 
-            startDateStatement = `start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}`;
+            dateStatement = `_or: [
+                {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+                {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}}
+            ]`;
         }
 
         let timerStatementArray = [];
         if (userWhereStatement) {
             timerStatementArray.push(userWhereStatement);
         }
-        if (startDateStatement) {
-            timerStatementArray.push(startDateStatement);
+        if (dateStatement) {
+            timerStatementArray.push(dateStatement);
         }
         const timerStatementString = timerStatementArray.join(', ');
         const timerWhereStatement = timerStatementString ? `(where: {${timerStatementString}})` : '';
