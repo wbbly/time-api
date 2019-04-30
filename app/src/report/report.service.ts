@@ -20,7 +20,7 @@ export class ReportService {
         projectNames: string[],
         startDate: string,
         endDate: string,
-        timezoneOffset?: number
+        timezoneOffset: number = 0
     ): Promise<{ path: string } | AxiosError> {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -73,7 +73,7 @@ export class ReportService {
         });
     }
 
-    private prepareReportData(data: any, startDate: string, endDate: string, timezoneOffset: number = 0): any[] {
+    private prepareReportData(data: any, startDate: string, endDate: string, timezoneOffset: number): any[] {
         const { timer_v2: timerV2 } = data;
         const timerEntriesReport = {};
         for (let i = 0, timerV2Length = timerV2.length; i < timerV2Length; i++) {
@@ -99,7 +99,7 @@ export class ReportService {
                 'Start date': this.timeService.getTimestampByGivenValue(startDatetime),
                 'End date': timerEntriesReport[uniqueTimeEntryKey]
                     ? timerEntriesReport[uniqueTimeEntryKey]['End date']
-                    : this.timeService.getReadableTime(endDatetime, timezoneOffset * 60 * 1000),
+                    : this.timeService.getReadableTime(endDatetime, timezoneOffset),
             };
         }
 
@@ -108,22 +108,16 @@ export class ReportService {
         for (let i = 0, timerEntriesReportLength = timerEntriesReportValues.length; i < timerEntriesReportLength; i++) {
             let timeEntry = timerEntriesReportValues[i];
             timeEntry['Time'] = this.timeService.getTimeDurationByGivenTimestamp(timeEntry['Time']);
-            timeEntry['Start date'] = this.timeService.getReadableTime(
-                timeEntry['Start date'],
-                timezoneOffset * 60 * 1000
-            );
+            timeEntry['Start date'] = this.timeService.getReadableTime(timeEntry['Start date'], timezoneOffset);
         }
 
         return timerEntriesReportValues.reverse();
     }
 
-    private generateReport(data: any[], timezoneOffset: number = 0): string {
+    private generateReport(data: any[], timezoneOffset: number): string {
         const filePath = this.fileService.saveCsvFile(
             data,
-            `reports/report_${this.timeService.getReadableTime(
-                this.timeService.getTimestamp(),
-                timezoneOffset * 60 * 1000
-            )}.csv`
+            `reports/report_${this.timeService.getReadableTime(this.timeService.getTimestamp(), timezoneOffset)}.csv`
         );
 
         return filePath;

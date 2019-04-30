@@ -13,6 +13,14 @@ export class TimeService {
         return new Date(value).toISOString();
     }
 
+    getDateValueFromISOTimeByGivenValue(value: string | number): string {
+        return this.getISOTimeByGivenValue(value).split('T')[0];
+    }
+
+    getTimeValueFromISOTimeByGivenValue(value: string | number): string {
+        return this.getISOTimeByGivenValue(value).split('T')[1];
+    }
+
     getUTCTime(): string {
         return new Date().toUTCString();
     }
@@ -62,19 +70,27 @@ export class TimeService {
         });
 
         const duration = shortEnglishHumanizer(number).replace(/,/g, ''); // 2w 2d 45m
+
         return duration;
     }
 
-    getDatePeriodsBetweenStartEndDates(startDate: string, endDate: string): any[] {
+    getDayPeriodsBetweenStartEndDates(startDate: string, endDate: string): any[] {
         let datesList = [];
-        let startDateTimestamp = this.getTimestampByGivenValue(startDate);
+        let currentDateTimestamp = this.getTimestampByGivenValue(startDate);
         const endDateTimestamp = this.getTimestampByGivenValue(endDate);
-        while (startDateTimestamp < endDateTimestamp) {
+        while (currentDateTimestamp < endDateTimestamp) {
+            const nextDateTimestamp = this.getTimestampByGivenValue(
+                `${this.getDateValueFromISOTimeByGivenValue(
+                    currentDateTimestamp + 24 * 60 * 60 * 1000
+                )}T${this.getTimeValueFromISOTimeByGivenValue(startDate)}`
+            );
             datesList.push({
-                startPeriod: this.getISOTimeByGivenValue(startDateTimestamp),
-                endPeriod: this.getISOTimeByGivenValue(startDateTimestamp + 24 * 60 * 60 * 1000),
+                startPeriod: this.getISOTimeByGivenValue(currentDateTimestamp),
+                endPeriod: this.getISOTimeByGivenValue(
+                    nextDateTimestamp > endDateTimestamp ? endDateTimestamp : nextDateTimestamp
+                ),
             });
-            startDateTimestamp += 24 * 60 * 60 * 1000;
+            currentDateTimestamp = nextDateTimestamp;
         }
 
         return datesList;

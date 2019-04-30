@@ -76,7 +76,8 @@ export class UserService {
                 role_id
                 role {
                     title
-                }
+                },
+                timezone_offset
             }
         }
         `;
@@ -96,6 +97,7 @@ export class UserService {
                             is_active: isActive,
                             role_id: roleId,
                             role,
+                            timezone_offset: timezoneOffset,
                         } = data;
                         const { title } = role;
                         user = {
@@ -108,6 +110,7 @@ export class UserService {
                             role: {
                                 title,
                             },
+                            timezoneOffset,
                         };
                     }
 

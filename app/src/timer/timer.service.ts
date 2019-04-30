@@ -181,7 +181,7 @@ export class TimerService {
                 (res: AxiosResponse) => {
                     this.limitTimeEntriesByStartEndDates(res.data.timer_v2, startDate, endDate);
 
-                    const datePeriods = this.timeService.getDatePeriodsBetweenStartEndDates(startDate, endDate);
+                    const datePeriods = this.timeService.getDayPeriodsBetweenStartEndDates(startDate, endDate);
                     res.data.timer_v2 = this.cutTimeEntriesPartsByDatePeriods(res.data.timer_v2, datePeriods);
 
                     resolve(res);

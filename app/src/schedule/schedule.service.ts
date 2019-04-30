@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, NestSchedule } from 'nest-schedule';
 
-import { MailService } from '../../core/mail/mail.service';
-import { TimerCurrentV2Service } from '../../timer-current-v2/timer-current-v2.service';
-import { TimeService } from '../../time/time.service';
-import { TimerCurrentV2 } from '../../timer-current-v2/interfaces/timer-current-v2.interface';
+import { MailService } from '../core/mail/mail.service';
+import { TimerCurrentV2Service } from '../timer-current-v2/timer-current-v2.service';
+import { TimeService } from '../time/time.service';
+import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.interface';
 
 @Injectable()
 export class ScheduleService extends NestSchedule {

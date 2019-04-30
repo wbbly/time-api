@@ -10,6 +10,7 @@ export interface User {
     isActive?: boolean;
     roleId?: string;
     createdAt?: string;
+    timezoneOffset?: number;
     currentTimer?: TimerCurrentV2[];
     role?: Role;
     timer?: Timer[];
