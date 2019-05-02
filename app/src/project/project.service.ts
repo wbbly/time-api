@@ -93,13 +93,19 @@ export class ProjectService {
         }
 
         const timerStatementString = timerStatementArray.join(', ');
-        const timerWhereStatement = timerStatementString ? `(where: {${timerStatementString}})` : '';
+        const timerWhereStatement = timerStatementString
+            ? `(where: {${timerStatementString}}, order_by: {end_datetime: desc})`
+            : '(order_by: {end_datetime: desc})';
 
         const query = `{
             project_v2(where: {name: {_eq: "${projectName}"}}) {
                 timer ${timerWhereStatement} {
                     issue
+                    project {
+                        name
+                    }
                     user {
+                        email
                         username
                     }
                     start_datetime
@@ -112,10 +118,7 @@ export class ProjectService {
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    for (let i = 0; i < res.data.project_v2.length; i++) {
-                        const project = res.data.project_v2[i];
-                        this.timerService.limitTimeEntriesByStartEndDates(project.timer, startDate, endDate);
-                    }
+                    this.prepareReportsProjectData(res.data.project_v2, startDate, endDate);
 
                     resolve(res);
                 },
@@ -262,5 +265,50 @@ export class ProjectService {
                 .request(query)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
+    }
+
+    private prepareReportsProjectData(data: any, startDate: string, endDate: string): void {
+        for (let i = 0; i < data.length; i++) {
+            const projectV2 = data[i];
+            this.timerService.limitTimeEntriesByStartEndDates(projectV2.timer, startDate, endDate);
+
+            const projectV2Report = {};
+            for (let j = 0; j < projectV2.timer.length; j++) {
+                const timeEntry = projectV2.timer[j];
+                const { issue, start_datetime: startDatetime, end_datetime: endDatetime, project, user } = timeEntry;
+                const { name: projectName } = project;
+                const { email: userEmail, username } = user;
+
+                const uniqueTimeEntryKey = `${issue}-${projectName}-${userEmail}`;
+                const previousDuration = projectV2Report[uniqueTimeEntryKey]
+                    ? projectV2Report[uniqueTimeEntryKey].durationTimestamp
+                    : 0;
+                const currentDuration =
+                    this.timeService.getTimestampByGivenValue(endDatetime) -
+                    this.timeService.getTimestampByGivenValue(startDatetime);
+                projectV2Report[uniqueTimeEntryKey] = {
+                    user: {
+                        username,
+                    },
+                    issue,
+                    durationTimestamp: previousDuration + currentDuration,
+                    startDatetime,
+                    endDatetime: projectV2Report[uniqueTimeEntryKey]
+                        ? projectV2Report[uniqueTimeEntryKey].endDatetime
+                        : endDatetime,
+                };
+            }
+
+            const projectV2ReportValues = Object.values(projectV2Report);
+            projectV2ReportValues.sort((a, b) => a['startDatetime'] - b['endDatetime']);
+            for (let i = 0, projectV2ReportLength = projectV2ReportValues.length; i < projectV2ReportLength; i++) {
+                let timeEntry = projectV2ReportValues[i];
+                timeEntry['duration'] = this.timeService.getTimeDurationByGivenTimestamp(
+                    timeEntry['durationTimestamp']
+                );
+            }
+
+            data[i].timer = projectV2ReportValues.reverse();
+        }
     }
 }
