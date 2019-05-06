@@ -193,7 +193,8 @@ export class ProjectService {
                 objects: [
                     {
                         name: "${name.toLowerCase().trim()}",
-                        project_color_id: "${projectColorId}"
+                        project_color_id: "${projectColorId}",
+                        team_id: "00000000-0000-0000-0000-000000000000" // @TODO: WOB-71, get team id from parameters
                     }
                 ]
             ){
