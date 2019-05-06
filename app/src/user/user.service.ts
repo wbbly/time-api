@@ -3,16 +3,14 @@ import { AxiosResponse, AxiosError } from 'axios';
 import * as bcrypt from 'bcrypt';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
+import { RoleService } from '../role/role.service';
 import { User } from './interfaces/user.interface';
-
-const ROLE_ADMIN = 'ROLE_ADMIN';
-const ROLE_USER = 'ROLE_USER';
 
 @Injectable()
 export class UserService {
     private salt = 10;
 
-    constructor(private readonly httpRequestsService: HttpRequestsService) {}
+    constructor(private readonly httpRequestsService: HttpRequestsService, private readonly roleService: RoleService) {}
 
     getUserList() {
         const query = `{
@@ -144,7 +142,7 @@ export class UserService {
 
     async checkUserIsAdmin(id: string): Promise<boolean> {
         const query = `{
-            user(where: { id: { _eq: "${id}" }, role: { title: { _eq: "${ROLE_ADMIN}" } } }) {
+            user(where: { id: { _eq: "${id}" }, role: { title: { _eq: "${this.roleService.ROLES.ROLE_ADMIN}" } } }) {
                 id
             }
         }
