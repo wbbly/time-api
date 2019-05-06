@@ -4,6 +4,7 @@ import { AxiosResponse, AxiosError } from 'axios';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TimerService } from '../timer/timer.service';
 import { TimeService } from '../time/time.service';
+import { TeamService } from '../team/team.service';
 import { Project } from './interfaces/project.interface';
 
 @Injectable()
@@ -11,7 +12,8 @@ export class ProjectService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly timerService: TimerService,
-        private readonly timeService: TimeService
+        private readonly timeService: TimeService,
+        private readonly teamService: TeamService
     ) {}
 
     getProjectList() {
@@ -188,17 +190,20 @@ export class ProjectService {
     addProject(project: Project) {
         const { name, projectColorId } = project;
 
+        // @TODO: WOB-71, get team_id from parameters
         const query = `mutation {
             insert_project_v2(
                 objects: [
                     {
                         name: "${name.toLowerCase().trim()}",
                         project_color_id: "${projectColorId}",
-                        team_id: "00000000-0000-0000-0000-000000000000" // @TODO: WOB-71, get team id from parameters
+                        team_id: "${this.teamService.DEFAULT_TEAMS_IDS.DEFAULT}"
                     }
                 ]
             ){
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;
@@ -241,7 +246,9 @@ export class ProjectService {
                     project_color_id: "${projectColorId}"
                 }
             ) {
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;

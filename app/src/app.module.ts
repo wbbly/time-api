@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { ProjectModule } from './project/project.module';
 import { ProjectColorModule } from './project-color/project-color.module';
 import { RoleModule } from './role/role.module';
+import { RoleCollaborationModule } from './role-collaboration/role-collaboration.module';
 import { TimeModule } from './time/time.module';
 import { TimerModule } from './timer/timer.module';
 import { TimerCurrentV2Module } from './timer-current-v2/timer-current-v2.module';
@@ -13,12 +14,14 @@ import { ScheduleModule } from './schedule/schedule.module';
 import { EmailModule } from './email/email.module';
 import { ReportModule } from './report/report.module';
 import { FileModule } from './file/file.module';
+import { TeamModule } from './team/team.module';
 
 @Module({
     imports: [
         ProjectModule,
         ProjectColorModule,
         RoleModule,
+        RoleCollaborationModule,
         TimeModule,
         TimerModule,
         TimerCurrentV2Module,
@@ -27,6 +30,7 @@ import { FileModule } from './file/file.module';
         EmailModule,
         ReportModule,
         FileModule,
+        TeamModule,
     ],
     controllers: [AppController],
     providers: [AppService],

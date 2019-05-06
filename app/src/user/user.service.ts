@@ -4,13 +4,20 @@ import * as bcrypt from 'bcrypt';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleService } from '../role/role.service';
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { TeamService } from '../team/team.service';
 import { User } from './interfaces/user.interface';
 
 @Injectable()
 export class UserService {
     private salt = 10;
 
-    constructor(private readonly httpRequestsService: HttpRequestsService, private readonly roleService: RoleService) {}
+    constructor(
+        private readonly httpRequestsService: HttpRequestsService,
+        private readonly roleService: RoleService,
+        private readonly roleCollaborationService: RoleCollaborationService,
+        private readonly teamService: TeamService
+    ) {}
 
     getUserList() {
         const query = `{
@@ -159,35 +166,65 @@ export class UserService {
         });
     }
 
-    async createUser(data: {
-        username: string;
-        email: string;
-        password: string;
-        roleId: string;
-    }): Promise<AxiosResponse | AxiosError> {
-        const { username, email, password, roleId } = data;
+    async createUser(data: { username: string; email: string; password: string }): Promise<AxiosResponse | AxiosError> {
+        const { username, email, password } = data;
         const passwordHash = await this.getHash(password);
 
-        const query = `mutation {
+        const insertUserQuery = `mutation {
             insert_user(
                 objects: [
                     {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        role_id: "${roleId}"
+                        role_id: "${this.roleService.ROLES_IDS.ROLE_USER}"
                     }
                 ]
             ){
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(insertUserQuery).subscribe(
+                (insertUserRes: AxiosResponse) => {
+                    const returningRows = insertUserRes.data.insert_user.returning;
+                    if (returningRows.length) {
+                        const userId = insertUserRes.data.insert_user.returning[0].id;
+
+                        // @TODO: WOB-71, get team_id and role_collaboration_id from parameters
+                        const insertUserTeamQuery = `mutation {
+                            insert_user_team(
+                                objects: [
+                                    {
+                                        user_id: "${userId}"
+                                        team_id: "${this.teamService.DEFAULT_TEAMS_IDS.DEFAULT}",
+                                        role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER}"
+                                        is_active: true
+                                    }
+                                ]
+                            ) {
+                                returning {
+                                    id
+                                }
+                            }
+                        }`;
+
+                        this.httpRequestsService
+                            .request(insertUserTeamQuery)
+                            .subscribe(
+                                (insertUserTeamRes: AxiosResponse) => resolve(insertUserTeamRes),
+                                (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                            );
+                    } else {
+                        resolve(insertUserRes);
+                    }
+                },
+                (insertUserError: AxiosError) => reject(insertUserError)
+            );
         });
     }
 
@@ -212,7 +249,9 @@ export class UserService {
                     is_active: ${isActive}
                 }
             ) {
-                affected_rows
+                returning {
+                    id
+                }
             }
         }`;
 

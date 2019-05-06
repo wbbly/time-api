@@ -2,11 +2,12 @@ import { Controller, Get, Post, Patch, HttpStatus, Headers, Param, Response, Bod
 import { AxiosError } from 'axios';
 
 import { UserService } from '../user/user.service';
+import { RoleService } from '../role/role.service';
 import { User } from './interfaces/user.interface';
 
 @Controller('user')
 export class UserController {
-    constructor(private readonly userService: UserService) {}
+    constructor(private readonly userService: UserService, private readonly roleService: RoleService) {}
 
     @Get('list')
     async userList(@Response() res: any) {
@@ -42,9 +43,9 @@ export class UserController {
     }
 
     @Post('register')
-    async registerUser(@Response() res: any, @Body() body: User) {
-        if (!(body && body.email && body.password && body.roleId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email, password and roleId are required!' });
+    async registerUser(@Response() res: any, @Body() body: any) {
+        if (!(body && body.email && body.password)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email and password are required!' });
         }
 
         let userExists = false;
@@ -64,7 +65,6 @@ export class UserController {
                 username: body.username || body.email,
                 email: body.email,
                 password: body.password,
-                roleId: body.roleId,
             });
         } catch (error) {
             console.log(error);
@@ -80,7 +80,7 @@ export class UserController {
     }
 
     @Patch(':id')
-    async updateUser(@Headers() header: any, @Param() param: any, @Response() res: any, @Body() body: User) {
+    async updateUser(@Headers() header: any, @Param() param: any, @Response() res: any, @Body() body: any) {
         if (!(header && header['x-admin-id'])) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-admin-id header is required!' });
         }
@@ -109,11 +109,16 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
         }
 
-        const { username, email, roleId, isActive } = user;
-        const userData = { username, email, roleId, isActive };
+        const { username, email, role: roleObject, isActive } = user;
+        const userData: any = { username, email, role: roleObject.title, isActive };
         Object.keys(userData).forEach(prop => {
             const value = body && body[prop];
             userData[prop] = typeof value === 'undefined' || value === null ? userData[prop] : value;
+
+            if (prop === 'role') {
+                userData['roleId'] = this.roleService.ROLES_IDS[userData[prop]];
+                delete userData[prop];
+            }
         });
 
         try {

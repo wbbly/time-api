@@ -7,5 +7,6 @@ import { RoleCollaborationService } from './role-collaboration.service';
     imports: [HttpModule],
     controllers: [RoleCollaborationController],
     providers: [RoleCollaborationService],
+    exports: [RoleCollaborationService],
 })
-export class RoleModule {}
+export class RoleCollaborationModule {}

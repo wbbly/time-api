@@ -98,7 +98,9 @@ export class TimerService {
                     }
                 ]
             ){
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;
@@ -209,7 +211,9 @@ export class TimerService {
                 where: {id: {_eq: "${id}"}},
                 _set: {${setParams.join(', ')}}
             ) {
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;

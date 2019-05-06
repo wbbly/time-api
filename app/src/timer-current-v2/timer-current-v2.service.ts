@@ -177,7 +177,9 @@ export class TimerCurrentV2Service {
                     }
                 ]
             ){
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;
@@ -209,7 +211,9 @@ export class TimerCurrentV2Service {
                     project_id: "${projectId}"
                 }
             ){
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;
@@ -243,7 +247,9 @@ export class TimerCurrentV2Service {
                     notification_6hrs: ${notification6hrs}
                 }
             ){
-                affected_rows
+                returning {
+                    id
+                }
             }
         }
         `;
