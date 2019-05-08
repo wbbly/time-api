@@ -11,7 +11,6 @@ export class TeamService {
     ) {}
 
     DEFAULT_TEAMS = {
-        DEFAULT: 'default',
         MY_TEAM: 'my team',
     };
 
@@ -19,12 +18,12 @@ export class TeamService {
         DEFAULT: '00000000-0000-0000-0000-000000000000',
     };
 
-    async createTeam(userId: string) {
+    async createDefaultTeam(userId: string) {
         const insertTeamQuery = `mutation {
-            insert_team_v2(
+            insert_team(
                 objects: [
                     {
-                        name: ${this.DEFAULT_TEAMS.DEFAULT}
+                        name: ${this.DEFAULT_TEAMS.MY_TEAM}
                     }
                 ]
             ) {
@@ -36,10 +35,10 @@ export class TeamService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(insertTeamQuery).subscribe((insertTeamRes: AxiosResponse) => {
-                const returningRows = insertTeamRes.data.insert_team_v2.returning;
+                const returningRows = insertTeamRes.data.insert_team.returning;
 
                 if (returningRows.length) {
-                    const teamId = insertTeamRes.data.insert_team_v2.returning[0].id;
+                    const teamId = insertTeamRes.data.insert_team.returning[0].id;
 
                     //Linking user with the team
                     const insertUserTeamQuery = `mutation {
