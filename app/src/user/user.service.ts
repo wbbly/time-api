@@ -196,6 +196,7 @@ export class UserService {
                         const userId = insertUserRes.data.insert_user.returning[0].id;
 
                         // @TODO: WOB-71, get team_id and role_collaboration_id from parameters
+                        // @TODO: WOB-111, run createTeam method from team service
                         const insertUserTeamQuery = `mutation {
                             insert_user_team(
                                 objects: [
