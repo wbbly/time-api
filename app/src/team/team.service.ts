@@ -3,18 +3,16 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { AxiosResponse, AxiosError } from 'axios';
 
-
 @Injectable()
 export class TeamService {
-
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly roleCollaborationService: RoleCollaborationService
-    ) {}    
+    ) {}
 
     DEFAULT_TEAMS = {
-        DEFAULT: "default",
-        MY_TEAM: "my team"
+        DEFAULT: 'default',
+        MY_TEAM: 'my team',
     };
 
     DEFAULT_TEAMS_IDS = {
@@ -37,15 +35,14 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(insertTeamQuery).subscribe(
-                (insertTeamRes: AxiosResponse) => {
-                    const returningRows = insertTeamRes.data.insert_team.returning;
+            this.httpRequestsService.request(insertTeamQuery).subscribe((insertTeamRes: AxiosResponse) => {
+                const returningRows = insertTeamRes.data.insert_team.returning;
 
-                    if (returningRows.length) {
-                        const teamId = insertTeamRes.data.insert_user.returning[0].id;
+                if (returningRows.length) {
+                    const teamId = insertTeamRes.data.insert_user.returning[0].id;
 
-                        //Linking user with the team
-                        const insertUserTeamQuery = `mutation {
+                    //Linking user with the team
+                    const insertUserTeamQuery = `mutation {
                             insert_user_team(
                                 objects: [
                                     {
@@ -62,21 +59,18 @@ export class TeamService {
                             }
                         }`;
 
-                        this.httpRequestsService
-                            .request(insertUserTeamQuery)
-                            .subscribe(
-                                (insertUserTeamRes: AxiosResponse) => resolve(insertUserTeamRes),
-                                (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
-                            );
-                    } else {
-                        reject({
-                            error: "Failed to create association"
-                        });
-                    } 
-                    
+                    this.httpRequestsService
+                        .request(insertUserTeamQuery)
+                        .subscribe(
+                            (insertUserTeamRes: AxiosResponse) => resolve(insertUserTeamRes),
+                            (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                        );
+                } else {
+                    reject({
+                        error: 'Failed to create association',
+                    });
                 }
-            )
-        })
-
+            });
+        });
     }
 }
