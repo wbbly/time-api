@@ -36,10 +36,10 @@ export class TeamService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(insertTeamQuery).subscribe((insertTeamRes: AxiosResponse) => {
-                const returningRows = insertTeamRes.data.insert_team.returning;
+                const returningRows = insertTeamRes.data.insert_team_v2.returning;
 
                 if (returningRows.length) {
-                    const teamId = insertTeamRes.data.insert_user.returning[0].id;
+                    const teamId = insertTeamRes.data.insert_team_v2.returning[0].id;
 
                     //Linking user with the team
                     const insertUserTeamQuery = `mutation {
