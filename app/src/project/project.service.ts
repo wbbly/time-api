@@ -187,17 +187,18 @@ export class ProjectService {
         });
     }
 
-    addProject(project: Project) {
+    async addProject(project: Project, userId: string) {
         const { name, projectColorId } = project;
 
-        // @TODO: WOB-111, get user_id from parameters & call getDefaultTeam() from team service.
+        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `mutation {
             insert_project_v2(
                 objects: [
                     {
                         name: "${name.toLowerCase().trim()}",
                         project_color_id: "${projectColorId}",
-                        team_id: "${this.teamService.DEFAULT_TEAMS_IDS.DEFAULT}"
+                        team_id: "${currentTeamId}"
                     }
                 ]
             ){

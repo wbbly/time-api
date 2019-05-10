@@ -96,13 +96,16 @@ export class ProjectController {
     }
 
     @Post('add')
-    async addProject(@Response() res: any, @Body() body: Project) {
-        if (!(body && body.name && body.projectColorId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
+    //@TODO: Make sure to implement userId passage from front.
+    async addProject(@Response() res: any, @Body() body: { project: Project; userId: string }) {
+        if (!(body && body.userId && body.project.name && body.project.projectColorId)) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'User ID, Project name and projectColorId are required!' });
         }
 
         try {
-            const addProjectRes = await this.projectService.addProject(body);
+            const addProjectRes = await this.projectService.addProject(body.project, body.userId);
             return res.status(HttpStatus.OK).json(addProjectRes);
         } catch (e) {
             const error: AxiosError = e;
