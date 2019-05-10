@@ -15,7 +15,6 @@ export class TeamController {
 
         try {
             const currentTeamRes = await this.teamService.getCurrentTeam(params.userId);
-            console.log(currentTeamRes);
             return res.status(HttpStatus.OK).json(currentTeamRes);
         } catch (err) {
             const error: AxiosError = err;
@@ -24,7 +23,18 @@ export class TeamController {
     }
 
     @Post('switch')
-    async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {}
+    async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {
+        if (!(body && body.userId && body.teamId)) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID & Team ID required' });
+        }
+        try {
+            const switchRes = await this.teamService.switchTeam(body.userId, body.teamId);
+            return res.status(HttpStatus.OK).json(switchRes);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
 
     @Get('list')
     async teamList(@Response() res: any) {

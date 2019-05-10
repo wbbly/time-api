@@ -129,4 +129,30 @@ export class TeamService {
                 );
         });
     }
+
+    async switchTeam(userId: string, teamId: string) {
+        const switchCurrentTeamQuery = `mutation {
+            update_user_team(
+                where: { 
+                    user_id: { _eq: "${userId}" } 
+                }
+                _set: {
+                  current_team: "${teamId}"
+                }
+            ) {
+                returning {
+                    current_team
+                }
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(switchCurrentTeamQuery)
+                .subscribe(
+                    (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
+                    (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
+                );
+        });
+    }
 }
