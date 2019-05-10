@@ -73,4 +73,63 @@ export class TeamService {
             });
         });
     }
+
+    async getCurrentTeam(userId: string){
+        const getCurrentTeamIdQuery = `{
+            user_team(where: { user_id: { _eq: "${userId}" } }) {
+                current_team
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(getCurrentTeamIdQuery).subscribe((getCurrentTeamIdRes: AxiosResponse) => {
+                const currentTeamId = getCurrentTeamIdRes.data.user_team[0].current_team;
+                const getCurrentTeamQuery = `{
+                    team(where: { id: { _eq: "${currentTeamId}" } }) {
+                        id
+                        name
+                    }
+                }`;
+
+                this.httpRequestsService
+                            .request(getCurrentTeamQuery)
+                            .subscribe(
+                                (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
+                                (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
+                            );
+                
+            })
+        });
+        
+    }
+
+    async getTeamList(){
+        const query = `{
+            team{
+              id
+              name
+              team_users{
+                user{
+                  id
+                  username
+                  email
+                  role{
+                    title
+                  }
+                }
+              }
+            }
+          }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                    .request(query)
+                    .subscribe(
+                        (queryRes: AxiosResponse) => resolve(queryRes),
+                        (queryError: AxiosError) => reject(queryError)
+                    );
+        })
+    }
+
 }
