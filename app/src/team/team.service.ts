@@ -46,9 +46,10 @@ export class TeamService {
                                 objects: [
                                     {
                                         user_id: "${userId}"
-                                        team_id: "${teamId}",
+                                        team_id: "${teamId}"
                                         role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN}"
                                         is_active: true
+                                        current_team: "${teamId}"
                                     }
                                 ]
                             ) {
