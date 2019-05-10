@@ -74,7 +74,7 @@ export class TeamService {
         });
     }
 
-    async getCurrentTeam(userId: string){
+    async getCurrentTeam(userId: string) {
         const getCurrentTeamIdQuery = `{
             user_team(where: { user_id: { _eq: "${userId}" } }) {
                 current_team
@@ -93,18 +93,16 @@ export class TeamService {
                 }`;
 
                 this.httpRequestsService
-                            .request(getCurrentTeamQuery)
-                            .subscribe(
-                                (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
-                                (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
-                            );
-                
-            })
+                    .request(getCurrentTeamQuery)
+                    .subscribe(
+                        (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
+                        (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
+                    );
+            });
         });
-        
     }
 
-    async getTeamList(){
+    async getTeamList() {
         const query = `{
             team{
               id
@@ -124,12 +122,11 @@ export class TeamService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
-                    .request(query)
-                    .subscribe(
-                        (queryRes: AxiosResponse) => resolve(queryRes),
-                        (queryError: AxiosError) => reject(queryError)
-                    );
-        })
+                .request(query)
+                .subscribe(
+                    (queryRes: AxiosResponse) => resolve(queryRes),
+                    (queryError: AxiosError) => reject(queryError)
+                );
+        });
     }
-
 }
