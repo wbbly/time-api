@@ -16,14 +16,22 @@ export class ProjectService {
         private readonly teamService: TeamService
     ) {}
 
-    getProjectList() {
+    async getProjectList(userId) {
+        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `{
-            project_v2(order_by: {name: desc}) {
-                id
-                name
-                is_active
-                project_color {
+            project_v2(
+                    order_by: {name: desc}
+                    where: {
+                        team_id: { _eq: "${currentTeamId}" }
+                    }
+                ) 
+                {
+                    id
                     name
+                    is_active
+                    project_color {
+                        name
                 }
             }
         }

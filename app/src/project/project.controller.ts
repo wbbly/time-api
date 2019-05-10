@@ -9,9 +9,12 @@ export class ProjectController {
     constructor(private readonly projectService: ProjectService) {}
 
     @Get('list')
-    async projectList(@Response() res: any) {
+    async projectList(@Response() res: any, @Query() params) {
+        if (!params.userId) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID needs to be specified.' });
+        }
         try {
-            const projectListRes = await this.projectService.getProjectList();
+            const projectListRes = await this.projectService.getProjectList(params.userId);
             return res.status(HttpStatus.OK).json(projectListRes);
         } catch (e) {
             const error: AxiosError = e;

@@ -22,6 +22,17 @@ export class TeamController {
         }
     }
 
+    @Get('list')
+    async teamList(@Response() res: any) {
+        try {
+            const teamListRes = await this.teamService.getTeamList();
+            return res.status(HttpStatus.OK).json(teamListRes);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
     @Patch('switch')
     async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {
         if (!(body && body.userId && body.teamId)) {
@@ -30,17 +41,6 @@ export class TeamController {
         try {
             const switchRes = await this.teamService.switchTeam(body.userId, body.teamId);
             return res.status(HttpStatus.OK).json(switchRes);
-        } catch (err) {
-            const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
-        }
-    }
-
-    @Get('list')
-    async teamList(@Response() res: any) {
-        try {
-            const teamListRes = await this.teamService.getTeamList();
-            return res.status(HttpStatus.OK).json(teamListRes);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
