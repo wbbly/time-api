@@ -1,4 +1,4 @@
-import { Controller, Get, Response, HttpStatus, Query, Post, Body } from '@nestjs/common';
+import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch } from '@nestjs/common';
 
 import { TeamService } from '../team/team.service';
 import { AxiosError } from 'axios';
@@ -22,7 +22,7 @@ export class TeamController {
         }
     }
 
-    @Post('switch')
+    @Patch('switch')
     async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {
         if (!(body && body.userId && body.teamId)) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID & Team ID required' });
@@ -47,7 +47,7 @@ export class TeamController {
         }
     }
 
-    @Post('rename')
+    @Patch('rename')
     async renameTeam(@Response() res: any, @Body() body: { teamId: string; newName: string }) {
         if (!(body && body.teamId && body.newName)) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Team ID & New Team Name required' });

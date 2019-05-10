@@ -190,7 +190,7 @@ export class ProjectService {
     addProject(project: Project) {
         const { name, projectColorId } = project;
 
-        // @TODO: WOB-71, get team_id from parameters
+        // @TODO: WOB-111, get user_id from parameters & call getDefaultTeam() from team service.
         const query = `mutation {
             insert_project_v2(
                 objects: [

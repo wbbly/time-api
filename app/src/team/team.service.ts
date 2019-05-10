@@ -49,7 +49,7 @@ export class TeamService {
                                         team_id: "${teamId}"
                                         role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN}"
                                         is_active: true
-                                        current_team: "${teamId}"
+                                        current_team: true
                                     }
                                 ]
                             ) {
@@ -75,30 +75,26 @@ export class TeamService {
     }
 
     async getCurrentTeam(userId: string) {
-        const getCurrentTeamIdQuery = `{
-            user_team(where: { user_id: { _eq: "${userId}" } }) {
-                current_team
+        const getCurrentTeamQuery = `{
+            user_team(where: { 
+                user_id: { _eq: "${userId}" }, 
+                current_team: { _eq: true} 
+            }) {
+                team {
+                    id
+                    name
+                }
             }
         }
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(getCurrentTeamIdQuery).subscribe((getCurrentTeamIdRes: AxiosResponse) => {
-                const currentTeamId = getCurrentTeamIdRes.data.user_team[0].current_team;
-                const getCurrentTeamQuery = `{
-                    team(where: { id: { _eq: "${currentTeamId}" } }) {
-                        id
-                        name
-                    }
-                }`;
-
-                this.httpRequestsService
-                    .request(getCurrentTeamQuery)
-                    .subscribe(
-                        (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
-                        (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
-                    );
-            });
+            this.httpRequestsService
+                .request(getCurrentTeamQuery)
+                .subscribe(
+                    (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
+                    (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
+                );
         });
     }
 
@@ -107,16 +103,6 @@ export class TeamService {
             team{
               id
               name
-              team_users{
-                user{
-                  id
-                  username
-                  email
-                  role{
-                    title
-                  }
-                }
-              }
             }
           }`;
 
@@ -131,13 +117,31 @@ export class TeamService {
     }
 
     async switchTeam(userId: string, teamId: string) {
+        //1) Set all teams which user posess to false
+        //2) Set current_team of teamId to true
+        const setAllCurrentTeamsToFalse = `mutation{
+            update_user_team(
+                where: {
+                    user_id: { _eq: "${userId}" }
+                }
+                _set: {
+                    current_team: false
+                } 
+            ) {
+                returning {
+                    current_team
+                }
+            }
+        }`;
+
         const switchCurrentTeamQuery = `mutation {
             update_user_team(
                 where: { 
-                    user_id: { _eq: "${userId}" } 
+                    user_id: { _eq: "${userId}" }
+                    team_id: { _eq: "${teamId}" } 
                 }
                 _set: {
-                  current_team: "${teamId}"
+                  current_team: true
                 }
             ) {
                 returning {
@@ -147,12 +151,17 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(switchCurrentTeamQuery)
-                .subscribe(
-                    (switchTeamRes: AxiosResponse) => resolve(switchTeamRes),
-                    (switchTeamError: AxiosError) => reject(switchTeamError)
-                );
+            this.httpRequestsService.request(setAllCurrentTeamsToFalse).subscribe(
+                (falsifyRes: AxiosResponse) => {
+                    this.httpRequestsService
+                        .request(switchCurrentTeamQuery)
+                        .subscribe(
+                            (switchTeamRes: AxiosResponse) => resolve(switchTeamRes),
+                            (switchTeamError: AxiosError) => reject(switchTeamError)
+                        );
+                },
+                (falsifyError: AxiosError) => reject(falsifyError)
+            );
         });
     }
 
