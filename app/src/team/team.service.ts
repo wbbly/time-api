@@ -14,10 +14,6 @@ export class TeamService {
         MY_TEAM: 'my team',
     };
 
-    DEFAULT_TEAMS_IDS = {
-        DEFAULT: '00000000-0000-0000-0000-000000000000',
-    };
-
     async createDefaultTeam(userId: string) {
         const insertTeamQuery = `mutation {
             insert_team(
