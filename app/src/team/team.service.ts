@@ -23,7 +23,7 @@ export class TeamService {
             insert_team(
                 objects: [
                     {
-                        name: ${this.DEFAULT_TEAMS.MY_TEAM}
+                        name: "${this.DEFAULT_TEAMS.MY_TEAM}"
                     }
                 ]
             ) {

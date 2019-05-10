@@ -198,10 +198,10 @@ export class UserService {
 
                         try {
                             this.teamService.createDefaultTeam(userId);
-                            // ^ 400 is thrown by Axios somewhere here
                         } catch (error) {
                             console.log(error);
                         }
+                        resolve(insertUserRes);
                     } else {
                         resolve(insertUserRes);
                     }
