@@ -150,8 +150,35 @@ export class TeamService {
             this.httpRequestsService
                 .request(switchCurrentTeamQuery)
                 .subscribe(
-                    (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
-                    (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
+                    (switchTeamRes: AxiosResponse) => resolve(switchTeamRes),
+                    (switchTeamError: AxiosError) => reject(switchTeamError)
+                );
+        });
+    }
+
+    async renameTeam(teamId: string, newName: string) {
+        const renameTeamQuery = `mutation{
+            update_team(
+                where: {
+                    id: { _eq: "${teamId}" }
+                }
+                _set: {
+                    name: "${newName}"
+                }
+            ) {
+                returning {
+                    id
+                    name
+                }
+            }
+        }  
+        `;
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(renameTeamQuery)
+                .subscribe(
+                    (renameTeamRes: AxiosResponse) => resolve(renameTeamRes),
+                    (renameTeamError: AxiosError) => reject(renameTeamError)
                 );
         });
     }

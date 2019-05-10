@@ -41,8 +41,22 @@ export class TeamController {
         try {
             const teamListRes = await this.teamService.getTeamList();
             return res.status(HttpStatus.OK).json(teamListRes);
-        } catch (e) {
-            const error: AxiosError = e;
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
+    @Post('rename')
+    async renameTeam(@Response() res: any, @Body() body: { teamId: string; newName: string }) {
+        if (!(body && body.teamId && body.newName)) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Team ID & New Team Name required' });
+        }
+        try {
+            const renamedTeam = await this.teamService.renameTeam(body.teamId, body.newName);
+            return res.status(HttpStatus.OK).json(renamedTeam);
+        } catch (err) {
+            const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
         }
     }
