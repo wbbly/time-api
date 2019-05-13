@@ -70,6 +70,83 @@ export class TeamService {
         });
     }
 
+    async inviteMemberToTeam(userId: string, teamId: string, invitedUserId: string) {
+        const checkIfTeamAdminQuery = `{
+            user_team(where: { 
+                user_id: { _eq: "${userId}" }, 
+                team_id: { _eq: "${teamId}"}
+            }) {
+                role_collaboration{
+                    id
+                }
+            }
+        }
+        `;
+
+        const checkIfAlreadyMemberQuery = `{
+            user_team(where: {
+                user_id: { _eq: "${invitedUserId}" }
+                team_id: { _eq: "${teamId}"}
+            }) {
+                id
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            const insertUserTeamQuery = `mutation {
+                insert_user_team(
+                    objects: [
+                        {
+                            user_id: "${invitedUserId}"
+                            team_id: "${teamId}"
+                            role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER}"
+                            is_active: true
+                            current_team: false
+                        }
+                    ]
+                ) {
+                    returning {
+                        id
+                    }
+                }
+            }
+            `;
+
+            this.httpRequestsService.request(checkIfTeamAdminQuery).subscribe(
+                (checkResponse: AxiosResponse) => {
+                    let admin = false;
+                    let alreadyMember = false;
+                    //Check if the requester is admin in the team
+                    if (
+                        checkResponse.data.user_team[0].role_collaboration.id ===
+                        this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
+                    ) {
+                        admin = true;
+                    }
+
+                    this.httpRequestsService.request(checkIfAlreadyMemberQuery).subscribe(
+                        (checkRes: AxiosResponse) => {
+                            if (checkRes.data.user_team[0]) alreadyMember = true;
+                            if (admin && !alreadyMember) {
+                                this.httpRequestsService
+                                    .request(insertUserTeamQuery)
+                                    .subscribe(
+                                        (insertRes: AxiosResponse) => resolve(insertRes),
+                                        (insertError: AxiosError) => reject(insertError)
+                                    );
+                            } else
+                                reject({
+                                    error: alreadyMember ? 'User already in team' : 'Not Authorized',
+                                });
+                        },
+                        (checkError: AxiosError) => reject(checkError)
+                    );
+                },
+                (checkError: AxiosError) => reject(checkError)
+            );
+        });
+    }
+
     async getCurrentTeam(userId: string) {
         const getCurrentTeamQuery = `{
             user_team(where: { 

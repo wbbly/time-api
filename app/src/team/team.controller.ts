@@ -2,6 +2,8 @@ import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch } from 
 
 import { TeamService } from '../team/team.service';
 import { AxiosError } from 'axios';
+import { any } from 'bluebird';
+import { TypeNameMetaFieldDef } from 'graphql';
 
 @Controller('team')
 export class TeamController {
@@ -30,6 +32,21 @@ export class TeamController {
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
+    @Post('invite')
+    async inviteMember(@Response() res: any, @Body() body: { userId: string; teamId: string; invitedUserId: string }) {
+        if (!(body && body.userId && body.teamId && body.invitedUserId)) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID, Team ID & Invited User ID required' });
+        }
+
+        try {
+            const invited = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, body.invitedUserId);
+            return res.status(HttpStatus.CREATED).json(invited);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error);
         }
     }
 
