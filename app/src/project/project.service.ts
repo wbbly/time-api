@@ -32,7 +32,11 @@ export class ProjectService {
                     is_active
                     project_color {
                         name
-                }
+                    }
+                    timer(where: {user_id: {_eq: "${userId}"}}) {
+                        start_datetime
+                        end_datetime
+                    }
             }
         }
         `;
@@ -44,15 +48,23 @@ export class ProjectService {
         });
     }
 
-    getAdminProjectList() {
+    async getAdminProjectList(userId) {
+        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `{
-            project_v2(order_by: {name: asc}, limit: 100) {
-                id
-                is_active
-                name
-                timer {
-                    start_datetime
-                    end_datetime
+            project_v2(
+                    order_by: {name: asc}, 
+                    limit: 100,
+                    where: {
+                        team_id: { _eq: "${currentTeamId}" }
+                    }
+                )  {
+                    id
+                    is_active
+                    name
+                    timer {
+                        start_datetime
+                        end_datetime
                 }
             }
         }

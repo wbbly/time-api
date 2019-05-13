@@ -23,9 +23,12 @@ export class ProjectController {
     }
 
     @Get('admin-list')
-    async adminProjectList(@Response() res: any) {
+    async adminProjectList(@Response() res: any, @Query() params) {
+        if (!params.userId) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID needs to be specified.' });
+        }
         try {
-            const adminProjectListRes = await this.projectService.getAdminProjectList();
+            const adminProjectListRes = await this.projectService.getAdminProjectList(params.userId);
             return res.status(HttpStatus.OK).json(adminProjectListRes);
         } catch (e) {
             const error: AxiosError = e;

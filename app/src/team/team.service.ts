@@ -223,6 +223,42 @@ export class TeamService {
         });
     }
 
+    async getTeamData(teamId: string) {
+        const query = `{
+            team(
+                where: {
+                    id: { _eq: "${teamId}"}
+                }
+            ){
+                id
+                name
+                team_users{
+                  user{
+                    username
+                    email
+                    role{
+                      title
+                    }
+                    is_active
+                  }
+                  role_collaboration{
+                    title
+                    } 
+                }
+              }
+          }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe(
+                    (queryRes: AxiosResponse) => resolve(queryRes),
+                    (queryError: AxiosError) => reject(queryError)
+                );
+        });
+    }
+
     async getTeamList() {
         const query = `{
             team{

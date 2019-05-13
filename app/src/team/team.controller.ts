@@ -1,4 +1,4 @@
-import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch } from '@nestjs/common';
+import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch, Param } from '@nestjs/common';
 
 import { TeamService } from '../team/team.service';
 import { AxiosError } from 'axios';
@@ -29,6 +29,17 @@ export class TeamController {
         try {
             const teamListRes = await this.teamService.getTeamList();
             return res.status(HttpStatus.OK).json(teamListRes);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
+    @Get(':id/data')
+    async getTeamDataById(@Response() res: any, @Param() param: any) {
+        try {
+            const dataRes = await this.teamService.getTeamData(param.id);
+            return res.status(HttpStatus.OK).json(dataRes);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
