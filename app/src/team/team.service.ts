@@ -147,6 +147,58 @@ export class TeamService {
         });
     }
 
+    async addTeam(userId: string, teamName: string) {
+        const addTeamQuery = `mutation {
+            insert_team(
+                objects: [
+                    {
+                        name: "${teamName}"
+                    }
+                ]
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(addTeamQuery).subscribe(
+                (addTeamRes: AxiosResponse) => {
+                    const createdTeamId = addTeamRes.data.insert_team.returning[0].id;
+
+                    const addTeamRelationQuery = `mutation {
+                            insert_user_team(
+                                objects: [
+                                    {
+                                        user_id: "${userId}"
+                                        team_id: "${createdTeamId}"
+                                        role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN}"
+                                        is_active: true
+                                        current_team: false
+                                    }
+                                ]
+                            ) {
+                                returning {
+                                    id
+                                }
+                            }
+                        }`;
+
+                    this.httpRequestsService
+                        .request(addTeamRelationQuery)
+                        .subscribe(
+                            (queryRes: AxiosResponse) => resolve(queryRes),
+                            (queryError: AxiosError) => reject(queryError)
+                        );
+                },
+                (addTeamError: AxiosError) => {
+                    reject(addTeamError);
+                }
+            );
+        });
+    }
+
     async getCurrentTeam(userId: string) {
         const getCurrentTeamQuery = `{
             user_team(where: { 

@@ -35,6 +35,21 @@ export class TeamController {
         }
     }
 
+    @Post('add')
+    async addTeam(@Response() res: any, @Body() body: { userId: string; teamName: string }) {
+        if (!(body && body.userId && body.teamName)) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID & Team Name required' });
+        }
+
+        try {
+            const createdTeam = await this.teamService.addTeam(body.userId, body.teamName);
+            return res.status(HttpStatus.CREATED).json(createdTeam);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
     @Post('invite')
     async inviteMember(@Response() res: any, @Body() body: { userId: string; teamId: string; invitedUserId: string }) {
         if (!(body && body.userId && body.teamId && body.invitedUserId)) {
