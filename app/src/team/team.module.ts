@@ -5,9 +5,10 @@ import { RoleCollaborationModule } from '../role-collaboration/role-collaboratio
 
 import { TeamController } from './team.controller';
 import { TeamService } from './team.service';
+import { ProjectColorService } from '../project-color/project-color.service';
 
 @Module({
-    imports: [HttpModule, CoreModule, RoleCollaborationModule],
+    imports: [HttpModule, CoreModule, RoleCollaborationModule, ProjectColorService],
     controllers: [TeamController],
     providers: [TeamService],
     exports: [TeamService],

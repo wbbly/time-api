@@ -5,6 +5,10 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 
 @Injectable()
 export class ProjectColorService {
+    DEFAULT_COLOR_IDS = {
+        GREEN: 'a642f337-9082-4f64-8ace-1d0e99fa7258',
+    };
+
     constructor(private readonly httpRequestsService: HttpRequestsService) {}
 
     getProjectColorList() {

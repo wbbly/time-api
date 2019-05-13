@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { AxiosResponse, AxiosError } from 'axios';
+
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
-import { AxiosResponse, AxiosError } from 'axios';
+import { ProjectColorService } from '../project-color/project-color.service';
 
 @Injectable()
 export class TeamService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly roleCollaborationService: RoleCollaborationService
+        private readonly roleCollaborationService: RoleCollaborationService,
+        private readonly projectColorService: ProjectColorService
     ) {}
 
     DEFAULT_TEAMS = {
@@ -36,6 +39,23 @@ export class TeamService {
                 if (returningRows.length) {
                     const teamId = insertTeamRes.data.insert_team.returning[0].id;
 
+                    //@TODO: Change Hardcoded project color ID
+                    const insertDefaultProject = `mutation {
+                        insert_project_v2(
+                            objects: [
+                                {
+                                    name: "any",
+                                    project_color_id: "${this.projectColorService.DEFAULT_COLOR_IDS.GREEN}",
+                                    team_id: "${teamId}"
+                                }
+                            ]
+                        ){
+                            returning {
+                                id
+                            }
+                        }
+                    }`;
+
                     //Linking user with the team
                     const insertUserTeamQuery = `mutation {
                             insert_user_team(
@@ -55,12 +75,17 @@ export class TeamService {
                             }
                         }`;
 
-                    this.httpRequestsService
-                        .request(insertUserTeamQuery)
-                        .subscribe(
-                            (insertUserTeamRes: AxiosResponse) => resolve(insertUserTeamRes),
-                            (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
-                        );
+                    this.httpRequestsService.request(insertDefaultProject).subscribe(
+                        (insertProjectRes: AxiosResponse) => {
+                            this.httpRequestsService
+                                .request(insertUserTeamQuery)
+                                .subscribe(
+                                    (insertUserTeamRes: AxiosResponse) => resolve(insertUserTeamRes),
+                                    (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                                );
+                        },
+                        (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                    );
                 } else {
                     reject({
                         error: 'Failed to create association',

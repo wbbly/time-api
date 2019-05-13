@@ -8,5 +8,6 @@ import { ProjectColorService } from './project-color.service';
     imports: [CoreModule],
     controllers: [ProjectColorController],
     providers: [ProjectColorService],
+    exports: [ProjectColorService],
 })
 export class ProjectColorModule {}
