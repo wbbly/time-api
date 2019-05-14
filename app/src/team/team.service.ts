@@ -3,14 +3,12 @@ import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
-import { ProjectColorService } from '../project-color/project-color.service';
 
 @Injectable()
 export class TeamService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly roleCollaborationService: RoleCollaborationService,
-        private readonly projectColorService: ProjectColorService
+        private readonly roleCollaborationService: RoleCollaborationService
     ) {}
 
     DEFAULT_TEAMS = {
@@ -45,7 +43,7 @@ export class TeamService {
                             objects: [
                                 {
                                     name: "any",
-                                    project_color_id: "${this.projectColorService.DEFAULT_COLOR_IDS.GREEN}",
+                                    project_color_id: "a642f337-9082-4f64-8ace-1d0e99fa7258",
                                     team_id: "${teamId}"
                                 }
                             ]
