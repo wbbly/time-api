@@ -12,7 +12,7 @@ export class TeamService {
     ) {}
 
     DEFAULT_TEAMS = {
-        MY_TEAM: 'my team',
+        MY_TEAM: 'My team',
     };
 
     async createDefaultTeam(userId: string) {
@@ -317,6 +317,27 @@ export class TeamService {
                     (queryRes: AxiosResponse) => resolve(queryRes),
                     (queryError: AxiosError) => reject(queryError)
                 );
+        });
+    }
+
+    async getAllUsers() {
+        const query = `{
+                user(order_by: {username: asc}) {
+                        id,
+                        username,
+                        email,
+                        role {
+                            title
+                        },
+                        is_active
+                    }
+                }
+            `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 

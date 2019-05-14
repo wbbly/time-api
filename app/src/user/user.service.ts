@@ -69,7 +69,7 @@ export class UserService {
         });
     }
 
-    async getUser(whereStatement: string): Promise<User | null | AxiosError> {
+    async getUser(whereStatement: string): Promise<any | null | AxiosError> {
         const query = `{
             user(where: {${whereStatement}}) {
                 id
@@ -82,11 +82,21 @@ export class UserService {
                     title
                 },
                 timezone_offset
+                user_teams(where: {
+                    current_team: {
+                      _eq: true
+                    },				
+                }){
+                    role_collaboration{
+                        title
+                    }
+                    role_collaboration_id
+                }
             }
         }
         `;
 
-        let user: User = null;
+        let user: any = null;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
@@ -101,9 +111,15 @@ export class UserService {
                             is_active: isActive,
                             role_id: roleId,
                             role,
+                            user_teams: userTeams,
                             timezone_offset: timezoneOffset,
                         } = data;
                         const { title } = role;
+                        const {
+                            role_collaboration: roleCollaboration,
+                            role_collaboration_id: roleCollaborationId,
+                        } = userTeams[0];
+                        const { title: roleCollaborationTitle } = roleCollaboration;
                         user = {
                             id: userId,
                             username,
@@ -113,6 +129,10 @@ export class UserService {
                             roleId,
                             role: {
                                 title,
+                            },
+                            roleCollaborationId,
+                            roleCollaboration: {
+                                title: roleCollaborationTitle,
                             },
                             timezoneOffset,
                         };
@@ -176,7 +196,8 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        role_id: "${this.roleService.ROLES_IDS.ROLE_USER}"
+                        role_id: "${this.roleService.ROLES_IDS.ROLE_USER}",
+                        is_active: true
                     }
                 ]
             ){

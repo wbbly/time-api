@@ -76,6 +76,16 @@ export class TeamController {
         }
     }
 
+    @Post('invite/email')
+    async inviteByEmail(@Response() res: any, @Body() body: { email: string }) {
+        if (!(body && body.email)) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User Email is required' });
+        }
+        let usersData: any = await this.teamService.getAllUsers();
+        let users = usersData.data.user;
+        let userExists = users.filter(user => user.email === body.email);
+    }
+
     @Patch('switch')
     async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {
         if (!(body && body.userId && body.teamId)) {
