@@ -257,11 +257,9 @@ export class TeamService {
                 name
                 team_users{
                   user{
+                    id
                     username
                     email
-                    role{
-                      title
-                    }
                     is_active
                   }
                   role_collaboration{

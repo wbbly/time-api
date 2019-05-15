@@ -112,6 +112,7 @@ export class UserController {
         }
 
         let user = null;
+        console.log(param.id);
         try {
             user = await this.userService.getUserById(param.id, false);
         } catch (error) {
@@ -122,8 +123,8 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
         }
 
-        const { username, email, isActive } = user;
-        const userData: any = { username, email, isActive };
+        const { username, email, isActive, teamId, roleName } = user;
+        const userData: any = { username, email, isActive, teamId, roleName };
         Object.keys(userData).forEach(prop => {
             const value = body && body[prop];
             userData[prop] = typeof value === 'undefined' || value === null ? userData[prop] : value;

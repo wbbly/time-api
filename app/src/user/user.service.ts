@@ -36,17 +36,14 @@ export class UserService {
     }
 
     async getUserById(id: string, isActive: boolean = true): Promise<User | AxiosError> {
-        const whereStatements = [`id: { _eq: "${id}" }`];
+        const whereStatements = `id: { _eq: "${id}" }`;
 
-        if (isActive) {
-            whereStatements.push(`is_active: { _eq: true } `);
-        }
+        //if (isActive) {
+        //    whereStatements.push(`is_active: { _eq: true } `);
+        //}
 
         return new Promise((resolve, reject) => {
-            this.getUser(whereStatements.join(',')).then(
-                (res: User) => resolve(res),
-                (error: AxiosError) => reject(error)
-            );
+            this.getUser(whereStatements).then((res: User) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
@@ -238,32 +235,63 @@ export class UserService {
         data: {
             username: string;
             email: string;
-            roleId: string;
             isActive: boolean;
+            roleName: string;
+            teamId: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, roleId, isActive } = data;
+        const { username, email, isActive, teamId, roleName } = data;
+
+        let roleId =
+            roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
+                ? this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
+                : this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER;
+
+        console.log(roleName, this.roleCollaborationService.ROLES.ROLE_ADMIN);
 
         const query = `mutation {
             update_user(
-                where: {id: {_eq: "${id}"}},
+                where: {
+                  id: {_eq: "${id}"},
+                  user_teams: {team_id: {_eq: "${teamId}"}}
+                },
+                   
                 _set: {
                     username: "${username}"
                     email: "${email}",
-                    role_id: "${roleId}",
                     is_active: ${isActive}
+                }){
+                    returning{
+                      id 
+                    }
+                  }
+                }`;
+
+        const updateTeamRoleQuery = `mutation{
+            update_user_team(
+                where: {
+                    user_id: { _eq: "${id}"}
+                },
+                _set: {
+                    role_collaboration_id: "${roleId}"
                 }
             ) {
-                returning {
+                returning{
                     id
                 }
             }
-        }`;
+        }
+        `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    this.httpRequestsService.request(updateTeamRoleQuery).subscribe((res: AxiosResponse) => {
+                        resolve(res);
+                    });
+                },
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 
