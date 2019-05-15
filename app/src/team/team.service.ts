@@ -300,13 +300,13 @@ export class TeamService {
 
     async getAllUserTeams(userId: string) {
         const query = `{
-            user_team(where: { user_id: {_eq: "${userId}"}, {is_active: { _eq: true }} }){
-               team{
+            user_team(where: {user_id: {_eq: "${userId}"}, is_active: {_eq: true}}) {
+              team {
                 id
                 name
               }
             }
-          }
+        }
         `;
         return new Promise((resolve, reject) => {
             this.httpRequestsService
