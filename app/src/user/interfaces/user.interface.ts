@@ -1,4 +1,3 @@
-import { Role } from '../../role/interfaces/role.interface';
 import { TimerCurrentV2 } from '../../timer-current-v2/interfaces/timer-current-v2.interface';
 import { Timer } from '../../timer/interfaces/timer.interface';
 
@@ -12,6 +11,5 @@ export interface User {
     createdAt?: string;
     timezoneOffset?: number;
     currentTimer?: TimerCurrentV2[];
-    role?: Role;
     timer?: Timer[];
 }

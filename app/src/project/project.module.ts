@@ -5,7 +5,7 @@ import { TimerModule } from '../timer/timer.module';
 import { TimeModule } from '../time/time.module';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
-import { TeamModule } from 'src/team/team.module';
+import { TeamModule } from '../team/team.module';
 
 @Module({
     imports: [CoreModule, TimerModule, TimeModule, TeamModule],
