@@ -3,7 +3,6 @@ import { AxiosResponse, AxiosError } from 'axios';
 import * as bcrypt from 'bcrypt';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
-import { RoleService } from '../role/role.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { User } from './interfaces/user.interface';
@@ -14,7 +13,7 @@ export class UserService {
 
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly roleService: RoleService,
+        private readonly roleCollaborationService: RoleCollaborationService,
         private readonly teamService: TeamService
     ) {}
 
@@ -24,9 +23,6 @@ export class UserService {
                     id,
                     username,
                     email,
-                    role {
-                        title
-                    },
                     is_active
                 }
             }
@@ -77,10 +73,6 @@ export class UserService {
                 email
                 password
                 is_active
-                role_id
-                role {
-                    title
-                },
                 timezone_offset
                 user_teams(where: {
                     current_team: {
@@ -109,12 +101,10 @@ export class UserService {
                             email,
                             password,
                             is_active: isActive,
-                            role_id: roleId,
-                            role,
                             user_teams: userTeams,
                             timezone_offset: timezoneOffset,
                         } = data;
-                        const { title } = role;
+
                         const {
                             role_collaboration: roleCollaboration,
                             role_collaboration_id: roleCollaborationId,
@@ -126,10 +116,6 @@ export class UserService {
                             email,
                             password,
                             isActive,
-                            roleId,
-                            role: {
-                                title,
-                            },
                             roleCollaborationId,
                             roleCollaboration: {
                                 title: roleCollaborationTitle,
@@ -168,17 +154,33 @@ export class UserService {
 
     async checkUserIsAdmin(id: string): Promise<boolean> {
         const query = `{
-            user(where: { id: { _eq: "${id}" }, role: { title: { _eq: "${this.roleService.ROLES.ROLE_ADMIN}" } } }) {
-                id
-            }
-        }
+            user(where: 
+              { 
+                id: { _eq: "${id}" },
+                
+              }),  {
+                          user_teams(where: {
+                            current_team: { _eq: true }
+                          }){
+                              role_collaboration_id
+                              role_collaboration{
+                                  title
+                              }
+                          }
+                      }
+                  }
         `;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    const users = res.data.user || [];
-                    resolve(users.length > 0);
+                    if (res.data.user.length > 0) {
+                        const admin =
+                            res.data.user[0].user_teams[0].role_collaboration.title ===
+                                this.roleCollaborationService.ROLES.ROLE_ADMIN || false;
+                        console.log('IS ADMIN =>', admin);
+                        resolve(admin);
+                    } else resolve(false);
                 },
                 (error: AxiosError) => reject(error)
             );
@@ -196,7 +198,6 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        role_id: "${this.roleService.ROLES_IDS.ROLE_USER}",
                         is_active: true
                     }
                 ]

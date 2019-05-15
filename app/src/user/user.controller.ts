@@ -2,17 +2,12 @@ import { Controller, Get, Post, Patch, HttpStatus, Headers, Param, Response, Bod
 import { AxiosError } from 'axios';
 
 import { UserService } from '../user/user.service';
-import { RoleService } from '../role/role.service';
 import { TeamService } from '../team/team.service';
 import { User } from './interfaces/user.interface';
 
 @Controller('user')
 export class UserController {
-    constructor(
-        private readonly userService: UserService,
-        private readonly roleService: RoleService,
-        private readonly teamService: TeamService
-    ) {}
+    constructor(private readonly userService: UserService, private readonly teamService: TeamService) {}
 
     @Get('list')
     async userList(@Response() res: any) {
@@ -127,16 +122,11 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
         }
 
-        const { username, email, role: roleObject, isActive } = user;
-        const userData: any = { username, email, role: roleObject.title, isActive };
+        const { username, email, isActive } = user;
+        const userData: any = { username, email, isActive };
         Object.keys(userData).forEach(prop => {
             const value = body && body[prop];
             userData[prop] = typeof value === 'undefined' || value === null ? userData[prop] : value;
-
-            if (prop === 'role') {
-                userData['roleId'] = this.roleService.ROLES_IDS[userData[prop]];
-                delete userData[prop];
-            }
         });
 
         try {
