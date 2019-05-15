@@ -16,15 +16,27 @@ export class ProjectService {
         private readonly teamService: TeamService
     ) {}
 
-    getProjectList() {
+    async getProjectList(userId) {
+        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `{
-            project_v2(order_by: {name: desc}) {
-                id
-                name
-                is_active
-                project_color {
+            project_v2(
+                    order_by: {name: desc}
+                    where: {
+                        team_id: { _eq: "${currentTeamId}" }
+                    }
+                ) 
+                {
+                    id
                     name
-                }
+                    is_active
+                    project_color {
+                        name
+                    }
+                    timer(where: {user_id: {_eq: "${userId}"}}) {
+                        start_datetime
+                        end_datetime
+                    }
             }
         }
         `;
@@ -36,15 +48,23 @@ export class ProjectService {
         });
     }
 
-    getAdminProjectList() {
+    async getAdminProjectList(userId) {
+        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `{
-            project_v2(order_by: {name: asc}, limit: 100) {
-                id
-                is_active
-                name
-                timer {
-                    start_datetime
-                    end_datetime
+            project_v2(
+                    order_by: {name: asc}, 
+                    limit: 100,
+                    where: {
+                        team_id: { _eq: "${currentTeamId}" }
+                    }
+                )  {
+                    id
+                    is_active
+                    name
+                    timer {
+                        start_datetime
+                        end_datetime
                 }
             }
         }
@@ -187,17 +207,18 @@ export class ProjectService {
         });
     }
 
-    addProject(project: Project) {
+    async addProject(project: Project, userId: string) {
         const { name, projectColorId } = project;
 
-        // @TODO: WOB-71, get team_id from parameters
+        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `mutation {
             insert_project_v2(
                 objects: [
                     {
                         name: "${name.toLowerCase().trim()}",
                         project_color_id: "${projectColorId}",
-                        team_id: "${this.teamService.DEFAULT_TEAMS_IDS.DEFAULT}"
+                        team_id: "${currentTeamId}"
                     }
                 ]
             ){

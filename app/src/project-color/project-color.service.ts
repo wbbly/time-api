@@ -7,6 +7,10 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 export class ProjectColorService {
     constructor(private readonly httpRequestsService: HttpRequestsService) {}
 
+    DEFAULT_COLOR_IDS = {
+        GREEN: 'a642f337-9082-4f64-8ace-1d0e99fa7258',
+    };
+
     getProjectColorList() {
         const query = `{
             project_color {

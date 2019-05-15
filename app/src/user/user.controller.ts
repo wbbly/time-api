@@ -2,12 +2,12 @@ import { Controller, Get, Post, Patch, HttpStatus, Headers, Param, Response, Bod
 import { AxiosError } from 'axios';
 
 import { UserService } from '../user/user.service';
-import { RoleService } from '../role/role.service';
+import { TeamService } from '../team/team.service';
 import { User } from './interfaces/user.interface';
 
 @Controller('user')
 export class UserController {
-    constructor(private readonly userService: UserService, private readonly roleService: RoleService) {}
+    constructor(private readonly userService: UserService, private readonly teamService: TeamService) {}
 
     @Get('list')
     async userList(@Response() res: any) {
@@ -16,6 +16,19 @@ export class UserController {
             return res.status(HttpStatus.OK).json(userListRes);
         } catch (e) {
             const error: AxiosError = e;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
+    @Get(':id/teams')
+    async userTeams(@Response() res: any, @Param() param: any) {
+        if (!param.id) return res.status(HttpStatus.BAD_REQUEST).json({ message: 'A Valid User ID is required' });
+
+        try {
+            const teamsData = await this.teamService.getAllUserTeams(param.id);
+            return res.status(HttpStatus.OK).json(teamsData);
+        } catch (err) {
+            const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
         }
     }
@@ -99,6 +112,7 @@ export class UserController {
         }
 
         let user = null;
+        console.log(param.id);
         try {
             user = await this.userService.getUserById(param.id, false);
         } catch (error) {
@@ -109,16 +123,11 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
         }
 
-        const { username, email, role: roleObject, isActive } = user;
-        const userData: any = { username, email, role: roleObject.title, isActive };
+        const { username, email, isActive, teamId, roleName } = user;
+        const userData: any = { username, email, isActive, teamId, roleName };
         Object.keys(userData).forEach(prop => {
             const value = body && body[prop];
             userData[prop] = typeof value === 'undefined' || value === null ? userData[prop] : value;
-
-            if (prop === 'role') {
-                userData['roleId'] = this.roleService.ROLES_IDS[userData[prop]];
-                delete userData[prop];
-            }
         });
 
         try {

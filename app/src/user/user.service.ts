@@ -3,7 +3,6 @@ import { AxiosResponse, AxiosError } from 'axios';
 import * as bcrypt from 'bcrypt';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
-import { RoleService } from '../role/role.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { User } from './interfaces/user.interface';
@@ -14,7 +13,6 @@ export class UserService {
 
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly roleService: RoleService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly teamService: TeamService
     ) {}
@@ -25,9 +23,6 @@ export class UserService {
                     id,
                     username,
                     email,
-                    role {
-                        title
-                    },
                     is_active
                 }
             }
@@ -41,17 +36,14 @@ export class UserService {
     }
 
     async getUserById(id: string, isActive: boolean = true): Promise<User | AxiosError> {
-        const whereStatements = [`id: { _eq: "${id}" }`];
+        const whereStatements = `id: { _eq: "${id}" }`;
 
-        if (isActive) {
-            whereStatements.push(`is_active: { _eq: true } `);
-        }
+        //if (isActive) {
+        //    whereStatements.push(`is_active: { _eq: true } `);
+        //}
 
         return new Promise((resolve, reject) => {
-            this.getUser(whereStatements.join(',')).then(
-                (res: User) => resolve(res),
-                (error: AxiosError) => reject(error)
-            );
+            this.getUser(whereStatements).then((res: User) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
@@ -70,7 +62,7 @@ export class UserService {
         });
     }
 
-    async getUser(whereStatement: string): Promise<User | null | AxiosError> {
+    async getUser(whereStatement: string): Promise<any | null | AxiosError> {
         const query = `{
             user(where: {${whereStatement}}) {
                 id
@@ -78,16 +70,22 @@ export class UserService {
                 email
                 password
                 is_active
-                role_id
-                role {
-                    title
-                },
                 timezone_offset
+                user_teams(where: {
+                    current_team: {
+                      _eq: true
+                    },				
+                }){
+                    role_collaboration{
+                        title
+                    }
+                    role_collaboration_id
+                }
             }
         }
         `;
 
-        let user: User = null;
+        let user: any = null;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
@@ -100,20 +98,24 @@ export class UserService {
                             email,
                             password,
                             is_active: isActive,
-                            role_id: roleId,
-                            role,
+                            user_teams: userTeams,
                             timezone_offset: timezoneOffset,
                         } = data;
-                        const { title } = role;
+
+                        const {
+                            role_collaboration: roleCollaboration,
+                            role_collaboration_id: roleCollaborationId,
+                        } = userTeams[0];
+                        const { title: roleCollaborationTitle } = roleCollaboration;
                         user = {
                             id: userId,
                             username,
                             email,
                             password,
                             isActive,
-                            roleId,
-                            role: {
-                                title,
+                            roleCollaborationId,
+                            roleCollaboration: {
+                                title: roleCollaborationTitle,
                             },
                             timezoneOffset,
                         };
@@ -149,17 +151,33 @@ export class UserService {
 
     async checkUserIsAdmin(id: string): Promise<boolean> {
         const query = `{
-            user(where: { id: { _eq: "${id}" }, role: { title: { _eq: "${this.roleService.ROLES.ROLE_ADMIN}" } } }) {
-                id
-            }
-        }
+            user(where: 
+              { 
+                id: { _eq: "${id}" },
+                
+              }),  {
+                          user_teams(where: {
+                            current_team: { _eq: true }
+                          }){
+                              role_collaboration_id
+                              role_collaboration{
+                                  title
+                              }
+                          }
+                      }
+                  }
         `;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    const users = res.data.user || [];
-                    resolve(users.length > 0);
+                    if (res.data.user.length > 0) {
+                        const admin =
+                            res.data.user[0].user_teams[0].role_collaboration.title ===
+                                this.roleCollaborationService.ROLES.ROLE_ADMIN || false;
+                        console.log('IS ADMIN =>', admin);
+                        resolve(admin);
+                    } else resolve(false);
                 },
                 (error: AxiosError) => reject(error)
             );
@@ -177,7 +195,7 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        role_id: "${this.roleService.ROLES_IDS.ROLE_USER}"
+                        is_active: true
                     }
                 ]
             ){
@@ -196,29 +214,13 @@ export class UserService {
                         const userId = insertUserRes.data.insert_user.returning[0].id;
 
                         // @TODO: WOB-71, get team_id and role_collaboration_id from parameters
-                        const insertUserTeamQuery = `mutation {
-                            insert_user_team(
-                                objects: [
-                                    {
-                                        user_id: "${userId}"
-                                        team_id: "${this.teamService.DEFAULT_TEAMS_IDS.DEFAULT}",
-                                        role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER}"
-                                        is_active: true
-                                    }
-                                ]
-                            ) {
-                                returning {
-                                    id
-                                }
-                            }
-                        }`;
 
-                        this.httpRequestsService
-                            .request(insertUserTeamQuery)
-                            .subscribe(
-                                (insertUserTeamRes: AxiosResponse) => resolve(insertUserTeamRes),
-                                (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
-                            );
+                        try {
+                            this.teamService.createDefaultTeam(userId);
+                        } catch (error) {
+                            console.log(error);
+                        }
+                        resolve(insertUserRes);
                     } else {
                         resolve(insertUserRes);
                     }
@@ -233,32 +235,63 @@ export class UserService {
         data: {
             username: string;
             email: string;
-            roleId: string;
             isActive: boolean;
+            roleName: string;
+            teamId: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, roleId, isActive } = data;
+        const { username, email, isActive, teamId, roleName } = data;
+
+        let roleId =
+            roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
+                ? this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
+                : this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER;
+
+        console.log(roleName, this.roleCollaborationService.ROLES.ROLE_ADMIN);
 
         const query = `mutation {
             update_user(
-                where: {id: {_eq: "${id}"}},
+                where: {
+                  id: {_eq: "${id}"},
+                  user_teams: {team_id: {_eq: "${teamId}"}}
+                },
+                   
                 _set: {
                     username: "${username}"
                     email: "${email}",
-                    role_id: "${roleId}",
                     is_active: ${isActive}
+                }){
+                    returning{
+                      id 
+                    }
+                  }
+                }`;
+
+        const updateTeamRoleQuery = `mutation{
+            update_user_team(
+                where: {
+                    user_id: { _eq: "${id}"}
+                },
+                _set: {
+                    role_collaboration_id: "${roleId}"
                 }
             ) {
-                returning {
+                returning{
                     id
                 }
             }
-        }`;
+        }
+        `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    this.httpRequestsService.request(updateTeamRoleQuery).subscribe((res: AxiosResponse) => {
+                        resolve(res);
+                    });
+                },
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 

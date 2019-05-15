@@ -122,27 +122,53 @@ export class TimerService {
     }
 
     getUserTimerList(userId: string) {
-        const query = `{
-            timer_v2(where: {user_id: {_eq: "${userId}"}}, order_by: {start_datetime: desc}, limit: 500) {
-                id,
-                start_datetime,
-                end_datetime,
-                issue,
-                project {
-                    name,
-                    id,
-                    project_color {
-                        name
-                    }
+        const getCurrentTeamQuery = `{
+            user_team(where: { 
+                user_id: { _eq: "${userId}" }, 
+                current_team: { _eq: true} 
+            }) {
+                team {
+                    id
+                    name
                 }
             }
         }
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(getCurrentTeamQuery).subscribe(
+                (getCurrentTeamRes: AxiosResponse) => {
+                    let teamId = getCurrentTeamRes.data.user_team[0].team.id;
+                    const query = `{
+                            timer_v2(where: {
+                                user_id: {_eq: "${userId}"},
+                                project:{
+                                    team_id: {
+                                        _eq: "${teamId}"
+                                    }
+                                }
+                            }, order_by: {start_datetime: desc}, limit: 500) {
+                                id,
+                                start_datetime,
+                                end_datetime,
+                                issue,
+                                project{
+                                    name,
+                                    id,
+                                    project_color {
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                        `;
+
+                    this.httpRequestsService
+                        .request(query)
+                        .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+                },
+                (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
+            );
         });
     }
 
