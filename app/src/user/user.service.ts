@@ -91,6 +91,7 @@ export class UserService {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     const data = res.data.user.shift();
+                    console.log(data);
                     if (data) {
                         const {
                             id: userId,
