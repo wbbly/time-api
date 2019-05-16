@@ -91,7 +91,6 @@ export class UserService {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     const data = res.data.user.shift();
-                    console.log(data);
                     if (data) {
                         const {
                             id: userId,
@@ -176,7 +175,6 @@ export class UserService {
                         const admin =
                             res.data.user[0].user_teams[0].role_collaboration.title ===
                                 this.roleCollaborationService.ROLES.ROLE_ADMIN || false;
-                        console.log('IS ADMIN =>', admin);
                         resolve(admin);
                     } else resolve(false);
                 },
@@ -247,8 +245,6 @@ export class UserService {
             roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
                 ? this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
                 : this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER;
-
-        console.log(roleName, this.roleCollaborationService.ROLES.ROLE_ADMIN);
 
         const query = `mutation {
             update_user(

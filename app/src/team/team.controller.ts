@@ -1,13 +1,13 @@
-import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch, Param, Inject } from '@nestjs/common';
+import { AxiosError } from 'axios';
 
 import { TeamService } from '../team/team.service';
-import { AxiosError } from 'axios';
-import { any } from 'bluebird';
-import { TypeNameMetaFieldDef } from 'graphql';
 
 @Controller('team')
 export class TeamController {
-    constructor(private readonly teamService: TeamService) {}
+    constructor(
+        private readonly teamService: TeamService
+    ) { }
 
     @Get('current')
     async currentTeam(@Response() res: any, @Query() params) {
@@ -47,13 +47,26 @@ export class TeamController {
     }
 
     @Get(':id/rolecheck/:userId')
-    async getTeamRole(@Response() res: any, @Param() param: any){
+    async getTeamRole(@Response() res: any, @Param() param: any) {
         try {
             const teamRoleResult = await this.teamService.getTeamUserRole(param.id, param.userId);
             return res.status(HttpStatus.OK).json(teamRoleResult)
-        } catch (err){
+        } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        }
+    }
+
+    @Get(':id/invite/:invitationId')
+    async acceptInvitation(@Response() res: any, @Param() param: any) {
+        try {
+            const acceptResult = await this.teamService.acceptInvitation(param.id, param.invitationId);
+            return res.status(HttpStatus.OK).redirect('https://time.wobbly.me/login');
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json({
+                error: "Please try again later"
+            })
         }
     }
 
@@ -72,30 +85,7 @@ export class TeamController {
         }
     }
 
-    @Post('invite')
-    async inviteMember(@Response() res: any, @Body() body: { userId: string; teamId: string; invitedUserId: string }) {
-        if (!(body && body.userId && body.teamId && body.invitedUserId)) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID, Team ID & Invited User ID required' });
-        }
 
-        try {
-            const invited = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, body.invitedUserId);
-            return res.status(HttpStatus.CREATED).json(invited);
-        } catch (err) {
-            const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error);
-        }
-    }
-
-    @Post('invite/email')
-    async inviteByEmail(@Response() res: any, @Body() body: { email: string }) {
-        if (!(body && body.email)) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User Email is required' });
-        }
-        let usersData: any = await this.teamService.getAllUsers();
-        let users = usersData.data.user;
-        let userExists = users.filter(user => user.email === body.email);
-    }
 
     @Patch('switch')
     async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {
