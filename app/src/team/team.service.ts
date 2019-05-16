@@ -3,6 +3,7 @@ import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class TeamService {
@@ -126,7 +127,7 @@ export class TeamService {
                             role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER}"
                             is_active: false
                             current_team: false
-                            invite_hash: "00000000-0000-0000-0000-000000000000"
+                            invite_hash: "${uuid.v4()}"
                         }
                     ]
                 ) {
@@ -172,7 +173,7 @@ export class TeamService {
         });
     }
 
-    async acceptInvitation(teamId: string, inviteId: string){
+    async acceptInvitation(teamId: string, inviteId: string) {
         const acceptInvitationQuery = `mutation {
             update_user_team(
                 where: { 
@@ -352,7 +353,6 @@ export class TeamService {
         });
     }
 
-
     async switchTeam(userId: string, teamId: string) {
         //1) Set all teams which user posess to false
         //2) Set current_team of teamId to true
@@ -429,7 +429,7 @@ export class TeamService {
         });
     }
 
-    async getTeamUserRole(teamId: string, userId: string){
+    async getTeamUserRole(teamId: string, userId: string) {
         const checkIfTeamAdminQuery = `{
             user_team(where: { 
                 user_id: { _eq: "${userId}" }, 

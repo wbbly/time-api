@@ -10,11 +10,11 @@ import { User } from './interfaces/user.interface';
 @Controller('user')
 export class UserController {
     constructor(
-        private readonly userService: UserService, 
-        private readonly teamService: TeamService, 
+        private readonly userService: UserService,
+        private readonly teamService: TeamService,
         private readonly configService: ConfigService,
-        private readonly mailService: MailService) 
-        {}
+        private readonly mailService: MailService
+    ) {}
 
     @Get('list')
     async userList(@Response() res: any) {
@@ -63,18 +63,22 @@ export class UserController {
     }
 
     @Post('invite')
-    async inviteByEmail(@Response() res: any, @Body() body: { userId: string, teamId: string, email: string }) {
+    async inviteByEmail(@Response() res: any, @Body() body: { userId: string; teamId: string; email: string }) {
         if (!(body && body.email)) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User Email is required' });
         }
-        
+
         let usersData: any = await this.userService.getUserList();
         let users = usersData.data.user;
         let userExists = users.filter(user => user.email === body.email);
         if (userExists.length > 0) {
             //Such user is already registered
-            const defaultTeamData = this.teamService.createDefaultTeam(userExists[0].id)
-            const invitedData: any = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, userExists[0].id);
+            const defaultTeamData = this.teamService.createDefaultTeam(userExists[0].id);
+            const invitedData: any = await this.teamService.inviteMemberToTeam(
+                body.userId,
+                body.teamId,
+                userExists[0].id
+            );
             //Send an email:
             const to = body.email;
             //@TODO Add Team Name in the subject
@@ -82,7 +86,9 @@ export class UserController {
             const html = `
             Please follow the link below to accept the invitation to the team:     
             <br /><br />
-            ${this.configService.get('API_URL')}/team/${body.teamId}/invite/${invitedData.data.insert_user_team.returning[0].invite_hash}
+            ${this.configService.get('API_URL')}/team/${body.teamId}/invite/${
+                invitedData.data.insert_user_team.returning[0].invite_hash
+            }
             <br /><br />
             Have a nice one!
         `;
@@ -91,19 +97,21 @@ export class UserController {
             //No such user registered, let us create one.
 
             //Generating random password
-            const userPassword = Math.random().toString(36).slice(-8);
+            const userPassword = Math.random()
+                .toString(36)
+                .slice(-8);
             const createdData: any = await this.userService.createUser({
                 username: body.email,
                 email: body.email,
-                password: userPassword
+                password: userPassword,
             });
             //Send an email with successful registration
-            
+
             const to1 = body.email;
             //@TODO Add Team Name in the subject
             const subject1 = `You've been successfully registered in the Wobbly`;
             const html1 = `
-            Please use the credentials below to access the Wobbly https://time.wobbly.me
+            Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
             <br /> <br />
 
             Email: ${body.email}
@@ -111,15 +119,18 @@ export class UserController {
 
             Password: ${userPassword}
 
-            <br /> <br /?
+            <br /> <br />
             Have a nice one!
         `;
-        this.mailService.send(to1, subject1, html1);
-            
+            this.mailService.send(to1, subject1, html1);
+
             //Get created user ID from createdData and process inviteRequest from Team Service
-           
-            const invitedData: any = 
-                await this.teamService.inviteMemberToTeam(body.userId, body.teamId, createdData.data.insert_user.returning[0].id);
+
+            const invitedData: any = await this.teamService.inviteMemberToTeam(
+                body.userId,
+                body.teamId,
+                createdData.data.insert_user.returning[0].id
+            );
             //Send an email:
             const to2 = body.email;
             //@TODO Add Team Name in the subject
@@ -127,7 +138,9 @@ export class UserController {
             const html2 = `
             Please follow the link below to accept the invitation to the team:     
             <br /><br />
-            http://127.0.0.1:3000/team/${body.teamId}/invite/${invitedData.data.insert_user_team.returning[0].invite_hash}
+            http://127.0.0.1:3000/team/${body.teamId}/invite/${
+                invitedData.data.insert_user_team.returning[0].invite_hash
+            }
             <br /><br />
             Have a nice one!
         `;
@@ -135,8 +148,8 @@ export class UserController {
         }
 
         return res.status(HttpStatus.CREATED).json({
-            success: true
-        })
+            success: true,
+        });
     }
 
     @Post('register')

@@ -2,12 +2,11 @@ import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch, Param,
 import { AxiosError } from 'axios';
 
 import { TeamService } from '../team/team.service';
+import { ConfigService } from '../core/config/config.service';
 
 @Controller('team')
 export class TeamController {
-    constructor(
-        private readonly teamService: TeamService
-    ) { }
+    constructor(private readonly teamService: TeamService, private readonly configService: ConfigService) {}
 
     @Get('current')
     async currentTeam(@Response() res: any, @Query() params) {
@@ -50,7 +49,7 @@ export class TeamController {
     async getTeamRole(@Response() res: any, @Param() param: any) {
         try {
             const teamRoleResult = await this.teamService.getTeamUserRole(param.id, param.userId);
-            return res.status(HttpStatus.OK).json(teamRoleResult)
+            return res.status(HttpStatus.OK).json(teamRoleResult);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
@@ -61,12 +60,12 @@ export class TeamController {
     async acceptInvitation(@Response() res: any, @Param() param: any) {
         try {
             const acceptResult = await this.teamService.acceptInvitation(param.id, param.invitationId);
-            return res.status(HttpStatus.OK).redirect('https://time.wobbly.me/login');
+            return res.status(HttpStatus.OK).redirect(`${this.configService.get('APP_URL')}/timer`);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json({
-                error: "Please try again later"
-            })
+                error: 'Please try again later',
+            });
         }
     }
 
@@ -84,8 +83,6 @@ export class TeamController {
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
         }
     }
-
-
 
     @Patch('switch')
     async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {

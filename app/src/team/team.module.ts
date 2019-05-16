@@ -1,4 +1,4 @@
-import { Module, HttpModule} from '@nestjs/common';
+import { Module, HttpModule } from '@nestjs/common';
 
 import { CoreModule } from '../core/core.module';
 import { RoleCollaborationModule } from '../role-collaboration/role-collaboration.module';
