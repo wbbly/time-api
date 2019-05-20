@@ -3,6 +3,7 @@ import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class TeamService {
@@ -123,13 +124,15 @@ export class TeamService {
                             user_id: "${invitedUserId}"
                             team_id: "${teamId}"
                             role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER}"
-                            is_active: true
+                            is_active: false
                             current_team: false
+                            invite_hash: "${uuid.v4()}"
                         }
                     ]
                 ) {
                     returning {
-                        id
+                        invite_hash
+                        user_id
                     }
                 }
             }
@@ -167,6 +170,34 @@ export class TeamService {
                 },
                 (checkError: AxiosError) => reject(checkError)
             );
+        });
+    }
+
+    async acceptInvitation(teamId: string, inviteId: string) {
+        const acceptInvitationQuery = `mutation {
+            update_user_team(
+                where: { 
+                    invite_hash: { _eq: "${inviteId}" }
+                    team_id: { _eq: "${teamId}" } 
+                }
+                _set: {
+                  is_active: true
+                  invite_hash: null
+                }
+            ) {
+                returning {
+                    is_active
+                }
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(acceptInvitationQuery)
+                .subscribe(
+                    (queryRes: AxiosResponse) => resolve(queryRes),
+                    (queryError: AxiosError) => reject(queryError)
+                );
         });
     }
 
@@ -319,27 +350,6 @@ export class TeamService {
                     (queryRes: AxiosResponse) => resolve(queryRes),
                     (queryError: AxiosError) => reject(queryError)
                 );
-        });
-    }
-
-    async getAllUsers() {
-        const query = `{
-                user(order_by: {username: asc}) {
-                        id,
-                        username,
-                        email,
-                        role {
-                            title
-                        },
-                        is_active
-                    }
-                }
-            `;
-
-        return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
