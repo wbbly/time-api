@@ -234,7 +234,7 @@ export class TeamService {
                 }
                 role_collaboration_id
                 role_collaboration {
-                title
+                    title
                 }
             }
         }
@@ -419,7 +419,7 @@ export class TeamService {
         });
     }
 
-    async getTeamUserRole(teamId: string, userId: string){
+    async getTeamUserRole(teamId: string, userId: string) {
         const checkIfTeamAdminQuery = `{
             user_team(where: { 
                 user_id: { _eq: "${userId}" }, 

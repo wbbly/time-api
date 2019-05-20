@@ -47,11 +47,11 @@ export class TeamController {
     }
 
     @Get(':id/rolecheck/:userId')
-    async getTeamRole(@Response() res: any, @Param() param: any){
+    async getTeamRole(@Response() res: any, @Param() param: any) {
         try {
             const teamRoleResult = await this.teamService.getTeamUserRole(param.id, param.userId);
-            return res.status(HttpStatus.OK).json(teamRoleResult)
-        } catch (err){
+            return res.status(HttpStatus.OK).json(teamRoleResult);
+        } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
         }
