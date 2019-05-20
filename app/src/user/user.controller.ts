@@ -73,7 +73,6 @@ export class UserController {
         let userExists = users.filter(user => user.email === body.email);
         if (userExists.length > 0) {
             //Such user is already registered
-            const defaultTeamData = this.teamService.createDefaultTeam(userExists[0].id);
             const invitedData: any = await this.teamService.inviteMemberToTeam(
                 body.userId,
                 body.teamId,
