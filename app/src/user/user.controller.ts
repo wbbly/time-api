@@ -74,13 +74,10 @@ export class UserController {
         let usersData: any = await this.userService.getUserList();
         let users = usersData.data.user;
         let userExists = users.filter(user => user.email === body.email);
+        let invitedData: any = null;
         if (userExists.length > 0) {
             //Such user is already registered
-            const invitedData: any = await this.teamService.inviteMemberToTeam(
-                body.userId,
-                body.teamId,
-                userExists[0].id
-            );
+            invitedData = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, userExists[0].id);
             //Send an email:
             const to = body.email;
             //@TODO Add Team Name in the subject
@@ -128,7 +125,7 @@ export class UserController {
 
             //Get created user ID from createdData and process inviteRequest from Team Service
 
-            const invitedData: any = await this.teamService.inviteMemberToTeam(
+            invitedData = await this.teamService.inviteMemberToTeam(
                 body.userId,
                 body.teamId,
                 createdData.data.insert_user.returning[0].id
@@ -150,7 +147,7 @@ export class UserController {
         }
 
         return res.status(HttpStatus.CREATED).json({
-            success: true,
+            invitedUserId: invitedData.data.insert_user_team.returning,
         });
     }
 
@@ -211,7 +208,6 @@ export class UserController {
         }
 
         let user = null;
-        console.log(param.id);
         try {
             user = await this.userService.getUserById(param.id, false);
         } catch (error) {

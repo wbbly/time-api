@@ -132,6 +132,7 @@ export class TeamService {
                 ) {
                     returning {
                         invite_hash
+                        user_id
                     }
                 }
             }
