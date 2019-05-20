@@ -265,7 +265,7 @@ export class TeamService {
                 }
                 role_collaboration_id
                 role_collaboration {
-                title
+                    title
                 }
             }
         }
