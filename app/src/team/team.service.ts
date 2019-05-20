@@ -117,7 +117,6 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            //@TODO: Generate random UUID
             const insertUserTeamQuery = `mutation {
                 insert_user_team(
                     objects: [

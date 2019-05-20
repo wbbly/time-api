@@ -63,7 +63,10 @@ export class UserController {
     }
 
     @Post('invite')
-    async inviteByEmail(@Response() res: any, @Body() body: { userId: string; teamId: string; email: string }) {
+    async inviteByEmail(
+        @Response() res: any,
+        @Body() body: { userId: string; teamId: string; teamName: string; email: string }
+    ) {
         if (!(body && body.email)) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User Email is required' });
         }
@@ -81,9 +84,9 @@ export class UserController {
             //Send an email:
             const to = body.email;
             //@TODO Add Team Name in the subject
-            const subject = `You've been invited to the new team!`;
+            const subject = `You've been invited to the new team | ${body.teamName}!`;
             const html = `
-            Please follow the link below to accept the invitation to the team:     
+            Please follow the link below to accept the invitation to the ${body.teamName} team:     
             <br /><br />
             ${this.configService.get('API_URL')}/team/${body.teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
@@ -133,11 +136,11 @@ export class UserController {
             //Send an email:
             const to2 = body.email;
             //@TODO Add Team Name in the subject
-            const subject2 = `You've been invited to the new team!`;
+            const subject2 = `You've been invited to the new team | ${body.teamName}!`;
             const html2 = `
-            Please follow the link below to accept the invitation to the team:     
+            Please follow the link below to accept the invitation to the ${body.teamName} team:     
             <br /><br />
-            http://127.0.0.1:3000/team/${body.teamId}/invite/${
+            ${this.configService.get('API_URL')}team/${body.teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
             }
             <br /><br />
