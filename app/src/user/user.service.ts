@@ -267,7 +267,8 @@ export class UserService {
         const updateTeamRoleQuery = `mutation{
             update_user_team(
                 where: {
-                    user_id: { _eq: "${id}"}
+                    user_id: { _eq: "${id}"},
+                    team_id: { _eq: "${teamId}"}
                 },
                 _set: {
                     role_collaboration_id: "${roleId}"
