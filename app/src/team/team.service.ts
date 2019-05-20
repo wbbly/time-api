@@ -232,6 +232,10 @@ export class TeamService {
                     id
                     name
                 }
+                role_collaboration_id
+                role_collaboration {
+                    title
+                }
             }
         }
         `;
@@ -411,6 +415,30 @@ export class TeamService {
                 .subscribe(
                     (renameTeamRes: AxiosResponse) => resolve(renameTeamRes),
                     (renameTeamError: AxiosError) => reject(renameTeamError)
+                );
+        });
+    }
+
+    async getTeamUserRole(teamId: string, userId: string) {
+        const checkIfTeamAdminQuery = `{
+            user_team(where: { 
+                user_id: { _eq: "${userId}" }, 
+                team_id: { _eq: "${teamId}"}
+            }) {
+                role_collaboration{
+                    id
+                    title
+                }
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(checkIfTeamAdminQuery)
+                .subscribe(
+                    (checkRes: AxiosResponse) => resolve(checkRes),
+                    (checkError: AxiosError) => reject(checkError)
                 );
         });
     }
