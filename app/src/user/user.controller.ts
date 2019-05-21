@@ -71,31 +71,32 @@ export class UserController {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User Email is required' });
         }
 
-        let usersData: any = await this.userService.getUserList();
-        let users = usersData.data.user;
-        let userExists = users.filter(user => user.email === body.email);
+        const usersData: any = await this.userService.getUserList();
+        const users = usersData.data.user;
+        const userExists = users.filter(user => user.email === body.email);
         let invitedData: any = null;
         if (userExists.length > 0) {
-            //Such user is already registered
+            // Such user is already registered
             invitedData = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, userExists[0].id);
-            //Send an email:
+            // Send an email:
             const to = body.email;
-            //@TODO Add Team Name in the subject
-            const subject = `You've been invited to the new team | ${body.teamName}!`;
+            const subject = `You've been invited to the "${body.teamName}" team!`;
             const html = `
-            Please follow the link below to accept the invitation to the ${body.teamName} team:     
+            Follow the link below to accept the invitation to the "${body.teamName}" team:
             <br /><br />
             ${this.configService.get('API_URL')}/team/${body.teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
             }
             <br /><br />
-            Have a nice one!
+            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <br />
+            © 2019 All rights reserved.
         `;
             this.mailService.send(to, subject, html);
         } else {
-            //No such user registered, let us create one.
+            // No such user registered, let us create one.
 
-            //Generating random password
+            // Generating random password
             const userPassword = Math.random()
                 .toString(36)
                 .slice(-8);
@@ -104,46 +105,36 @@ export class UserController {
                 email: body.email,
                 password: userPassword,
             });
-            //Send an email with successful registration
 
-            const to1 = body.email;
-            //@TODO Add Team Name in the subject
-            const subject1 = `You've been successfully registered in the Wobbly`;
-            const html1 = `
-            Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
-            <br /> <br />
-
-            Email: ${body.email}
-            <br /> <br />
-
-            Password: ${userPassword}
-
-            <br /> <br />
-            Have a nice one!
-        `;
-            this.mailService.send(to1, subject1, html1);
-
-            //Get created user ID from createdData and process inviteRequest from Team Service
-
+            // Get created user ID from createdData and process inviteRequest from Team Service
             invitedData = await this.teamService.inviteMemberToTeam(
                 body.userId,
                 body.teamId,
                 createdData.data.insert_user.returning[0].id
             );
-            //Send an email:
-            const to2 = body.email;
-            //@TODO Add Team Name in the subject
-            const subject2 = `You've been invited to the new team | ${body.teamName}!`;
-            const html2 = `
-            Please follow the link below to accept the invitation to the ${body.teamName} team:     
+
+            // Send an email:
+            const subject = `You've been invited to the "${body.teamName}" team!`;
+            const html = `
+            Follow the link below to accept the invitation to the "${body.teamName}" team:
             <br /><br />
-            ${this.configService.get('API_URL')}team/${body.teamId}/invite/${
+            ${this.configService.get('API_URL')}/team/${body.teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
             }
             <br /><br />
-            Have a nice one!
+            <br /><br />
+            Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+            <br /><br />
+
+            <b>Email:</b> ${body.email}<br />
+            <b>Password:</b> ${userPassword}
+
+            <br /><br />
+            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <br />
+            © 2019 All rights reserved.
         `;
-            this.mailService.send(to2, subject2, html2);
+            this.mailService.send(body.email, subject, html);
         }
 
         return res.status(HttpStatus.CREATED).json({
