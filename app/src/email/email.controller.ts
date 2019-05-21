@@ -21,6 +21,10 @@ export class EmailController {
             Email: ${body.email}
             <br /><br />
             Message: ${body.message}
+            <br /><br />
+            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <br />
+            © 2019 All rights reserved.
         `;
         this.mailService.send(to, subject, html);
 

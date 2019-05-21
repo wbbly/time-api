@@ -4,6 +4,7 @@ import { Cron, NestSchedule } from 'nest-schedule';
 import { MailService } from '../core/mail/mail.service';
 import { TimerCurrentV2Service } from '../timer-current-v2/timer-current-v2.service';
 import { TimeService } from '../time/time.service';
+import { ConfigService } from '../core/config/config.service';
 import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.interface';
 
 @Injectable()
@@ -11,7 +12,8 @@ export class ScheduleService extends NestSchedule {
     constructor(
         private readonly mailService: MailService,
         private readonly timerCurrentV2Service: TimerCurrentV2Service,
-        private readonly timeService: TimeService
+        private readonly timeService: TimeService,
+        private readonly configService: ConfigService
     ) {
         super();
     }
@@ -38,10 +40,10 @@ export class ScheduleService extends NestSchedule {
                             It will be stop automatically after the time goes out of 8 hours.
                             <br /><br />
                             --
+                            <br /><br />
+                            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
                             <br />
-                            Wobbly.me
-                            <br />
-                            Time Tracking
+                            © 2019 All rights reserved.
                             `
                             )
                             .then(res => {
@@ -81,10 +83,10 @@ export class ScheduleService extends NestSchedule {
                             `Hi! You current task was stopped automatically after 8 hours!
                             <br /><br />
                             --
+                            <br /><br />
+                            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
                             <br />
-                            Wobbly.me
-                            <br />
-                            Time Tracking
+                            © 2019 All rights reserved.
                             `
                         );
                     }
