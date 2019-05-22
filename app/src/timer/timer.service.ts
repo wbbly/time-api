@@ -84,7 +84,9 @@ export class TimerService {
         userId: string;
         projectId: string;
     }): Promise<Timer | null> {
-        const { issue, startDatetime, endDatetime, userId, projectId } = data;
+        let { issue } = data;
+        issue = issue || 'Untitled issue';
+        const { startDatetime, endDatetime, userId, projectId } = data;
 
         const query = `mutation {
             insert_timer_v2(
