@@ -329,7 +329,11 @@ export class ProjectService {
             }
 
             const projectV2ReportValues = Object.values(projectV2Report);
-            projectV2ReportValues.sort((a, b) => a['startDatetime'] - b['endDatetime']);
+            projectV2ReportValues.sort(
+                (a, b) =>
+                    this.timeService.getTimestampByGivenValue(a['startDatetime']) -
+                    this.timeService.getTimestampByGivenValue(b['startDatetime'])
+            );
             for (let i = 0, projectV2ReportLength = projectV2ReportValues.length; i < projectV2ReportLength; i++) {
                 let timeEntry = projectV2ReportValues[i];
                 timeEntry['duration'] = this.timeService.getTimeDurationByGivenTimestamp(
