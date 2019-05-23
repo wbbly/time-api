@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
+import * as uuid from 'uuid';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
-import * as uuid from 'uuid';
 
 @Injectable()
 export class TeamService {
@@ -38,7 +38,7 @@ export class TeamService {
                 if (returningRows.length) {
                     const teamId = insertTeamRes.data.insert_team.returning[0].id;
 
-                    //@TODO: Change Hardcoded project color ID
+                    // @TODO: Change Hardcoded project color ID
                     const insertDefaultProject = `mutation {
                         insert_project_v2(
                             objects: [
@@ -55,7 +55,7 @@ export class TeamService {
                         }
                     }`;
 
-                    //Linking user with the team
+                    // Linking user with the team
                     const insertUserTeamQuery = `mutation {
                             insert_user_team(
                                 objects: [
@@ -96,8 +96,8 @@ export class TeamService {
 
     async inviteMemberToTeam(userId: string, teamId: string, invitedUserId: string) {
         const checkIfTeamAdminQuery = `{
-            user_team(where: { 
-                user_id: { _eq: "${userId}" }, 
+            user_team(where: {
+                user_id: { _eq: "${userId}" },
                 team_id: { _eq: "${teamId}"}
             }) {
                 role_collaboration{
@@ -142,7 +142,7 @@ export class TeamService {
                 (checkResponse: AxiosResponse) => {
                     let admin = false;
                     let alreadyMember = false;
-                    //Check if the requester is admin in the team
+                    // Check if the requester is admin in the team
                     if (
                         checkResponse.data.user_team[0].role_collaboration.id ===
                         this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
@@ -152,7 +152,10 @@ export class TeamService {
 
                     this.httpRequestsService.request(checkIfAlreadyMemberQuery).subscribe(
                         (checkRes: AxiosResponse) => {
-                            if (checkRes.data.user_team[0]) alreadyMember = true;
+                            if (checkRes.data.user_team[0]) {
+                                alreadyMember = true;
+                            }
+
                             if (admin && !alreadyMember) {
                                 this.httpRequestsService
                                     .request(insertUserTeamQuery)
@@ -160,10 +163,11 @@ export class TeamService {
                                         (insertRes: AxiosResponse) => resolve(insertRes),
                                         (insertError: AxiosError) => reject(insertError)
                                     );
-                            } else
+                            } else {
                                 reject({
                                     error: alreadyMember ? 'User already in team' : 'Not Authorized',
                                 });
+                            }
                         },
                         (checkError: AxiosError) => reject(checkError)
                     );
@@ -174,15 +178,26 @@ export class TeamService {
     }
 
     async acceptInvitation(teamId: string, inviteId: string) {
+        const getUserIdByInvitationQuery = `{
+            user_team (
+                where: {
+                    invite_hash: { _eq: "${inviteId}" }
+                    team_id: { _eq: "${teamId}" }
+                }
+            ) {
+                user_id
+            }
+        }`;
+
         const acceptInvitationQuery = `mutation {
             update_user_team(
-                where: { 
+                where: {
                     invite_hash: { _eq: "${inviteId}" }
-                    team_id: { _eq: "${teamId}" } 
+                    team_id: { _eq: "${teamId}" }
                 }
                 _set: {
-                  is_active: true
-                  invite_hash: null
+                    is_active: true
+                    invite_hash: null
                 }
             ) {
                 returning {
@@ -192,12 +207,24 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(acceptInvitationQuery)
-                .subscribe(
-                    (queryRes: AxiosResponse) => resolve(queryRes),
-                    (queryError: AxiosError) => reject(queryError)
-                );
+            this.httpRequestsService.request(getUserIdByInvitationQuery).subscribe(
+                async (getUserIdByInvitationQueryRes: AxiosResponse) => {
+                    const userTeam = getUserIdByInvitationQueryRes.data.user_team;
+                    const userId = (userTeam[0] || {}).user_id;
+                    try {
+                        await this.switchTeam(userId, teamId);
+                        this.httpRequestsService
+                            .request(acceptInvitationQuery)
+                            .subscribe(
+                                (acceptInvitationQueryRes: AxiosResponse) => resolve(acceptInvitationQueryRes),
+                                (acceptInvitationQueryError: AxiosError) => reject(acceptInvitationQueryError)
+                            );
+                    } catch (switchTeamError) {
+                        reject(switchTeamError);
+                    }
+                },
+                (getUserIdByInvitationQueryError: AxiosError) => reject(getUserIdByInvitationQueryError)
+            );
         });
     }
 
@@ -255,9 +282,9 @@ export class TeamService {
 
     async getCurrentTeam(userId: string) {
         const getCurrentTeamQuery = `{
-            user_team(where: { 
-                user_id: { _eq: "${userId}" }, 
-                current_team: { _eq: true} 
+            user_team(where: {
+                user_id: { _eq: "${userId}" },
+                current_team: { _eq: true}
             }) {
                 team {
                     id
@@ -291,18 +318,18 @@ export class TeamService {
                 id
                 name
                 team_users{
-                  user{
-                    id
-                    username
-                    email
-                    is_active
-                  }
-                  role_collaboration{
-                    title
-                    } 
+                    user{
+                        id
+                        username
+                        email
+                        is_active
+                    }
+                    role_collaboration{
+                        title
+                    }
                 }
-              }
-          }
+            }
+        }
         `;
 
         return new Promise((resolve, reject) => {
@@ -318,10 +345,10 @@ export class TeamService {
     async getTeamList() {
         const query = `{
             team{
-              id
-              name
+                id
+                name
             }
-          }`;
+        }`;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
@@ -336,10 +363,10 @@ export class TeamService {
     async getAllUserTeams(userId: string) {
         const query = `{
             user_team(where: {user_id: {_eq: "${userId}"}, is_active: {_eq: true}}) {
-              team {
-                id
-                name
-              }
+                team {
+                    id
+                    name
+                }
             }
         }
         `;
@@ -354,8 +381,8 @@ export class TeamService {
     }
 
     async switchTeam(userId: string, teamId: string) {
-        //1) Set all teams which user posess to false
-        //2) Set current_team of teamId to true
+        // 1) Set all teams which user posess to false
+        // 2) Set current_team of teamId to true
         const setAllCurrentTeamsToFalse = `mutation{
             update_user_team(
                 where: {
@@ -363,7 +390,7 @@ export class TeamService {
                 }
                 _set: {
                     current_team: false
-                } 
+                }
             ) {
                 returning {
                     current_team
@@ -373,12 +400,12 @@ export class TeamService {
 
         const switchCurrentTeamQuery = `mutation {
             update_user_team(
-                where: { 
+                where: {
                     user_id: { _eq: "${userId}" }
-                    team_id: { _eq: "${teamId}" } 
+                    team_id: { _eq: "${teamId}" }
                 }
                 _set: {
-                  current_team: true
+                    current_team: true
                 }
             ) {
                 returning {
@@ -389,15 +416,15 @@ export class TeamService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(setAllCurrentTeamsToFalse).subscribe(
-                (falsifyRes: AxiosResponse) => {
+                (setAllCurrentTeamsToFalseRes: AxiosResponse) => {
                     this.httpRequestsService
                         .request(switchCurrentTeamQuery)
                         .subscribe(
-                            (switchTeamRes: AxiosResponse) => resolve(switchTeamRes),
-                            (switchTeamError: AxiosError) => reject(switchTeamError)
+                            (switchCurrentTeamQueryRes: AxiosResponse) => resolve(switchCurrentTeamQueryRes),
+                            (switchCurrentTeamQueryError: AxiosError) => reject(switchCurrentTeamQueryError)
                         );
                 },
-                (falsifyError: AxiosError) => reject(falsifyError)
+                (setAllCurrentTeamsToFalseError: AxiosError) => reject(setAllCurrentTeamsToFalseError)
             );
         });
     }
@@ -417,7 +444,7 @@ export class TeamService {
                     name
                 }
             }
-        }  
+        }
         `;
         return new Promise((resolve, reject) => {
             this.httpRequestsService
@@ -431,8 +458,8 @@ export class TeamService {
 
     async getTeamUserRole(teamId: string, userId: string) {
         const checkIfTeamAdminQuery = `{
-            user_team(where: { 
-                user_id: { _eq: "${userId}" }, 
+            user_team(where: {
+                user_id: { _eq: "${userId}" },
                 team_id: { _eq: "${teamId}"}
             }) {
                 role_collaboration{
