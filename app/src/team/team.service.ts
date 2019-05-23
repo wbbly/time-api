@@ -16,12 +16,12 @@ export class TeamService {
         MY_TEAM: 'My team',
     };
 
-    async createDefaultTeam(userId: string) {
+    async createTeam(userId: string, teamName: string = this.DEFAULT_TEAMS.MY_TEAM) {
         const insertTeamQuery = `mutation {
             insert_team(
                 objects: [
                     {
-                        name: "${this.DEFAULT_TEAMS.MY_TEAM}"
+                        name: "${teamName}"
                     }
                 ]
             ) {
@@ -224,58 +224,6 @@ export class TeamService {
                     }
                 },
                 (getUserIdByInvitationQueryError: AxiosError) => reject(getUserIdByInvitationQueryError)
-            );
-        });
-    }
-
-    async addTeam(userId: string, teamName: string) {
-        const addTeamQuery = `mutation {
-            insert_team(
-                objects: [
-                    {
-                        name: "${teamName}"
-                    }
-                ]
-            ) {
-                returning {
-                    id
-                }
-            }
-        }`;
-
-        return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(addTeamQuery).subscribe(
-                (addTeamRes: AxiosResponse) => {
-                    const createdTeamId = addTeamRes.data.insert_team.returning[0].id;
-
-                    const addTeamRelationQuery = `mutation {
-                            insert_user_team(
-                                objects: [
-                                    {
-                                        user_id: "${userId}"
-                                        team_id: "${createdTeamId}"
-                                        role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN}"
-                                        is_active: true
-                                        current_team: false
-                                    }
-                                ]
-                            ) {
-                                returning {
-                                    id
-                                }
-                            }
-                        }`;
-
-                    this.httpRequestsService
-                        .request(addTeamRelationQuery)
-                        .subscribe(
-                            (queryRes: AxiosResponse) => resolve(queryRes),
-                            (queryError: AxiosError) => reject(queryError)
-                        );
-                },
-                (addTeamError: AxiosError) => {
-                    reject(addTeamError);
-                }
             );
         });
     }

@@ -70,7 +70,7 @@ export class TeamController {
         }
 
         try {
-            const createdTeam = await this.teamService.addTeam(body.userId, body.teamName);
+            const createdTeam = await this.teamService.createTeam(body.userId, body.teamName);
             return res.status(HttpStatus.CREATED).json(createdTeam);
         } catch (err) {
             const error: AxiosError = err;

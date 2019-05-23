@@ -211,11 +211,8 @@ export class UserService {
                     const returningRows = insertUserRes.data.insert_user.returning;
                     if (returningRows.length) {
                         const userId = insertUserRes.data.insert_user.returning[0].id;
-
-                        // @TODO: WOB-71, get team_id and role_collaboration_id from parameters
-
                         try {
-                            this.teamService.createDefaultTeam(userId);
+                            this.teamService.createTeam(userId);
                         } catch (error) {
                             console.log(error);
                         }
