@@ -64,7 +64,7 @@ export class TeamService {
                                         team_id: "${teamId}"
                                         role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN}"
                                         is_active: true
-                                        current_team: true
+                                        current_team: false
                                     }
                                 ]
                             ) {
@@ -76,12 +76,17 @@ export class TeamService {
 
                     this.httpRequestsService.request(insertDefaultProject).subscribe(
                         (insertProjectRes: AxiosResponse) => {
-                            this.httpRequestsService
-                                .request(insertUserTeamQuery)
-                                .subscribe(
-                                    (insertUserTeamRes: AxiosResponse) => resolve(insertUserTeamRes),
-                                    (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
-                                );
+                            this.httpRequestsService.request(insertUserTeamQuery).subscribe(
+                                async (insertUserTeamRes: AxiosResponse) => {
+                                    try {
+                                        await this.switchTeam(userId, teamId);
+                                        resolve(insertUserTeamRes);
+                                    } catch (switchTeamError) {
+                                        reject(switchTeamError);
+                                    }
+                                },
+                                (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                            );
                         },
                         (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
                     );
