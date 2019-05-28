@@ -36,14 +36,17 @@ export class UserService {
     }
 
     async getUserById(id: string, isActive: boolean = true): Promise<User | AxiosError> {
-        const whereStatements = `id: { _eq: "${id}" }`;
+        const whereStatements = [`id: { _eq: "${id}" }`];
 
-        //if (isActive) {
-        //    whereStatements.push(`is_active: { _eq: true } `);
-        //}
+        if (isActive) {
+            whereStatements.push(`is_active: { _eq: true } `);
+        }
 
         return new Promise((resolve, reject) => {
-            this.getUser(whereStatements).then((res: User) => resolve(res), (error: AxiosError) => reject(error));
+            this.getUserPrimaryData(whereStatements.join(',')).then(
+                (res: User) => resolve(res),
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 
@@ -55,14 +58,14 @@ export class UserService {
         }
 
         return new Promise((resolve, reject) => {
-            this.getUser(whereStatements.join(',')).then(
+            this.getUserSecondaryData(whereStatements.join(',')).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
         });
     }
 
-    async getUser(whereStatement: string): Promise<any | null | AxiosError> {
+    async getUserPrimaryData(whereStatement: string): Promise<any | null | AxiosError> {
         const query = `{
             user(where: {${whereStatement}}) {
                 id
@@ -73,8 +76,8 @@ export class UserService {
                 timezone_offset
                 user_teams(where: {
                     current_team: {
-                      _eq: true
-                    },				
+                        _eq: true
+                    },
                 }){
                     role_collaboration{
                         title
@@ -117,6 +120,52 @@ export class UserService {
                             roleCollaboration: {
                                 title: roleCollaborationTitle,
                             },
+                            timezoneOffset,
+                        };
+                    }
+
+                    resolve(user);
+                },
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async getUserSecondaryData(whereStatement: string): Promise<any | null | AxiosError> {
+        const query = `{
+            user(where: {${whereStatement}}) {
+                id
+                username
+                email
+                password
+                is_active
+                timezone_offset
+            }
+        }
+        `;
+
+        let user: any = null;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    const data = res.data.user.shift();
+                    if (data) {
+                        const {
+                            id: userId,
+                            username,
+                            email,
+                            password,
+                            is_active: isActive,
+                            timezone_offset: timezoneOffset,
+                        } = data;
+
+                        user = {
+                            id: userId,
+                            username,
+                            email,
+                            password,
+                            isActive,
                             timezoneOffset,
                         };
                     }

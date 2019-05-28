@@ -55,6 +55,7 @@ export class UserController {
 
         if (user) {
             if (await this.userService.compareHash(body.password, user.password)) {
+                delete user.password;
                 return res.status(HttpStatus.OK).json({ user });
             }
         }
