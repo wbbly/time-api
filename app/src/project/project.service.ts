@@ -21,22 +21,21 @@ export class ProjectService {
         let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `{
             project_v2(
-                    order_by: {name: desc}
-                    where: {
-                        team_id: { _eq: "${currentTeamId}" }
-                    }
-                ) 
-                {
-                    id
+                order_by: {name: asc}
+                where: {
+                    team_id: { _eq: "${currentTeamId}" }
+                }
+            ) {
+                id
+                name
+                is_active
+                project_color {
                     name
-                    is_active
-                    project_color {
-                        name
-                    }
-                    timer(where: {user_id: {_eq: "${userId}"}}) {
-                        start_datetime
-                        end_datetime
-                    }
+                }
+                timer(where: {user_id: {_eq: "${userId}"}}) {
+                    start_datetime
+                    end_datetime
+                }
             }
         }
         `;
@@ -53,18 +52,20 @@ export class ProjectService {
         let currentTeamId = currentTeamData.data.user_team[0].team.id;
         const query = `{
             project_v2(
-                    order_by: {name: asc}, 
-                    limit: 100,
-                    where: {
-                        team_id: { _eq: "${currentTeamId}" }
-                    }
-                )  {
-                    id
-                    is_active
+                order_by: {name: asc}
+                where: {
+                    team_id: { _eq: "${currentTeamId}" }
+                }
+            ) {
+                id
+                name
+                is_active
+                project_color {
                     name
-                    timer {
-                        start_datetime
-                        end_datetime
+                }
+                timer {
+                    start_datetime
+                    end_datetime
                 }
             }
         }
