@@ -16,6 +16,7 @@ export class ReportService {
     ) {}
 
     getReportExport(
+        teamId: string,
         userEmails: string[],
         projectNames: string[],
         startDate: string,
@@ -27,8 +28,11 @@ export class ReportService {
             : '';
 
         const projectWhereStatement = projectNames.length
-            ? `project: {name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}}`
-            : '';
+            ? `project: {
+                team_id: {_eq: "${teamId}"},
+                name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}
+            }`
+            : `project: {team_id: {_eq: "${teamId}"}}`;
 
         const timerStatementArray = [
             `_or: [

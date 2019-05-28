@@ -174,14 +174,23 @@ export class TimerService {
         });
     }
 
-    getReportsTimerList(userEmails: string[], projectNames: string[], startDate: string, endDate: string) {
+    getReportsTimerList(
+        teamId: string,
+        userEmails: string[],
+        projectNames: string[],
+        startDate: string,
+        endDate: string
+    ) {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
             : '';
 
         const projectWhereStatement = projectNames.length
-            ? `project: {name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}}`
-            : '';
+            ? `project: {
+                team_id: {_eq: "${teamId}"},
+                name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}
+            }`
+            : `project: {team_id: {_eq: "${teamId}"}}`;
 
         const timerStatementArray = [
             `_or: [
@@ -195,9 +204,7 @@ export class TimerService {
             timerStatementArray.push(userWhereStatement);
         }
 
-        if (projectWhereStatement) {
-            timerStatementArray.push(projectWhereStatement);
-        }
+        timerStatementArray.push(projectWhereStatement);
 
         const query = `{
             timer_v2(where: {${timerStatementArray.join(',')}}, order_by: {start_datetime: asc}) {

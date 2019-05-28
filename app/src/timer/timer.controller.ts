@@ -1,12 +1,13 @@
 import { Controller, Get, Patch, Delete, Param, Response, HttpStatus, Body, Query, Headers } from '@nestjs/common';
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 
 import { TimerService } from './timer.service';
+import { TeamService } from '../team/team.service';
 import { Timer } from './interfaces/timer.interface';
 
 @Controller('timer')
 export class TimerController {
-    constructor(private readonly timerService: TimerService) {}
+    constructor(private readonly timerService: TimerService, private readonly teamService: TeamService) {}
 
     @Get('user-list')
     async userTimerList(@Response() res: any, @Query() params) {
@@ -41,8 +42,22 @@ export class TimerController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
         }
 
+        let teamId;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+
+        if (!teamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+        }
+
         try {
             const userTimerListRes = await this.timerService.getReportsTimerList(
+                teamId,
                 params.userEmails || [],
                 params.projectNames || [],
                 params.startDate,

@@ -99,7 +99,7 @@ export class ProjectService {
         });
     }
 
-    getReportsProject(projectName: string, userEmails: string[], startDate: string, endDate: string) {
+    getReportsProject(teamId: string, projectName: string, userEmails: string[], startDate: string, endDate: string) {
         const timerStatementArray = [
             `_or: [
             {start_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
@@ -121,7 +121,7 @@ export class ProjectService {
             : '(order_by: {end_datetime: desc})';
 
         const query = `{
-            project_v2(where: {name: {_eq: "${projectName}"}}) {
+            project_v2(where: {team_id: {_eq: "${teamId}"}, name: {_eq: "${projectName}"}}) {
                 timer ${timerWhereStatement} {
                     issue
                     project {
@@ -150,12 +150,27 @@ export class ProjectService {
         });
     }
 
-    getReportsProjects(projectNames: string[], userEmails: string[], startDate: string, endDate: string) {
+    getReportsProjects(
+        teamId: string,
+        projectNames: string[],
+        userEmails: string[],
+        startDate: string,
+        endDate: string
+    ) {
         const projectWhereStatement = projectNames.length
-            ? `(where: {name: {_in: [${projectNames
-                  .map(projectName => `"${projectName}"`)
-                  .join(',')}]}}, order_by: {name: asc})`
-            : '(order_by: {name: asc})';
+            ? `(
+                where: {
+                    team_id: {_eq: "${teamId}"},
+                    name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}
+                },
+                order_by: {name: asc}
+            )`
+            : `(
+                where: {
+                    team_id: {_eq: "${teamId}"}
+                },
+                order_by: {name: asc}
+            )`;
 
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -188,7 +203,7 @@ export class ProjectService {
                 name
                 timer ${timerWhereStatement} {
                     start_datetime
-                    end_datetime         
+                    end_datetime
                 }
             }
         }`;

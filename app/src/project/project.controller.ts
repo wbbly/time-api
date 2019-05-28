@@ -11,14 +11,15 @@ import {
     Query,
     Headers,
 } from '@nestjs/common';
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 
 import { ProjectService } from './project.service';
+import { TeamService } from '../team/team.service';
 import { Project } from './interfaces/project.interface';
 
 @Controller('project')
 export class ProjectController {
-    constructor(private readonly projectService: ProjectService) {}
+    constructor(private readonly projectService: ProjectService, private readonly teamService: TeamService) {}
 
     @Get('list')
     async projectList(@Response() res: any, @Query() params) {
@@ -79,8 +80,22 @@ export class ProjectController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
+        let teamId;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+
+        if (!teamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+        }
+
         try {
             const reportsProjectRes = await this.projectService.getReportsProject(
+                teamId,
                 params.projectName,
                 params.userEmails || [],
                 params.startDate,
@@ -107,8 +122,22 @@ export class ProjectController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
+        let teamId;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+
+        if (!teamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+        }
+
         try {
             const reportsProjectsRes = await this.projectService.getReportsProjects(
+                teamId,
                 params.projectNames || [],
                 params.userEmails || [],
                 params.startDate,

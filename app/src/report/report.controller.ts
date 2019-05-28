@@ -1,11 +1,12 @@
 import { Controller, Get, Response, HttpStatus, Query, Headers } from '@nestjs/common';
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 
 import { ReportService } from './report.service';
+import { TeamService } from '../team/team.service';
 
 @Controller('report')
 export class ReportController {
-    constructor(private readonly reportService: ReportService) {}
+    constructor(private readonly reportService: ReportService, private readonly teamService: TeamService) {}
 
     @Get('export')
     async reportExport(@Headers() header: any, @Response() res: any, @Query() params) {
@@ -25,8 +26,22 @@ export class ReportController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
         }
 
+        let teamId;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+
+        if (!teamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+        }
+
         try {
             const reportExportRes = await this.reportService.getReportExport(
+                teamId,
                 params.userEmails || [],
                 params.projectNames || [],
                 params.startDate,
