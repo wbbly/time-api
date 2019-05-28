@@ -1,4 +1,4 @@
-import { Controller, Get, Response, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Response, HttpStatus, Query, Headers } from '@nestjs/common';
 import { AxiosError } from 'axios';
 
 import { ReportService } from './report.service';
@@ -8,7 +8,11 @@ export class ReportController {
     constructor(private readonly reportService: ReportService) {}
 
     @Get('export')
-    async reportExport(@Response() res: any, @Query() params) {
+    async reportExport(@Headers() header: any, @Response() res: any, @Query() params) {
+        if (!(header && header['x-user-id'])) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+        }
+
         if (!(params && params.startDate && params.endDate)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters startDate and endDate are required!' });
         }

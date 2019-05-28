@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Patch, Delete, Param, Response, HttpStatus, Body, Query } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Patch,
+    Delete,
+    Param,
+    Response,
+    HttpStatus,
+    Body,
+    Query,
+    Headers,
+} from '@nestjs/common';
 import { AxiosError } from 'axios';
 
 import { ProjectService } from './project.service';
@@ -52,7 +64,11 @@ export class ProjectController {
     }
 
     @Get('reports-project')
-    async reportsProjectList(@Response() res: any, @Query() params) {
+    async reportsProjectList(@Headers() header: any, @Response() res: any, @Query() params) {
+        if (!(header && header['x-user-id'])) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+        }
+
         if (!(params && params.projectName && params.startDate && params.endDate)) {
             return res
                 .status(HttpStatus.FORBIDDEN)
@@ -78,7 +94,11 @@ export class ProjectController {
     }
 
     @Get('reports-projects')
-    async reportsProjectsList(@Response() res: any, @Query() params) {
+    async reportsProjectsList(@Headers() header: any, @Response() res: any, @Query() params) {
+        if (!(header && header['x-user-id'])) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+        }
+
         if (params && params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
         }

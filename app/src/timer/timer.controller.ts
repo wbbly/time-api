@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Delete, Param, Response, HttpStatus, Body, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Response, HttpStatus, Body, Query, Headers } from '@nestjs/common';
 import { AxiosError } from 'axios';
 
 import { TimerService } from './timer.service';
@@ -24,7 +24,11 @@ export class TimerController {
     }
 
     @Get('reports-list')
-    async reportsTimerList(@Response() res: any, @Query() params) {
+    async reportsTimerList(@Headers() header: any, @Response() res: any, @Query() params) {
+        if (!(header && header['x-user-id'])) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+        }
+
         if (!(params && params.startDate && params.endDate)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters startDate and endDate are required!' });
         }
