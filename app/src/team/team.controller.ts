@@ -19,7 +19,7 @@ export class TeamController {
             return res.status(HttpStatus.OK).json(currentTeamRes);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -30,7 +30,7 @@ export class TeamController {
             return res.status(HttpStatus.OK).json(teamListRes);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -41,7 +41,7 @@ export class TeamController {
             return res.status(HttpStatus.OK).json(dataRes);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -52,7 +52,7 @@ export class TeamController {
             return res.status(HttpStatus.OK).json(teamRoleResult);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -74,7 +74,7 @@ export class TeamController {
             return res.status(HttpStatus.CREATED).json(createdTeam);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -88,7 +88,7 @@ export class TeamController {
             return res.status(HttpStatus.OK).json(switchRes);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -102,7 +102,7 @@ export class TeamController {
             return res.status(HttpStatus.OK).json(renamedTeam);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 }

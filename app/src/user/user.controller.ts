@@ -21,9 +21,9 @@ export class UserController {
         try {
             const userListRes = await this.userService.getUserList();
             return res.status(HttpStatus.OK).json(userListRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -36,7 +36,7 @@ export class UserController {
             return res.status(HttpStatus.OK).json(teamsData);
         } catch (err) {
             const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -220,9 +220,9 @@ export class UserController {
             const updateUserRes = await this.userService.updateUser(param.id, userData);
 
             return res.status(HttpStatus.OK).json(updateUserRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 }

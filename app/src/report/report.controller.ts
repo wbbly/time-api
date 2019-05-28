@@ -50,9 +50,9 @@ export class ReportController {
             );
 
             return res.status(HttpStatus.OK).json(reportExportRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 }

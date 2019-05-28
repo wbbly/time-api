@@ -14,7 +14,7 @@ export class ProjectColorController {
             return res.status(HttpStatus.OK).json(projectColorListRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 }

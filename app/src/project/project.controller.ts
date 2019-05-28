@@ -31,7 +31,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(projectListRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -45,7 +45,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(adminProjectListRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -60,7 +60,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(userProjectListRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -104,7 +104,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(reportsProjectRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -146,7 +146,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(reportsProjectsRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -164,7 +164,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(addProjectRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -175,7 +175,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(getProjectByIdRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -190,7 +190,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(updateProjectByIdRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -201,7 +201,7 @@ export class ProjectController {
             return res.status(HttpStatus.OK).json(deleteProjectByIdRes);
         } catch (e) {
             const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 }

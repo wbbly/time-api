@@ -18,9 +18,9 @@ export class TimerController {
         try {
             const userTimerListRes = await this.timerService.getUserTimerList(params.userId);
             return res.status(HttpStatus.OK).json(userTimerListRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -64,9 +64,9 @@ export class TimerController {
                 params.endDate
             );
             return res.status(HttpStatus.OK).json(userTimerListRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -79,9 +79,9 @@ export class TimerController {
         try {
             const updateTimerByIdRes = await this.timerService.updateTimerById(param.id, body);
             return res.status(HttpStatus.OK).json(updateTimerByIdRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 
@@ -90,9 +90,9 @@ export class TimerController {
         try {
             const deleteTimerByIdRes = await this.timerService.deleteTimerById(param.id);
             return res.status(HttpStatus.OK).json(deleteTimerByIdRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response.data.errors);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 }
