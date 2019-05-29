@@ -58,7 +58,12 @@ export class TeamController {
 
     @Get(':id/invite/:invitationId')
     async acceptInvitation(@Response() res: any, @Param() param: any) {
-        await this.teamService.acceptInvitation(param.id, param.invitationId);
+        try {
+            await this.teamService.acceptInvitation(param.id, param.invitationId);
+        } catch (err) {
+            const error: AxiosError = err;
+            console.log(error.response ? error.response.data.errors : error);
+        }
 
         return res.status(HttpStatus.OK).redirect(`${this.configService.get('APP_URL')}/team`);
     }

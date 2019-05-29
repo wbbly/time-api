@@ -85,7 +85,7 @@ export class UserController {
             const html = `
             Follow the link below to accept the invitation to the "${body.teamName}" team:
             <br /><br />
-            ${this.configService.get('API_URL')}/team/${body.teamId}/invite/${
+            ${this.configService.get('APP_URL')}/team/${body.teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
             }
             <br /><br />
@@ -119,7 +119,7 @@ export class UserController {
             const html = `
             Follow the link below to accept the invitation to the "${body.teamName}" team:
             <br /><br />
-            ${this.configService.get('API_URL')}/team/${body.teamId}/invite/${
+            ${this.configService.get('APP_URL')}/team/${body.teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
             }
             <br /><br />
