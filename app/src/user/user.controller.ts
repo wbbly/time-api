@@ -68,17 +68,26 @@ export class UserController {
         @Response() res: any,
         @Body() body: { userId: string; teamId: string; teamName: string; email: string }
     ) {
-        if (!(body && body.email)) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User Email is required' });
+        if (!(body && body.userId && body.teamId && body.teamName && body.email)) {
+            return res
+                .status(HttpStatus.BAD_REQUEST)
+                .json({ message: 'Params userId, teamId, teamName and email are required' });
         }
 
         const usersData: any = await this.userService.getUserList();
         const users = usersData.data.user;
         const userExists = users.filter(user => user.email === body.email);
+
         let invitedData: any = null;
         if (userExists.length > 0) {
             // Such user is already registered
-            invitedData = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, userExists[0].id);
+            try {
+                invitedData = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, userExists[0].id);
+            } catch (e) {
+                const error: AxiosError = e;
+                return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+            }
+
             // Send an email:
             const to = body.email;
             const subject = `You've been invited to the "${body.teamName}" team!`;

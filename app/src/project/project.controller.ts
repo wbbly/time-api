@@ -151,7 +151,6 @@ export class ProjectController {
     }
 
     @Post('add')
-    //@TODO: Make sure to implement userId passage from front.
     async addProject(@Response() res: any, @Body() body: { project: Project; userId: string }) {
         if (!(body && body.userId && body.project.name && body.project.projectColorId)) {
             return res

@@ -4,12 +4,14 @@ import * as uuid from 'uuid';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { ProjectColorService } from '../project-color/project-color.service';
 
 @Injectable()
 export class TeamService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly roleCollaborationService: RoleCollaborationService
+        private readonly roleCollaborationService: RoleCollaborationService,
+        private readonly projectColorService: ProjectColorService
     ) {}
 
     DEFAULT_TEAMS = {
@@ -38,13 +40,12 @@ export class TeamService {
                 if (returningRows.length) {
                     const teamId = insertTeamRes.data.insert_team.returning[0].id;
 
-                    // @TODO: Change Hardcoded project color ID
                     const insertDefaultProject = `mutation {
                         insert_project_v2(
                             objects: [
                                 {
                                     name: "any",
-                                    project_color_id: "a642f337-9082-4f64-8ace-1d0e99fa7258",
+                                    project_color_id: "${this.projectColorService.DEFAULT_COLOR_IDS.GREEN}",
                                     team_id: "${teamId}"
                                 }
                             ]
@@ -92,7 +93,7 @@ export class TeamService {
                     );
                 } else {
                     reject({
-                        error: 'Failed to create association',
+                        message: 'Failed to create association',
                     });
                 }
             });
@@ -170,7 +171,7 @@ export class TeamService {
                                     );
                             } else {
                                 reject({
-                                    error: alreadyMember ? 'User already in team' : 'Not Authorized',
+                                    message: alreadyMember ? 'User already in team' : 'Not Authorized',
                                 });
                             }
                         },
