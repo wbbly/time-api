@@ -275,11 +275,11 @@ export class TeamService {
                         id
                         username
                         email
-                        is_active
                     }
                     role_collaboration{
                         title
                     }
+                    is_active
                 }
             }
         }

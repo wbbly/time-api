@@ -287,7 +287,7 @@ export class UserService {
     ): Promise<AxiosResponse | AxiosError> {
         const { username, email, isActive, teamId, roleName } = data;
 
-        let roleId =
+        const roleId =
             roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
                 ? this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
                 : this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER;
@@ -295,20 +295,19 @@ export class UserService {
         const query = `mutation {
             update_user(
                 where: {
-                  id: {_eq: "${id}"},
-                  user_teams: {team_id: {_eq: "${teamId}"}}
+                    id: {_eq: "${id}"},
+                    user_teams: {team_id: {_eq: "${teamId}"}}
                 },
-                   
                 _set: {
                     username: "${username}"
-                    email: "${email}",
-                    is_active: ${isActive}
-                }){
-                    returning{
-                      id 
-                    }
-                  }
-                }`;
+                    email: "${email}"
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
 
         const updateTeamRoleQuery = `mutation{
             update_user_team(
@@ -318,9 +317,10 @@ export class UserService {
                 },
                 _set: {
                     role_collaboration_id: "${roleId}"
+                    is_active: ${isActive}
                 }
             ) {
-                returning{
+                returning {
                     id
                 }
             }
