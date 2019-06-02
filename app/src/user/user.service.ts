@@ -322,6 +322,7 @@ export class UserService {
             ) {
                 returning {
                     id
+                    current_team
                 }
             }
         }
@@ -330,9 +331,57 @@ export class UserService {
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    this.httpRequestsService.request(updateTeamRoleQuery).subscribe((res: AxiosResponse) => {
-                        resolve(res);
-                    });
+                    this.httpRequestsService.request(updateTeamRoleQuery).subscribe(
+                        async (updateTeamRoleQueryRes: AxiosResponse) => {
+                            const returningRows = updateTeamRoleQueryRes.data.update_user_team.returning;
+                            if (returningRows.length) {
+                                const currentTeam = returningRows[0].current_team;
+
+                                if (currentTeam && !isActive) {
+                                    try {
+                                        const ownerUserTeams = await this.teamService.getOwnerUserTeams(id);
+                                        const teamList = ownerUserTeams.data.team;
+                                        if (teamList.length) {
+                                            const lastOwnerTeam = teamList[0];
+                                            await this.teamService.switchTeam(id, lastOwnerTeam.id);
+                                            resolve(updateTeamRoleQueryRes);
+                                        }
+                                    } catch (error) {
+                                        const resetCurrentTeamQuery = `mutation{
+                                            update_user_team(
+                                                where: {
+                                                    user_id: { _eq: "${id}"},
+                                                    team_id: { _eq: "${teamId}"}
+                                                },
+                                                _set: {
+                                                    current_team: false
+                                                }
+                                            ) {
+                                                returning {
+                                                    id
+                                                }
+                                            }
+                                        }
+                                        `;
+
+                                        this.httpRequestsService
+                                            .request(resetCurrentTeamQuery)
+                                            .subscribe(
+                                                (resetCurrentTeamQueryRes: AxiosResponse) =>
+                                                    resolve(resetCurrentTeamQueryRes),
+                                                (resetCurrentTeamQueryError: AxiosError) =>
+                                                    reject(resetCurrentTeamQueryError)
+                                            );
+                                    }
+                                } else {
+                                    resolve(updateTeamRoleQueryRes);
+                                }
+                            } else {
+                                resolve(updateTeamRoleQueryRes);
+                            }
+                        },
+                        (updateTeamRoleQueryError: AxiosError) => reject(updateTeamRoleQueryError)
+                    );
                 },
                 (error: AxiosError) => reject(error)
             );

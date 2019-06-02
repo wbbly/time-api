@@ -335,6 +335,23 @@ export class TeamService {
         });
     }
 
+    async getOwnerUserTeams(userId: string): Promise<AxiosResponse> {
+        const query = `{
+            team (where: {owner_id: {_eq: "${userId}"}}, order_by: {created_at: desc}) {
+                id
+            }
+        }
+        `;
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe(
+                    (queryRes: AxiosResponse) => resolve(queryRes),
+                    (queryError: AxiosError) => reject(queryError)
+                );
+        });
+    }
+
     async switchTeam(userId: string, teamId: string) {
         // 1) Set all teams which user posess to false
         // 2) Set current_team of teamId to true
