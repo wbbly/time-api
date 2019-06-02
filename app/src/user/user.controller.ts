@@ -56,6 +56,8 @@ export class UserController {
         if (user) {
             if (await this.userService.compareHash(body.password, user.password)) {
                 delete user.password;
+                user['appVersion'] = 'v0.0.1'; // @TODO: replace with real application version
+
                 return res.status(HttpStatus.OK).json({ user });
             }
         }
