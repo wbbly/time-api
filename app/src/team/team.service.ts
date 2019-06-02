@@ -23,7 +23,8 @@ export class TeamService {
             insert_team(
                 objects: [
                     {
-                        name: "${teamName}"
+                        name: "${teamName}",
+                        owner_id: "${userId}"
                     }
                 ]
             ) {
