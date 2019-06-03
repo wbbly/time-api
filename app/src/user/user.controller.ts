@@ -197,9 +197,11 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-admin-id header is required!' });
         }
 
+        const adminId = header['x-admin-id'];
+
         let userIsAdmin = false;
         try {
-            userIsAdmin = await this.userService.checkUserIsAdmin(header['x-admin-id']);
+            userIsAdmin = await this.userService.checkUserIsAdmin(adminId);
         } catch (error) {
             console.log(error);
         }
@@ -229,7 +231,7 @@ export class UserController {
         });
 
         try {
-            const updateUserRes = await this.userService.updateUser(param.id, userData);
+            const updateUserRes = await this.userService.updateUser(adminId, param.id, userData);
 
             return res.status(HttpStatus.OK).json(updateUserRes);
         } catch (err) {

@@ -276,7 +276,8 @@ export class UserService {
     }
 
     async updateUser(
-        id: string,
+        adminId: string,
+        userId: string,
         data: {
             username: string;
             email: string;
@@ -295,7 +296,7 @@ export class UserService {
         const query = `mutation {
             update_user(
                 where: {
-                    id: {_eq: "${id}"},
+                    id: {_eq: "${userId}"},
                     user_teams: {team_id: {_eq: "${teamId}"}}
                 },
                 _set: {
@@ -312,7 +313,7 @@ export class UserService {
         const updateTeamRoleQuery = `mutation{
             update_user_team(
                 where: {
-                    user_id: { _eq: "${id}"},
+                    user_id: { _eq: "${userId}"},
                     team_id: { _eq: "${teamId}"}
                 },
                 _set: {
@@ -328,7 +329,29 @@ export class UserService {
         }
         `;
 
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            let ownTeamList = [];
+            try {
+                const ownerUserTeams = await this.teamService.getOwnerUserTeams(userId);
+                ownTeamList = ownerUserTeams.data.team;
+                for (const ownTeam of ownTeamList) {
+                    if (ownTeam.id === teamId && roleId === this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER) {
+                        if (adminId === userId) {
+                            return reject({
+                                message: "You can't be able to change the role in your own team",
+                            });
+                        } else {
+                            return reject({
+                                message: "You can't be able to change the team owner's role",
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                const error: AxiosError = e;
+                return reject(error);
+            }
+
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     this.httpRequestsService.request(updateTeamRoleQuery).subscribe(
@@ -338,19 +361,15 @@ export class UserService {
                                 const currentTeam = returningRows[0].current_team;
 
                                 if (currentTeam && !isActive) {
-                                    try {
-                                        const ownerUserTeams = await this.teamService.getOwnerUserTeams(id);
-                                        const teamList = ownerUserTeams.data.team;
-                                        if (teamList.length) {
-                                            const lastOwnerTeam = teamList[0];
-                                            await this.teamService.switchTeam(id, lastOwnerTeam.id);
-                                            resolve(updateTeamRoleQueryRes);
-                                        }
-                                    } catch (error) {
+                                    if (ownTeamList.length) {
+                                        const lastOwnerTeam = ownTeamList[0];
+                                        await this.teamService.switchTeam(userId, lastOwnerTeam.id);
+                                        resolve(updateTeamRoleQueryRes);
+                                    } else {
                                         const resetCurrentTeamQuery = `mutation{
                                             update_user_team(
                                                 where: {
-                                                    user_id: { _eq: "${id}"},
+                                                    user_id: { _eq: "${userId}"},
                                                     team_id: { _eq: "${teamId}"}
                                                 },
                                                 _set: {
