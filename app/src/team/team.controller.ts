@@ -98,12 +98,12 @@ export class TeamController {
     }
 
     @Patch('rename')
-    async renameTeam(@Response() res: any, @Body() body: { userId: string; teamId: string; newName: string }) {
-        if (!(body && body.userId && body.teamId && body.newName)) {
+    async renameTeam(@Response() res: any, @Body() body: { teamId: string; newName: string }) {
+        if (!(body && body.teamId && body.newName)) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID, Team ID & New Team Name required' });
         }
         try {
-            const renamedTeam = await this.teamService.renameTeam(body.userId, body.teamId, body.newName);
+            const renamedTeam = await this.teamService.renameTeam(body.teamId, body.newName);
             return res.status(HttpStatus.OK).json(renamedTeam);
         } catch (err) {
             const error: AxiosError = err;

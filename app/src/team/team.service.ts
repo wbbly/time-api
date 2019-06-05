@@ -413,32 +413,58 @@ export class TeamService {
         });
     }
 
-    async renameTeam(userId: string, teamId: string, newName: string) {
-        const newSlug = slugify(`${userId}-${newName}`, { lower: true });
-        const renameTeamQuery = `mutation{
-            update_team(
+    async renameTeam(teamId: string, newName: string) {
+        const getTeamQuery = `mutation{
+            team(
                 where: {
                     id: { _eq: "${teamId}" }
                 }
-                _set: {
-                    name: "${newName}"
-                    slug: "${newSlug}"
-                }
             ) {
-                returning {
-                    id
-                    name
-                }
+                id
+                owner_id
             }
         }
         `;
+
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(renameTeamQuery)
-                .subscribe(
-                    (renameTeamRes: AxiosResponse) => resolve(renameTeamRes),
-                    (renameTeamError: AxiosError) => reject(renameTeamError)
-                );
+            this.httpRequestsService.request(getTeamQuery).subscribe(
+                (getTeamQueryRes: AxiosResponse) => {
+                    const team = getTeamQueryRes.data.team[0];
+                    if (!team) {
+                        reject({
+                            message: 'An error occured while renaming the team.',
+                        });
+                    }
+
+                    const ownerId = team.owner_id;
+                    const newSlug = slugify(`${ownerId}-${newName}`, { lower: true });
+                    const renameTeamQuery = `mutation{
+                            update_team(
+                                where: {
+                                    id: { _eq: "${teamId}" }
+                                }
+                                _set: {
+                                    name: "${newName}"
+                                    slug: "${newSlug}"
+                                }
+                            ) {
+                                returning {
+                                    id
+                                    name
+                                }
+                            }
+                        }
+                        `;
+
+                    this.httpRequestsService
+                        .request(renameTeamQuery)
+                        .subscribe(
+                            (renameTeamRes: AxiosResponse) => resolve(renameTeamRes),
+                            (renameTeamError: AxiosError) => reject(renameTeamError)
+                        );
+                },
+                (getTeamQueryError: AxiosError) => reject(getTeamQueryError)
+            );
         });
     }
 
