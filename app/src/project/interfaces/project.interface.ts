@@ -8,6 +8,7 @@ export interface Project {
     isActive?: boolean;
     projectColorId?: string;
     team_id?: string;
+    slug?: string;
     createdAt?: string;
     projectColor?: ProjectColor;
     timer?: Timer[];

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
+import slugify from 'slugify';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TimerService } from '../timer/timer.service';
@@ -224,15 +225,20 @@ export class ProjectService {
     }
 
     async addProject(project: Project, userId: string) {
-        const { name, projectColorId } = project;
+        let { name } = project;
+        name = name.trim();
+        const { projectColorId } = project;
 
-        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
-        let currentTeamId = currentTeamData.data.user_team[0].team.id;
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+        const currentTeamSlug = currentTeamData.data.user_team[0].team.slug;
+        const slug = `${currentTeamSlug}-${slugify(name, { lower: true })}`;
         const query = `mutation {
             insert_project_v2(
                 objects: [
                     {
-                        name: "${name.toLowerCase().trim()}",
+                        name: "${name}",
+                        slug: "${slug}",
                         project_color_id: "${projectColorId}",
                         team_id: "${currentTeamId}"
                     }
@@ -272,14 +278,21 @@ export class ProjectService {
         });
     }
 
-    updateProjectById(id: string, project: Project) {
-        const { name, projectColorId } = project;
+    async updateProjectById(id: string, project: Project, userId: string) {
+        let { name } = project;
+        name = name.trim();
+        const { projectColorId } = project;
+
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamSlug = currentTeamData.data.user_team[0].team.slug;
+        const slug = `${currentTeamSlug}-${slugify(name, { lower: true })}`;
 
         const query = `mutation {
             update_project_v2(
                 where: {id: {_eq: "${id}"}},
                 _set: {
-                    name: "${name.toLowerCase().trim()}",
+                    name: "${name}",
+                    slug: "${slug}",
                     project_color_id: "${projectColorId}"
                 }
             ) {

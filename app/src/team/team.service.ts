@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
 import * as uuid from 'uuid';
+import slugify from 'slugify';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { ProjectColorService } from '../project-color/project-color.service';
+import { reject } from 'bluebird';
 
 @Injectable()
 export class TeamService {
@@ -19,11 +21,13 @@ export class TeamService {
     };
 
     async createTeam(userId: string, teamName: string = this.DEFAULT_TEAMS.MY_TEAM) {
+        const teamSlug = slugify(`${userId}-${teamName}`, { lower: true });
         const insertTeamQuery = `mutation {
             insert_team(
                 objects: [
                     {
                         name: "${teamName}",
+                        slug: "${teamSlug}",
                         owner_id: "${userId}"
                     }
                 ]
@@ -35,13 +39,14 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(insertTeamQuery).subscribe((insertTeamRes: AxiosResponse) => {
-                const returningRows = insertTeamRes.data.insert_team.returning;
+            this.httpRequestsService.request(insertTeamQuery).subscribe(
+                (insertTeamRes: AxiosResponse) => {
+                    const returningRows = insertTeamRes.data.insert_team.returning;
 
-                if (returningRows.length) {
-                    const teamId = insertTeamRes.data.insert_team.returning[0].id;
+                    if (returningRows.length) {
+                        const teamId = insertTeamRes.data.insert_team.returning[0].id;
 
-                    const insertDefaultProject = `mutation {
+                        const insertDefaultProject = `mutation {
                         insert_project_v2(
                             objects: [
                                 {
@@ -57,8 +62,8 @@ export class TeamService {
                         }
                     }`;
 
-                    // Linking user with the team
-                    const insertUserTeamQuery = `mutation {
+                        // Linking user with the team
+                        const insertUserTeamQuery = `mutation {
                             insert_user_team(
                                 objects: [
                                     {
@@ -76,28 +81,30 @@ export class TeamService {
                             }
                         }`;
 
-                    this.httpRequestsService.request(insertDefaultProject).subscribe(
-                        (insertProjectRes: AxiosResponse) => {
-                            this.httpRequestsService.request(insertUserTeamQuery).subscribe(
-                                async (insertUserTeamRes: AxiosResponse) => {
-                                    try {
-                                        await this.switchTeam(userId, teamId);
-                                        resolve(insertUserTeamRes);
-                                    } catch (switchTeamError) {
-                                        reject(switchTeamError);
-                                    }
-                                },
-                                (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
-                            );
-                        },
-                        (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
-                    );
-                } else {
-                    reject({
-                        message: 'Failed to create association',
-                    });
-                }
-            });
+                        this.httpRequestsService.request(insertDefaultProject).subscribe(
+                            (insertProjectRes: AxiosResponse) => {
+                                this.httpRequestsService.request(insertUserTeamQuery).subscribe(
+                                    async (insertUserTeamRes: AxiosResponse) => {
+                                        try {
+                                            await this.switchTeam(userId, teamId);
+                                            resolve(insertUserTeamRes);
+                                        } catch (switchTeamError) {
+                                            reject(switchTeamError);
+                                        }
+                                    },
+                                    (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                                );
+                            },
+                            (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                        );
+                    } else {
+                        reject({
+                            message: 'Failed to create association',
+                        });
+                    }
+                },
+                (insertTeamError: AxiosError) => reject(insertTeamError)
+            );
         });
     }
 
@@ -244,6 +251,7 @@ export class TeamService {
                 team {
                     id
                     name
+                    slug
                 }
                 role_collaboration_id
                 role_collaboration {
@@ -401,7 +409,8 @@ export class TeamService {
         });
     }
 
-    async renameTeam(teamId: string, newName: string) {
+    async renameTeam(userId: string, teamId: string, newName: string) {
+        const newSlug = slugify(`${userId}-${newName}`, { lower: true });
         const renameTeamQuery = `mutation{
             update_team(
                 where: {
@@ -409,6 +418,7 @@ export class TeamService {
                 }
                 _set: {
                     name: "${newName}"
+                    slug: "${newSlug}"
                 }
             ) {
                 returning {

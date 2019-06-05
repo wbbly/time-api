@@ -179,13 +179,23 @@ export class ProjectController {
     }
 
     @Patch(':id')
-    async updateProjectById(@Param() param: any, @Response() res: any, @Body() body: Project) {
-        if (!(body && body.name && body.projectColorId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
+    async updateProjectById(
+        @Param() param: any,
+        @Response() res: any,
+        @Body() body: { project: Project; userId: string }
+    ) {
+        if (!(body && body.userId && body.project.name && body.project.projectColorId)) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'User ID, Project name and projectColorId are required!' });
         }
 
         try {
-            const updateProjectByIdRes = await this.projectService.updateProjectById(param.id, body);
+            const updateProjectByIdRes = await this.projectService.updateProjectById(
+                param.id,
+                body.project,
+                body.userId
+            );
             return res.status(HttpStatus.OK).json(updateProjectByIdRes);
         } catch (e) {
             const error: AxiosError = e;
