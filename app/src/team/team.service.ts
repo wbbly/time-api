@@ -44,13 +44,17 @@ export class TeamService {
                     const returningRows = insertTeamRes.data.insert_team.returning;
 
                     if (returningRows.length) {
+                        const projectName = 'any';
+
                         const teamId = insertTeamRes.data.insert_team.returning[0].id;
+                        const projectSlug = `${teamSlug}-${slugify(projectName, { lower: true })}`;
 
                         const insertDefaultProject = `mutation {
                         insert_project_v2(
                             objects: [
                                 {
-                                    name: "any",
+                                    name: "${projectName}",
+                                    slug: "${projectSlug}",
                                     project_color_id: "${this.projectColorService.DEFAULT_COLOR_IDS.GREEN}",
                                     team_id: "${teamId}"
                                 }
