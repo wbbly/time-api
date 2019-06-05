@@ -414,7 +414,7 @@ export class TeamService {
     }
 
     async renameTeam(teamId: string, newName: string) {
-        const getTeamQuery = `mutation{
+        const getTeamQuery = `{
             team(
                 where: {
                     id: { _eq: "${teamId}" }
