@@ -28,13 +28,13 @@
     },
     "dependencies": {
         "@nest-modules/mailer": "1.0.4",
-        "@nestjs/common": "6.0.2",
-        "@nestjs/core": "6.0.2",
-        "@nestjs/graphql": "6.0.2",
-        "@nestjs/platform-express": "6.0.2",
-        "@nestjs/platform-socket.io": "6.0.2",
-        "@nestjs/websockets": "6.0.2",
+        "@nestjs/common": "6.3.0",
+        "@nestjs/core": "6.3.0",
+        "@nestjs/platform-express": "6.3.0",
+        "@nestjs/platform-socket.io": "6.3.0",
+        "@nestjs/websockets": "6.3.0",
         "apollo-server-express": "2.4.8",
+        "axios": "0.19.0",
         "bcrypt": "^3.0.5",
         "dotenv": "^7.0.0",
         "fs-extra": "^7.0.1",
@@ -53,7 +53,7 @@
         "uuid": "^3.3.2"
     },
     "devDependencies": {
-        "@nestjs/testing": "6.0.2",
+        "@nestjs/testing": "6.3.0",
         "@types/bcrypt": "^3.0.0",
         "@types/dotenv": "^6.1.0",
         "@types/express": "4.16.1",
