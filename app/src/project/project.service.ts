@@ -231,8 +231,7 @@ export class ProjectService {
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
-        const currentTeamSlug = currentTeamData.data.user_team[0].team.slug;
-        const slug = `${currentTeamSlug}-${slugify(name, { lower: true })}`;
+        const slug = `${currentTeamId}-${slugify(name, { lower: true })}`;
         const query = `mutation {
             insert_project_v2(
                 objects: [
@@ -284,8 +283,8 @@ export class ProjectService {
         const { projectColorId } = project;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
-        const currentTeamSlug = currentTeamData.data.user_team[0].team.slug;
-        const slug = `${currentTeamSlug}-${slugify(name, { lower: true })}`;
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+        const slug = `${currentTeamId}-${slugify(name, { lower: true })}`;
 
         const query = `mutation {
             update_project_v2(

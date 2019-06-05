@@ -47,7 +47,7 @@ export class TeamService {
                         const projectName = 'any';
 
                         const teamId = insertTeamRes.data.insert_team.returning[0].id;
-                        const projectSlug = `${teamSlug}-${slugify(projectName, { lower: true })}`;
+                        const projectSlug = `${teamId}-${slugify(projectName, { lower: true })}`;
 
                         const insertDefaultProject = `mutation {
                         insert_project_v2(
