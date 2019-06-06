@@ -66,6 +66,21 @@ export class UserService {
         });
     }
 
+    async getUserByResetPasswordHash(token: string, isActive: boolean = true): Promise<User | AxiosError> {
+        const whereStatements = [`reset_password_hash: { _eq: "${token}" }`];
+
+        if (isActive) {
+            whereStatements.push(`is_active: { _eq: true } `);
+        }
+
+        return new Promise((resolve, reject) => {
+            this.getUserSecondaryData(whereStatements.join(',')).then(
+                (res: User) => resolve(res),
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
     async getUserPrimaryData(whereStatement: string): Promise<any | null | AxiosError> {
         const query = `{
             user(where: {${whereStatement}}) {
@@ -432,6 +447,37 @@ export class UserService {
                 .subscribe(
                     (resetPasswordResponse: AxiosResponse) => resolve(resetPasswordResponse),
                     (resetPasswordError: AxiosError) => reject(resetPasswordError)
+                );
+        });
+    }
+
+    async setPassword(resetPasswordHash: string, password: string): Promise<AxiosResponse> {
+        const passwordHash = await this.getHash(password);
+
+        return new Promise((resolve, reject) => {
+            const setPasswordQuery = `mutation {
+                update_user(
+                    where: {
+                        reset_password_hash: {_eq: "${resetPasswordHash}"}
+                    },
+                    _set: {
+                        reset_password_hash: null
+                        password: "${passwordHash}"
+                    }
+                ) {
+                    returning {
+                        id
+                        email
+                    }
+                }
+            }
+            `;
+
+            this.httpRequestsService
+                .request(setPasswordQuery)
+                .subscribe(
+                    (setPasswordResponse: AxiosResponse) => resolve(setPasswordResponse),
+                    (setPasswordError: AxiosError) => reject(setPasswordError)
                 );
         });
     }

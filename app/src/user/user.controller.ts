@@ -86,6 +86,53 @@ export class UserController {
             .json({ message: 'An error occurred while sending a password reset email!' });
     }
 
+    @Post('set-password')
+    async setPassword(@Response() res: any, @Body() body: { token: string; password: string }) {
+        if (!(body && body.token && body.password)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Token and password are required!' });
+        }
+
+        let user = null;
+        try {
+            user = await this.userService.getUserByResetPasswordHash(body.token);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (user) {
+            let setPasswordData = null;
+            try {
+                setPasswordData = await this.userService.setPassword(body.token, body.password);
+            } catch (error) {
+                console.log(error);
+            }
+
+            if (setPasswordData) {
+                // Send an email:
+                const to = setPasswordData.data.update_user.returning[0].email;
+                const subject = `You've been successfully reset the password!`;
+                const html = `
+                Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+                <br /><br />
+
+                <b>Email:</b> ${to}<br />
+                <b>Password:</b> ${body.password}
+
+                <br /><br />
+                <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                <br />
+                © 2019 All rights reserved.
+            `;
+                this.mailService.send(to, subject, html);
+                return res.status(HttpStatus.OK).json({ message: "You've been successfully reset the password!" });
+            }
+        }
+
+        return res
+            .status(HttpStatus.FORBIDDEN)
+            .json({ message: 'Sorry, something went wrong. Please try again later!' });
+    }
+
     @Post('login')
     async loginUser(@Response() res: any, @Body() body: User) {
         if (!(body && body.email && body.password)) {
