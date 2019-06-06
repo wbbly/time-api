@@ -44,7 +44,7 @@ export class UserService {
         }
 
         return new Promise((resolve, reject) => {
-            this.getUserPrimaryData(whereStatements.join(',')).then(
+            this.getUserData(whereStatements.join(',')).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
@@ -59,7 +59,7 @@ export class UserService {
         }
 
         return new Promise((resolve, reject) => {
-            this.getUserSecondaryData(whereStatements.join(',')).then(
+            this.getUserData(whereStatements.join(',')).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
@@ -74,87 +74,20 @@ export class UserService {
         }
 
         return new Promise((resolve, reject) => {
-            this.getUserSecondaryData(whereStatements.join(',')).then(
+            this.getUserData(whereStatements.join(',')).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
         });
     }
 
-    async getUserPrimaryData(whereStatement: string): Promise<any | null | AxiosError> {
+    async getUserData(whereStatement: string): Promise<any | null | AxiosError> {
         const query = `{
             user(where: {${whereStatement}}) {
                 id
                 username
                 email
                 password
-                is_active
-                timezone_offset
-                user_teams(where: {
-                    current_team: {
-                        _eq: true
-                    },
-                }){
-                    role_collaboration{
-                        title
-                    }
-                    role_collaboration_id
-                }
-            }
-        }
-        `;
-
-        let user: any = null;
-
-        return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
-                (res: AxiosResponse) => {
-                    const data = res.data.user.shift();
-                    if (data) {
-                        const {
-                            id: userId,
-                            username,
-                            email,
-                            password,
-                            is_active: isActive,
-                            user_teams: userTeams,
-                            timezone_offset: timezoneOffset,
-                        } = data;
-
-                        const {
-                            role_collaboration: roleCollaboration,
-                            role_collaboration_id: roleCollaborationId,
-                        } = userTeams[0];
-                        const { title: roleCollaborationTitle } = roleCollaboration;
-                        user = {
-                            id: userId,
-                            username,
-                            email,
-                            password,
-                            isActive,
-                            roleCollaborationId,
-                            roleCollaboration: {
-                                title: roleCollaborationTitle,
-                            },
-                            timezoneOffset,
-                        };
-                    }
-
-                    resolve(user);
-                },
-                (error: AxiosError) => reject(error)
-            );
-        });
-    }
-
-    async getUserSecondaryData(whereStatement: string): Promise<any | null | AxiosError> {
-        const query = `{
-            user(where: {${whereStatement}}) {
-                id
-                username
-                email
-                password
-                is_active
                 timezone_offset
             }
         }
@@ -167,21 +100,13 @@ export class UserService {
                 (res: AxiosResponse) => {
                     const data = res.data.user.shift();
                     if (data) {
-                        const {
-                            id: userId,
-                            username,
-                            email,
-                            password,
-                            is_active: isActive,
-                            timezone_offset: timezoneOffset,
-                        } = data;
+                        const { id: userId, username, email, password, timezone_offset: timezoneOffset } = data;
 
                         user = {
                             id: userId,
                             username,
                             email,
                             password,
-                            isActive,
                             timezoneOffset,
                         };
                     }
@@ -214,37 +139,24 @@ export class UserService {
         });
     }
 
-    async checkUserIsAdmin(id: string): Promise<boolean> {
+    async getUserDataByTeam(id: string, teamId: string): Promise<AxiosResponse> {
         const query = `{
-            user(where: 
-              { 
-                id: { _eq: "${id}" },
-                
-              }),  {
-                          user_teams(where: {
-                            current_team: { _eq: true }
-                          }){
-                              role_collaboration_id
-                              role_collaboration{
-                                  title
-                              }
-                          }
-                      }
-                  }
+            user(where: {id: {_eq: "${id}"}}) {
+                user_teams(where: {team_id: {_eq: "${teamId}"}}) {
+                    is_active
+                    role_collaboration_id
+                    role_collaboration {
+                        title
+                    }
+                }
+            }
+        }
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
-                (res: AxiosResponse) => {
-                    if (res.data.user.length > 0) {
-                        const admin =
-                            res.data.user[0].user_teams[0].role_collaboration.title ===
-                                this.roleCollaborationService.ROLES.ROLE_ADMIN || false;
-                        resolve(admin);
-                    } else resolve(false);
-                },
-                (error: AxiosError) => reject(error)
-            );
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
@@ -293,16 +205,16 @@ export class UserService {
 
     async updateUser(
         adminId: string,
+        teamId: string,
         userId: string,
         data: {
             username: string;
             email: string;
             isActive: boolean;
             roleName: string;
-            teamId: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, isActive, teamId, roleName } = data;
+        const { username, email, isActive, roleName } = data;
 
         const roleId =
             roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
@@ -359,6 +271,16 @@ export class UserService {
                         } else {
                             return reject({
                                 message: "You can't be able to change the team owner's role",
+                            });
+                        }
+                    } else if (ownTeam.id === teamId && isActive === false) {
+                        if (adminId === userId) {
+                            return reject({
+                                message: "You can't be able to set your account as inactive in your own team",
+                            });
+                        } else {
+                            return reject({
+                                message: "You can't be able to set team owner's account as inactive",
                             });
                         }
                     }

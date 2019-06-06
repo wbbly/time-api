@@ -3,6 +3,7 @@ import { AxiosError } from 'axios';
 
 import { UserService } from '../user/user.service';
 import { TeamService } from '../team/team.service';
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { MailService } from '../core/mail/mail.service';
 import { ConfigService } from '../core/config/config.service';
 import { User } from './interfaces/user.interface';
@@ -12,6 +13,7 @@ export class UserController {
     constructor(
         private readonly userService: UserService,
         private readonly teamService: TeamService,
+        private readonly roleCollaborationService: RoleCollaborationService,
         private readonly configService: ConfigService,
         private readonly mailService: MailService
     ) {}
@@ -345,23 +347,33 @@ export class UserController {
 
     @Patch(':id')
     async updateUser(@Headers() header: any, @Param() param: any, @Response() res: any, @Body() body: any) {
-        if (!(header && header['x-admin-id'])) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-admin-id header is required!' });
+        if (!(header && header['x-user-id'] && header['x-team-id'])) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id and x-team-id headers are required!' });
         }
 
-        const adminId = header['x-admin-id'];
+        body = body || {};
+
+        const userId = header['x-user-id'];
+        const teamId = header['x-team-id'];
 
         let userIsAdmin = false;
+        let userIsActive = false;
         try {
-            userIsAdmin = await this.userService.checkUserIsAdmin(adminId);
+            const userDataByTeamData = await this.userService.getUserDataByTeam(userId, teamId);
+            userIsAdmin =
+                userDataByTeamData.data.user[0].user_teams[0].role_collaboration.title ===
+                this.roleCollaborationService.ROLES.ROLE_ADMIN;
+            userIsActive = userDataByTeamData.data.user[0].user_teams[0].is_active;
         } catch (error) {
             console.log(error);
         }
 
         if (!userIsAdmin) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: "You don't have a permissions to update the user!" });
+            if (param.id !== userId) {
+                return res
+                    .status(HttpStatus.FORBIDDEN)
+                    .json({ message: "You don't have a permissions to update the user!" });
+            }
         }
 
         let user = null;
@@ -375,15 +387,32 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
         }
 
-        const { username, email, isActive, teamId, roleName } = user;
-        const userData: any = { username, email, isActive, teamId, roleName };
+        let allowedDataToUpdate: any = {
+            username: body.username,
+            email: body.email,
+            isActive: body.isActive,
+            roleName: body.roleName,
+        };
+        if (!userIsAdmin) {
+            allowedDataToUpdate = { username: body.username, email: body.email };
+        }
+
+        const { username, email } = user;
+        const userData = {
+            username,
+            email,
+            isActive: userIsActive,
+            roleName: userIsAdmin
+                ? this.roleCollaborationService.ROLES.ROLE_ADMIN
+                : this.roleCollaborationService.ROLES.ROLE_MEMBER,
+        };
         Object.keys(userData).forEach(prop => {
-            const value = body && body[prop];
+            const value = allowedDataToUpdate[prop];
             userData[prop] = typeof value === 'undefined' || value === null ? userData[prop] : value;
         });
 
         try {
-            const updateUserRes = await this.userService.updateUser(adminId, param.id, userData);
+            const updateUserRes = await this.userService.updateUser(userId, teamId, param.id, userData);
 
             return res.status(HttpStatus.OK).json(updateUserRes);
         } catch (err) {
