@@ -149,7 +149,7 @@ export class UserController {
 
         let user = null;
         try {
-            user = await this.userService.getUserById(header['x-user-id']);
+            user = await this.userService.getUserById(header['x-user-id'], true);
         } catch (error) {
             console.log(error);
         }
