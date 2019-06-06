@@ -40,6 +40,52 @@ export class UserController {
         }
     }
 
+    @Post('reset-password')
+    async resetPassword(@Response() res: any, @Body() body: { email: string }) {
+        if (!(body && body.email)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email are required!' });
+        }
+
+        let user = null;
+        try {
+            user = await this.userService.getUserByEmail(body.email);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (user) {
+            let resetPasswordData = null;
+            try {
+                resetPasswordData = await this.userService.resetPassword(body.email);
+            } catch (error) {
+                console.log(error);
+            }
+
+            if (resetPasswordData) {
+                // Send an email:
+                const to = body.email;
+                const subject = `You've been requested the reset password!`;
+                const html = `
+                Follow the link below to reset the password:
+                <br /><br />
+                ${this.configService.get('APP_URL')}/reset-password?${
+                    resetPasswordData.data.update_user.returning[0].reset_password_hash
+                }
+                <br /><br />
+                <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                <br />
+                © 2019 All rights reserved.
+            `;
+                this.mailService.send(to, subject, html);
+                return res.status(HttpStatus.OK).json({ message: 'Check the mailbox for a password reset email!' });
+            }
+        }
+
+        return res
+            .status(HttpStatus.FORBIDDEN)
+            .json({ message: 'An error occurred while sending a password reset email!' });
+    }
+
     @Post('login')
     async loginUser(@Response() res: any, @Body() body: User) {
         if (!(body && body.email && body.password)) {

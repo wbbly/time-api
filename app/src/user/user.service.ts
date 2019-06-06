@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
+import * as uuid from 'uuid';
 import * as bcrypt from 'bcrypt';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
@@ -404,6 +405,34 @@ export class UserService {
                 },
                 (error: AxiosError) => reject(error)
             );
+        });
+    }
+
+    async resetPassword(email: string): Promise<AxiosResponse> {
+        return new Promise((resolve, reject) => {
+            const resetPasswordQuery = `mutation {
+                update_user(
+                    where: {
+                        email: {_eq: "${email}"}
+                    },
+                    _set: {
+                        reset_password_hash: "${uuid.v4()}"
+                    }
+                ) {
+                    returning {
+                        id
+                        reset_password_hash
+                    }
+                }
+            }
+            `;
+
+            this.httpRequestsService
+                .request(resetPasswordQuery)
+                .subscribe(
+                    (resetPasswordResponse: AxiosResponse) => resolve(resetPasswordResponse),
+                    (resetPasswordError: AxiosError) => reject(resetPasswordError)
+                );
         });
     }
 

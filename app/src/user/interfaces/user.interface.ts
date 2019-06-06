@@ -10,6 +10,7 @@ export interface User {
     roleId?: string;
     createdAt?: string;
     timezoneOffset?: number;
+    resetPasswordHash?: string;
     currentTimer?: TimerCurrentV2[];
     timer?: Timer[];
 }
