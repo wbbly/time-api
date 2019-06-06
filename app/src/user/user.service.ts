@@ -482,6 +482,36 @@ export class UserService {
         });
     }
 
+    async changePassword(userId: string, newPassword: string): Promise<AxiosResponse> {
+        const passwordHash = await this.getHash(newPassword);
+
+        return new Promise((resolve, reject) => {
+            const changePasswordQuery = `mutation {
+                update_user(
+                    where: {
+                        id: {_eq: "${userId}"}
+                    },
+                    _set: {
+                        password: "${passwordHash}"
+                    }
+                ) {
+                    returning {
+                        id
+                        email
+                    }
+                }
+            }
+            `;
+
+            this.httpRequestsService
+                .request(changePasswordQuery)
+                .subscribe(
+                    (changePasswordResponse: AxiosResponse) => resolve(changePasswordResponse),
+                    (changePasswordError: AxiosError) => reject(changePasswordError)
+                );
+        });
+    }
+
     async getHash(password: string | undefined): Promise<string> {
         return bcrypt.hash(password, this.salt);
     }

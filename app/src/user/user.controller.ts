@@ -133,6 +133,65 @@ export class UserController {
             .json({ message: 'Sorry, something went wrong. Please try again later!' });
     }
 
+    @Post('change-password')
+    async changePassword(
+        @Headers() header: any,
+        @Response() res: any,
+        @Body() body: { password: string; newPassword: string }
+    ) {
+        if (!(header && header['x-user-id'])) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+        }
+
+        if (!(body && body.password && body.newPassword)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Current and new passwords are required!' });
+        }
+
+        let user = null;
+        try {
+            user = await this.userService.getUserById(header['x-user-id']);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (user) {
+            if (await this.userService.compareHash(body.password, user.password)) {
+                let changePasswordData = null;
+                try {
+                    changePasswordData = await this.userService.changePassword(header['x-user-id'], body.newPassword);
+                } catch (error) {
+                    console.log(error);
+                }
+
+                if (changePasswordData) {
+                    // Send an email:
+                    const to = changePasswordData.data.update_user.returning[0].email;
+                    const subject = `You've been successfully changed the password!`;
+                    const html = `
+                    Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+                    <br /><br />
+
+                    <b>Email:</b> ${to}<br />
+                    <b>Password:</b> ${body.password}
+
+                    <br /><br />
+                    <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                    <br />
+                    © 2019 All rights reserved.
+                `;
+                    this.mailService.send(to, subject, html);
+                    return res
+                        .status(HttpStatus.OK)
+                        .json({ message: "You've been successfully changed the password!" });
+                }
+            } else {
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'Current password is wrong!' });
+            }
+        }
+
+        return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while changing a password!' });
+    }
+
     @Post('login')
     async loginUser(@Response() res: any, @Body() body: User) {
         if (!(body && body.email && body.password)) {
