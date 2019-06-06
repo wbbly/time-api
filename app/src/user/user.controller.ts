@@ -68,7 +68,7 @@ export class UserController {
                 const html = `
                 Follow the link below to reset the password:
                 <br /><br />
-                ${this.configService.get('APP_URL')}/reset-password?${
+                ${this.configService.get('APP_URL')}/reset-password?token=${
                     resetPasswordData.data.update_user.returning[0].reset_password_hash
                 }
                 <br /><br />
