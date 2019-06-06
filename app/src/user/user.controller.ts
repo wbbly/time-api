@@ -360,10 +360,13 @@ export class UserController {
         let userIsActive = false;
         try {
             const userDataByTeamData = await this.userService.getUserDataByTeam(userId, teamId);
-            userIsAdmin =
-                userDataByTeamData.data.user[0].user_teams[0].role_collaboration.title ===
-                this.roleCollaborationService.ROLES.ROLE_ADMIN;
-            userIsActive = userDataByTeamData.data.user[0].user_teams[0].is_active;
+            const userTeam = userDataByTeamData.data.user[0].user_teams[0];
+            if (!userTeam) {
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
+            }
+
+            userIsAdmin = userTeam.role_collaboration.title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
+            userIsActive = userTeam.is_active;
         } catch (error) {
             console.log(error);
         }
