@@ -1,21 +1,42 @@
-import { Controller, Get, Response, HttpStatus, Query, Post, Body, Patch, Param, Inject } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Response,
+    HttpStatus,
+    Query,
+    Post,
+    Body,
+    Patch,
+    Param,
+    UseGuards,
+    Headers,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AxiosError } from 'axios';
 
 import { TeamService } from '../team/team.service';
 import { ConfigService } from '../core/config/config.service';
+import { AuthService } from '../auth/auth.service';
 
 @Controller('team')
 export class TeamController {
-    constructor(private readonly teamService: TeamService, private readonly configService: ConfigService) {}
+    constructor(
+        private readonly teamService: TeamService,
+        private readonly configService: ConfigService,
+        private readonly authService: AuthService
+    ) {}
 
     @Get('current')
-    async currentTeam(@Response() res: any, @Query() params) {
-        if (!params.userId) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID needs to be specified.' });
+    @UseGuards(AuthGuard())
+    async currentTeam(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(params.userId);
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
             return res.status(HttpStatus.OK).json(currentTeamRes);
         } catch (err) {
             const error: AxiosError = err;
@@ -24,7 +45,8 @@ export class TeamController {
     }
 
     @Get('list')
-    async teamList(@Response() res: any) {
+    @UseGuards(AuthGuard())
+    async teamList(@Headers() headers: any, @Response() res: any) {
         try {
             const teamListRes = await this.teamService.getTeamList();
             return res.status(HttpStatus.OK).json(teamListRes);
@@ -35,7 +57,8 @@ export class TeamController {
     }
 
     @Get(':id/data')
-    async getTeamDataById(@Response() res: any, @Param() param: any) {
+    @UseGuards(AuthGuard())
+    async getTeamDataById(@Headers() headers: any, @Response() res: any, @Param() param: any) {
         try {
             const dataRes = await this.teamService.getTeamData(param.id);
             return res.status(HttpStatus.OK).json(dataRes);
@@ -46,7 +69,8 @@ export class TeamController {
     }
 
     @Get(':id/rolecheck/:userId')
-    async getTeamRole(@Response() res: any, @Param() param: any) {
+    @UseGuards(AuthGuard())
+    async getTeamRole(@Headers() headers: any, @Response() res: any, @Param() param: any) {
         try {
             const teamRoleResult = await this.teamService.getTeamUserRole(param.id, param.userId);
             return res.status(HttpStatus.OK).json(teamRoleResult);
@@ -57,7 +81,8 @@ export class TeamController {
     }
 
     @Get(':id/invite/:invitationId')
-    async acceptInvitation(@Response() res: any, @Param() param: any) {
+    @UseGuards(AuthGuard())
+    async acceptInvitation(@Headers() headers: any, @Response() res: any, @Param() param: any) {
         try {
             await this.teamService.acceptInvitation(param.id, param.invitationId);
         } catch (err) {
@@ -69,13 +94,19 @@ export class TeamController {
     }
 
     @Post('add')
-    async addTeam(@Response() res: any, @Body() body: { userId: string; teamName: string }) {
-        if (!(body && body.userId && body.teamName)) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID & Team Name required' });
+    @UseGuards(AuthGuard())
+    async addTeam(@Headers() headers: any, @Response() res: any, @Body() body: { teamName: string }) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!body.teamName) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Team Name required' });
         }
 
         try {
-            const createdTeam = await this.teamService.createTeam(body.userId, body.teamName);
+            const createdTeam = await this.teamService.createTeam(userId, body.teamName);
             return res.status(HttpStatus.CREATED).json(createdTeam);
         } catch (err) {
             const error: AxiosError = err;
@@ -84,12 +115,19 @@ export class TeamController {
     }
 
     @Patch('switch')
-    async switchTeam(@Response() res: any, @Body() body: { userId: string; teamId: string }) {
-        if (!(body && body.userId && body.teamId)) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID & Team ID required' });
+    @UseGuards(AuthGuard())
+    async switchTeam(@Headers() headers: any, @Response() res: any, @Body() body: { teamId: string }) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
+
+        if (!body.teamId) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Team ID required' });
+        }
+
         try {
-            const switchRes = await this.teamService.switchTeam(body.userId, body.teamId);
+            const switchRes = await this.teamService.switchTeam(userId, body.teamId);
             return res.status(HttpStatus.OK).json(switchRes);
         } catch (err) {
             const error: AxiosError = err;
@@ -98,10 +136,12 @@ export class TeamController {
     }
 
     @Patch('rename')
-    async renameTeam(@Response() res: any, @Body() body: { teamId: string; newName: string }) {
-        if (!(body && body.teamId && body.newName)) {
+    @UseGuards(AuthGuard())
+    async renameTeam(@Headers() headers: any, @Response() res: any, @Body() body: { teamId: string; newName: string }) {
+        if (!(body.teamId && body.newName)) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID, Team ID & New Team Name required' });
         }
+
         try {
             const renamedTeam = await this.teamService.renameTeam(body.teamId, body.newName);
             return res.status(HttpStatus.OK).json(renamedTeam);

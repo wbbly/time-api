@@ -1,22 +1,43 @@
-import { Controller, Get, Patch, Delete, Param, Response, HttpStatus, Body, Query, Headers } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Patch,
+    Delete,
+    Param,
+    Response,
+    HttpStatus,
+    Body,
+    Query,
+    Headers,
+    UseGuards,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AxiosError, AxiosResponse } from 'axios';
 
 import { TimerService } from './timer.service';
 import { TeamService } from '../team/team.service';
+import { AuthService } from '../auth/auth.service';
 import { Timer } from './interfaces/timer.interface';
 
 @Controller('timer')
 export class TimerController {
-    constructor(private readonly timerService: TimerService, private readonly teamService: TeamService) {}
+    constructor(
+        private readonly timerService: TimerService,
+        private readonly teamService: TeamService,
+        private readonly authService: AuthService
+    ) {}
 
     @Get('user-list')
-    async userTimerList(@Response() res: any, @Query() params) {
-        if (!(params && params.userId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameter userId is required!' });
+    @UseGuards(AuthGuard())
+    async userTimerList(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
         try {
-            const userTimerListRes = await this.timerService.getUserTimerList(params.userId);
+            const userTimerListRes = await this.timerService.getUserTimerList(userId);
             return res.status(HttpStatus.OK).json(userTimerListRes);
         } catch (err) {
             const error: AxiosError = err;
@@ -25,26 +46,28 @@ export class TimerController {
     }
 
     @Get('reports-list')
-    async reportsTimerList(@Headers() header: any, @Response() res: any, @Query() params) {
-        if (!(header && header['x-user-id'])) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+    @UseGuards(AuthGuard())
+    async reportsTimerList(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
-        if (!(params && params.startDate && params.endDate)) {
+        if (!(params.startDate && params.endDate)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters startDate and endDate are required!' });
         }
 
-        if (params && params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
+        if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
-        if (params && params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
+        if (params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
         }
 
         let teamId;
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
             teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
         } catch (err) {
             const error: AxiosError = err;
@@ -71,8 +94,9 @@ export class TimerController {
     }
 
     @Patch(':id')
-    async updateTimerById(@Param() param: any, @Response() res: any, @Body() body: Timer) {
-        if (!(body && body.projectId)) {
+    @UseGuards(AuthGuard())
+    async updateTimerById(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: Timer) {
+        if (!body.projectId) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Timer projectId is required!' });
         }
 
@@ -86,7 +110,8 @@ export class TimerController {
     }
 
     @Delete(':id')
-    async deleteTimerById(@Param() param: any, @Response() res: any) {
+    @UseGuards(AuthGuard())
+    async deleteTimerById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
         try {
             const deleteTimerByIdRes = await this.timerService.deleteTimerById(param.id);
             return res.status(HttpStatus.OK).json(deleteTimerByIdRes);

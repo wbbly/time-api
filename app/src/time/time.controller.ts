@@ -1,4 +1,5 @@
-import { Controller, Get, Response, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Response, HttpStatus, UseGuards, Headers } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 
 import { TimeService } from './time.service';
 import { Time } from './interfaces/time.interface';
@@ -8,7 +9,8 @@ export class TimeController {
     constructor(private readonly timeService: TimeService) {}
 
     @Get('current')
-    async timeCurrent(@Response() res: any) {
+    @UseGuards(AuthGuard())
+    async timeCurrent(@Headers() headers: any, @Response() res: any) {
         const time: Time = { timeISO: this.timeService.getISOTime() };
 
         return res.status(HttpStatus.OK).json(time);

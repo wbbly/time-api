@@ -6,7 +6,6 @@ import slugify from 'slugify';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { ProjectColorService } from '../project-color/project-color.service';
-import { reject } from 'bluebird';
 
 @Injectable()
 export class TeamService {

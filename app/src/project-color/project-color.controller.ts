@@ -1,4 +1,5 @@
-import { Controller, Get, Response, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Response, HttpStatus, UseGuards, Headers } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AxiosError } from 'axios';
 
 import { ProjectColorService } from './project-color.service';
@@ -8,7 +9,8 @@ export class ProjectColorController {
     constructor(private readonly projectColorService: ProjectColorService) {}
 
     @Get('list')
-    async projectColorList(@Response() res: any) {
+    @UseGuards(AuthGuard())
+    async projectColorList(@Headers() headers: any, @Response() res: any) {
         try {
             const projectColorListRes = await this.projectColorService.getProjectColorList();
             return res.status(HttpStatus.OK).json(projectColorListRes);

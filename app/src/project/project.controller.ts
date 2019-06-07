@@ -10,24 +10,35 @@ import {
     Body,
     Query,
     Headers,
+    UseGuards,
+    UnauthorizedException,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AxiosError, AxiosResponse } from 'axios';
 
 import { ProjectService } from './project.service';
 import { TeamService } from '../team/team.service';
+import { AuthService } from '../auth/auth.service';
 import { Project } from './interfaces/project.interface';
 
 @Controller('project')
 export class ProjectController {
-    constructor(private readonly projectService: ProjectService, private readonly teamService: TeamService) {}
+    constructor(
+        private readonly projectService: ProjectService,
+        private readonly teamService: TeamService,
+        private readonly authService: AuthService
+    ) {}
 
     @Get('list')
-    async projectList(@Response() res: any, @Query() params) {
-        if (!params.userId) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID needs to be specified.' });
+    @UseGuards(AuthGuard())
+    async projectList(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
+
         try {
-            const projectListRes = await this.projectService.getProjectList(params.userId);
+            const projectListRes = await this.projectService.getProjectList(userId);
             return res.status(HttpStatus.OK).json(projectListRes);
         } catch (e) {
             const error: AxiosError = e;
@@ -36,12 +47,15 @@ export class ProjectController {
     }
 
     @Get('admin-list')
-    async adminProjectList(@Response() res: any, @Query() params) {
-        if (!params.userId) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID needs to be specified.' });
+    @UseGuards(AuthGuard())
+    async adminProjectList(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
+
         try {
-            const adminProjectListRes = await this.projectService.getAdminProjectList(params.userId);
+            const adminProjectListRes = await this.projectService.getAdminProjectList(userId);
             return res.status(HttpStatus.OK).json(adminProjectListRes);
         } catch (e) {
             const error: AxiosError = e;
@@ -50,13 +64,15 @@ export class ProjectController {
     }
 
     @Get('user-list')
-    async userProjectList(@Response() res: any, @Query() params) {
-        if (!(params && params.userId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameter userId is required!' });
+    @UseGuards(AuthGuard())
+    async userProjectList(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
         try {
-            const userProjectListRes = await this.projectService.getUserProjectList(params.userId);
+            const userProjectListRes = await this.projectService.getUserProjectList(userId);
             return res.status(HttpStatus.OK).json(userProjectListRes);
         } catch (e) {
             const error: AxiosError = e;
@@ -65,24 +81,26 @@ export class ProjectController {
     }
 
     @Get('reports-project')
-    async reportsProjectList(@Headers() header: any, @Response() res: any, @Query() params) {
-        if (!(header && header['x-user-id'])) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+    @UseGuards(AuthGuard())
+    async reportsProjectList(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
-        if (!(params && params.projectName && params.startDate && params.endDate)) {
+        if (!(params.projectName && params.startDate && params.endDate)) {
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'Parameters projectName, startDate and endDate are required!' });
         }
 
-        if (params && params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
+        if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
         let teamId;
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
             teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
         } catch (err) {
             const error: AxiosError = err;
@@ -109,22 +127,24 @@ export class ProjectController {
     }
 
     @Get('reports-projects')
-    async reportsProjectsList(@Headers() header: any, @Response() res: any, @Query() params) {
-        if (!(header && header['x-user-id'])) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+    @UseGuards(AuthGuard())
+    async reportsProjectsList(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
-        if (params && params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
+        if (params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
         }
 
-        if (params && params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
+        if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
         let teamId;
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
             teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
         } catch (err) {
             const error: AxiosError = err;
@@ -151,15 +171,19 @@ export class ProjectController {
     }
 
     @Post('add')
-    async addProject(@Response() res: any, @Body() body: { project: Project; userId: string }) {
-        if (!(body && body.userId && body.project.name && body.project.projectColorId)) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'User ID, Project name and projectColorId are required!' });
+    @UseGuards(AuthGuard())
+    async addProject(@Headers() headers: any, @Response() res: any, @Body() body: { project: Project }) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!(body.project.name && body.project.projectColorId)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
         }
 
         try {
-            const addProjectRes = await this.projectService.addProject(body.project, body.userId);
+            const addProjectRes = await this.projectService.addProject(body.project, userId);
             return res.status(HttpStatus.OK).json(addProjectRes);
         } catch (e) {
             const error: AxiosError = e;
@@ -168,7 +192,8 @@ export class ProjectController {
     }
 
     @Get(':id')
-    async getProjectById(@Param() param: any, @Response() res: any) {
+    @UseGuards(AuthGuard())
+    async getProjectById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
         try {
             const getProjectByIdRes = await this.projectService.getProjectById(param.id);
             return res.status(HttpStatus.OK).json(getProjectByIdRes);
@@ -179,23 +204,24 @@ export class ProjectController {
     }
 
     @Patch(':id')
+    @UseGuards(AuthGuard())
     async updateProjectById(
+        @Headers() headers: any,
         @Param() param: any,
         @Response() res: any,
-        @Body() body: { project: Project; userId: string }
+        @Body() body: { project: Project }
     ) {
-        if (!(body && body.userId && body.project.name && body.project.projectColorId)) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'User ID, Project name and projectColorId are required!' });
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!(body.project.name && body.project.projectColorId)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
         }
 
         try {
-            const updateProjectByIdRes = await this.projectService.updateProjectById(
-                param.id,
-                body.project,
-                body.userId
-            );
+            const updateProjectByIdRes = await this.projectService.updateProjectById(param.id, body.project, userId);
             return res.status(HttpStatus.OK).json(updateProjectByIdRes);
         } catch (e) {
             const error: AxiosError = e;
@@ -204,7 +230,8 @@ export class ProjectController {
     }
 
     @Delete(':id')
-    async deleteProjectById(@Param() param: any, @Response() res: any) {
+    @UseGuards(AuthGuard())
+    async deleteProjectById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
         try {
             const deleteProjectByIdRes = await this.projectService.deleteProjectById(param.id);
             return res.status(HttpStatus.OK).json(deleteProjectByIdRes);

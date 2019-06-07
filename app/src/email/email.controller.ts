@@ -8,8 +8,8 @@ export class EmailController {
     constructor(private readonly mailService: MailService, private readonly configService: ConfigService) {}
 
     @Post('send')
-    async loginUser(@Response() res: any, @Body() body: any) {
-        if (!(body && body.email && body.company && body.message)) {
+    async sendEmail(@Response() res: any, @Body() body: any) {
+        if (!(body.email && body.company && body.message)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email, company and message are required!' });
         }
 

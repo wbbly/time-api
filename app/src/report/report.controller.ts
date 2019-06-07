@@ -1,34 +1,51 @@
-import { Controller, Get, Response, HttpStatus, Query, Headers } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Response,
+    HttpStatus,
+    Query,
+    Headers,
+    UseGuards,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AxiosError, AxiosResponse } from 'axios';
 
 import { ReportService } from './report.service';
 import { TeamService } from '../team/team.service';
+import { AuthService } from '../auth/auth.service';
 
 @Controller('report')
 export class ReportController {
-    constructor(private readonly reportService: ReportService, private readonly teamService: TeamService) {}
+    constructor(
+        private readonly reportService: ReportService,
+        private readonly teamService: TeamService,
+        private readonly authService: AuthService
+    ) {}
 
     @Get('export')
-    async reportExport(@Headers() header: any, @Response() res: any, @Query() params) {
-        if (!(header && header['x-user-id'])) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+    @UseGuards(AuthGuard())
+    async reportExport(@Headers() headers: any, @Response() res: any, @Query() params) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
-        if (!(params && params.startDate && params.endDate)) {
+        if (!(params.startDate && params.endDate)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters startDate and endDate are required!' });
         }
 
-        if (params && params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
+        if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
         }
 
-        if (params && params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
+        if (params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
         }
 
         let teamId;
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(header['x-user-id']);
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
             teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
         } catch (err) {
             const error: AxiosError = err;

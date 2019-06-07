@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { CoreModule } from '../core/core.module';
+import { AuthModule } from '../auth/auth.module';
 import { TimerModule } from '../timer/timer.module';
 import { TimeModule } from '../time/time.module';
 import { FileModule } from '../file/file.module';
@@ -9,7 +10,7 @@ import { ReportController } from './report.controller';
 import { ReportService } from './report.service';
 
 @Module({
-    imports: [CoreModule, TimerModule, TimeModule, FileModule, TeamModule],
+    imports: [CoreModule, AuthModule, TimerModule, TimeModule, FileModule, TeamModule],
     controllers: [ReportController],
     providers: [ReportService],
 })

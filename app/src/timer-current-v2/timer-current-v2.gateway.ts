@@ -2,6 +2,7 @@ import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/web
 import { Socket, Server } from 'socket.io';
 
 import { TimerCurrentV2Service } from './timer-current-v2.service';
+import { AuthService } from '../auth/auth.service';
 import { TimerCurrentV2 } from './interfaces/timer-current-v2.interface';
 import { Timer } from '../timer/interfaces/timer.interface';
 
@@ -10,31 +11,45 @@ export class TimerCurrentV2Gateway {
     @WebSocketServer()
     server: Server;
 
-    constructor(private readonly timerCurrentV2Service: TimerCurrentV2Service) {
+    constructor(
+        private readonly timerCurrentV2Service: TimerCurrentV2Service,
+        private readonly authService: AuthService
+    ) {
         this.timerCurrentV2Service._endTimerFlowSubject.subscribe(({ userId }) => {
             this.endTimerFlow({ userId });
         });
     }
 
     @SubscribeMessage('join-v2')
-    async onRoomJoin(client: Socket, data: { userId: string }): Promise<string> {
-        const { userId } = data;
+    async onRoomJoin(client: Socket, data: { token: string }): Promise<string> {
+        const userId = await this.authService.getUserId(data.token);
+        if (!userId) {
+            return 'Unauthorized';
+        }
+
         client.join(userId);
 
         return 'Join success';
     }
 
     @SubscribeMessage('leave-v2')
-    async onLeaveJoin(client: Socket, data: { userId: string }): Promise<string> {
-        const { userId } = data;
+    async onLeaveJoin(client: Socket, data: { token: string }): Promise<string> {
+        const userId = await this.authService.getUserId(data.token);
+        if (!userId) {
+            return 'Unauthorized';
+        }
+
         client.leave(userId);
 
         return 'Leave success';
     }
 
     @SubscribeMessage('check-timer-v2')
-    async checkTimer(client: Socket, data: { userId: string }): Promise<string> {
-        const { userId } = data;
+    async checkTimer(client: Socket, data: { token: string }): Promise<string> {
+        const userId = await this.authService.getUserId(data.token);
+        if (!userId) {
+            return 'Unauthorized';
+        }
 
         let startedTimer: TimerCurrentV2 = null;
         try {
@@ -53,12 +68,19 @@ export class TimerCurrentV2Gateway {
     }
 
     @SubscribeMessage('start-timer-v2')
-    async startTimer(client: Socket, data: { userId: string; issue: string; projectId: string }): Promise<string> {
-        const { userId } = data;
+    async startTimer(client: Socket, data: { token: string; issue: string; projectId: string }): Promise<string> {
+        const userId = await this.authService.getUserId(data.token);
+        if (!userId) {
+            return 'Unauthorized';
+        }
 
         let startedTimer: TimerCurrentV2 = null;
         try {
-            startedTimer = await this.timerCurrentV2Service.addTimerCurrent(data);
+            startedTimer = await this.timerCurrentV2Service.addTimerCurrent({
+                userId,
+                issue: data.issue,
+                projectId: data.projectId,
+            });
         } catch (error) {
             console.log(error);
         }
@@ -73,12 +95,19 @@ export class TimerCurrentV2Gateway {
     }
 
     @SubscribeMessage('update-timer-v2')
-    async updateTimer(client: Socket, data: { userId: string; issue: string; projectId: string }): Promise<string> {
-        const { userId } = data;
+    async updateTimer(client: Socket, data: { token: string; issue: string; projectId: string }): Promise<string> {
+        const userId = await this.authService.getUserId(data.token);
+        if (!userId) {
+            return 'Unauthorized';
+        }
 
         let startedTimer: TimerCurrentV2 = null;
         try {
-            startedTimer = await this.timerCurrentV2Service.updateTimerCurrent(data);
+            startedTimer = await this.timerCurrentV2Service.updateTimerCurrent({
+                userId,
+                issue: data.issue,
+                projectId: data.projectId,
+            });
         } catch (error) {
             console.log(error);
         }
@@ -93,8 +122,13 @@ export class TimerCurrentV2Gateway {
     }
 
     @SubscribeMessage('stop-timer-v2')
-    async endTimer(client: Socket, data: { userId: string }): Promise<string> {
-        this.endTimerFlow(data);
+    async endTimer(client: Socket, data: { token: string }): Promise<string> {
+        const userId = await this.authService.getUserId(data.token);
+        if (!userId) {
+            return 'Unauthorized';
+        }
+
+        this.endTimerFlow({ userId });
 
         return 'Stop timer';
     }

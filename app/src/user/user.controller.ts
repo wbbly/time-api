@@ -1,6 +1,20 @@
-import { Controller, Get, Post, Patch, HttpStatus, Headers, Param, Response, Body } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Patch,
+    HttpStatus,
+    Headers,
+    Param,
+    Response,
+    Body,
+    UseGuards,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AxiosError } from 'axios';
 
+import { AuthService } from '../auth/auth.service';
 import { UserService } from '../user/user.service';
 import { TeamService } from '../team/team.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
@@ -8,9 +22,12 @@ import { MailService } from '../core/mail/mail.service';
 import { ConfigService } from '../core/config/config.service';
 import { User } from './interfaces/user.interface';
 
+const APP_VERSION = 'v0.0.1';
+
 @Controller('user')
 export class UserController {
     constructor(
+        private readonly authService: AuthService,
         private readonly userService: UserService,
         private readonly teamService: TeamService,
         private readonly roleCollaborationService: RoleCollaborationService,
@@ -19,7 +36,8 @@ export class UserController {
     ) {}
 
     @Get('list')
-    async userList(@Response() res: any) {
+    @UseGuards(AuthGuard())
+    async userList(@Headers() headers: any, @Response() res: any) {
         try {
             const userListRes = await this.userService.getUserList();
             return res.status(HttpStatus.OK).json(userListRes);
@@ -29,12 +47,16 @@ export class UserController {
         }
     }
 
-    @Get(':id/teams')
-    async userTeams(@Response() res: any, @Param() param: any) {
-        if (!param.id) return res.status(HttpStatus.BAD_REQUEST).json({ message: 'A Valid User ID is required' });
+    @Get('teams')
+    @UseGuards(AuthGuard())
+    async userTeams(@Headers() headers: any, @Response() res: any, @Param() param: any) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
 
         try {
-            const teamsData = await this.teamService.getAllUserTeams(param.id);
+            const teamsData = await this.teamService.getAllUserTeams(userId);
             return res.status(HttpStatus.OK).json(teamsData);
         } catch (err) {
             const error: AxiosError = err;
@@ -44,7 +66,7 @@ export class UserController {
 
     @Post('reset-password')
     async resetPassword(@Response() res: any, @Body() body: { email: string }) {
-        if (!(body && body.email)) {
+        if (!body.email) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email are required!' });
         }
 
@@ -90,7 +112,7 @@ export class UserController {
 
     @Post('set-password')
     async setPassword(@Response() res: any, @Body() body: { token: string; password: string }) {
-        if (!(body && body.token && body.password)) {
+        if (!(body.token && body.password)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Token and password are required!' });
         }
 
@@ -136,22 +158,24 @@ export class UserController {
     }
 
     @Post('change-password')
+    @UseGuards(AuthGuard())
     async changePassword(
-        @Headers() header: any,
+        @Headers() headers: any,
         @Response() res: any,
         @Body() body: { password: string; newPassword: string }
     ) {
-        if (!(header && header['x-user-id'])) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id header is required!' });
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
-        if (!(body && body.password && body.newPassword)) {
+        if (!(body.password && body.newPassword)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Current and new passwords are required!' });
         }
 
         let user = null;
         try {
-            user = await this.userService.getUserById(header['x-user-id'], true);
+            user = await this.userService.getUserById(userId, true);
         } catch (error) {
             console.log(error);
         }
@@ -160,7 +184,7 @@ export class UserController {
             if (await this.userService.compareHash(body.password, user.password)) {
                 let changePasswordData = null;
                 try {
-                    changePasswordData = await this.userService.changePassword(header['x-user-id'], body.newPassword);
+                    changePasswordData = await this.userService.changePassword(userId, body.newPassword);
                 } catch (error) {
                     console.log(error);
                 }
@@ -196,7 +220,7 @@ export class UserController {
 
     @Post('login')
     async loginUser(@Response() res: any, @Body() body: User) {
-        if (!(body && body.email && body.password)) {
+        if (!(body.email && body.password)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email and password are required!' });
         }
 
@@ -209,10 +233,17 @@ export class UserController {
 
         if (user) {
             if (await this.userService.compareHash(body.password, user.password)) {
-                delete user.password;
-                user['appVersion'] = 'v0.0.1'; // @TODO: replace with real application version
+                const token = await this.authService.signIn({
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    timezoneOffset: user.timezoneOffset,
 
-                return res.status(HttpStatus.OK).json({ user });
+                    // @TODO: replace with real application version
+                    appVersion: APP_VERSION,
+                });
+
+                return res.status(HttpStatus.OK).json({ token });
             }
         }
 
@@ -220,14 +251,21 @@ export class UserController {
     }
 
     @Post('invite')
+    @UseGuards(AuthGuard())
     async inviteByEmail(
+        @Headers() headers: any,
         @Response() res: any,
-        @Body() body: { userId: string; teamId: string; teamName: string; email: string }
+        @Body() body: { teamId: string; teamName: string; email: string }
     ) {
-        if (!(body && body.userId && body.teamId && body.teamName && body.email)) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!(body.teamId && body.teamName && body.email)) {
             return res
                 .status(HttpStatus.BAD_REQUEST)
-                .json({ message: 'Params userId, teamId, teamName and email are required' });
+                .json({ message: 'Params teamId, teamName and email are required' });
         }
 
         const usersData: any = await this.userService.getUserList();
@@ -238,7 +276,7 @@ export class UserController {
         if (userExists.length > 0) {
             // Such user is already registered
             try {
-                invitedData = await this.teamService.inviteMemberToTeam(body.userId, body.teamId, userExists[0].id);
+                invitedData = await this.teamService.inviteMemberToTeam(userId, body.teamId, userExists[0].id);
             } catch (e) {
                 const error: AxiosError = e;
                 return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
@@ -274,7 +312,7 @@ export class UserController {
 
             // Get created user ID from createdData and process inviteRequest from Team Service
             invitedData = await this.teamService.inviteMemberToTeam(
-                body.userId,
+                userId,
                 body.teamId,
                 createdData.data.insert_user.returning[0].id
             );
@@ -310,7 +348,7 @@ export class UserController {
 
     @Post('register')
     async registerUser(@Response() res: any, @Body() body: any) {
-        if (!(body && body.email && body.password)) {
+        if (!(body.email && body.password)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email and password are required!' });
         }
 
@@ -346,15 +384,18 @@ export class UserController {
     }
 
     @Patch(':id')
-    async updateUser(@Headers() header: any, @Param() param: any, @Response() res: any, @Body() body: any) {
-        if (!(header && header['x-user-id'] && header['x-team-id'])) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-user-id and x-team-id headers are required!' });
+    @UseGuards(AuthGuard())
+    async updateUser(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
         }
 
-        body = body || {};
+        if (!headers['x-team-id']) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-team-id header is required!' });
+        }
 
-        const userId = header['x-user-id'];
-        const teamId = header['x-team-id'];
+        const teamId = headers['x-team-id'];
 
         let userIsAdmin = false;
         let userIsActive = false;
