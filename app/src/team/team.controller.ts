@@ -81,7 +81,6 @@ export class TeamController {
     }
 
     @Get(':id/invite/:invitationId')
-    @UseGuards(AuthGuard())
     async acceptInvitation(@Headers() headers: any, @Response() res: any, @Param() param: any) {
         try {
             await this.teamService.acceptInvitation(param.id, param.invitationId);
