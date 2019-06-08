@@ -54,7 +54,7 @@ export class TimerCurrentV2Service {
                         });
                     }
 
-                    resolve(startedTimers);
+                    return resolve(startedTimers);
                 },
                 _ => reject(startedTimers)
             );
@@ -97,7 +97,7 @@ export class TimerCurrentV2Service {
                         });
                     }
 
-                    resolve(startedTimers);
+                    return resolve(startedTimers);
                 },
                 _ => reject(startedTimers)
             );
@@ -156,7 +156,7 @@ export class TimerCurrentV2Service {
                         };
                     }
 
-                    resolve(startedTimer);
+                    return resolve(startedTimer);
                 },
                 _ => reject(startedTimer)
             );

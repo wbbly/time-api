@@ -90,9 +90,10 @@ export class TeamService {
                                     async (insertUserTeamRes: AxiosResponse) => {
                                         try {
                                             await this.switchTeam(userId, teamId);
-                                            resolve(insertUserTeamRes);
+
+                                            return resolve(insertUserTeamRes);
                                         } catch (switchTeamError) {
-                                            reject(switchTeamError);
+                                            return reject(switchTeamError);
                                         }
                                     },
                                     (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
@@ -101,7 +102,7 @@ export class TeamService {
                             (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
                         );
                     } else {
-                        reject({
+                        return reject({
                             message: 'Failed to create association',
                         });
                     }
@@ -157,15 +158,10 @@ export class TeamService {
 
             this.httpRequestsService.request(checkIfTeamAdminQuery).subscribe(
                 (checkResponse: AxiosResponse) => {
-                    let admin = false;
-                    let alreadyMember = false;
-                    // Check if the requester is admin in the team
-                    if (
+                    let admin =
                         checkResponse.data.user_team[0].role_collaboration.id ===
-                        this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
-                    ) {
-                        admin = true;
-                    }
+                        this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+                    let alreadyMember = false;
 
                     this.httpRequestsService.request(checkIfAlreadyMemberQuery).subscribe(
                         (checkRes: AxiosResponse) => {
@@ -181,7 +177,7 @@ export class TeamService {
                                         (insertError: AxiosError) => reject(insertError)
                                     );
                             } else {
-                                reject({
+                                return reject({
                                     message: alreadyMember ? 'User already in team' : 'Not Authorized',
                                 });
                             }
@@ -237,7 +233,7 @@ export class TeamService {
                                 (acceptInvitationQueryError: AxiosError) => reject(acceptInvitationQueryError)
                             );
                     } catch (switchTeamError) {
-                        reject(switchTeamError);
+                        return reject(switchTeamError);
                     }
                 },
                 (getUserIdByInvitationQueryError: AxiosError) => reject(getUserIdByInvitationQueryError)
@@ -364,8 +360,16 @@ export class TeamService {
     }
 
     async switchTeam(userId: string, teamId: string) {
-        // 1) Set all teams which user posess to false
-        // 2) Set current_team of teamId to true
+        const getUserTeamQuery = `{
+            user_team(where: {team_id: {_eq: "${teamId}"}, user_id: {_eq: "${userId}"}}) {
+                team {
+                    id
+                    owner_id
+                }
+            }
+        }
+        `;
+
         const setAllCurrentTeamsToFalse = `mutation{
             update_user_team(
                 where: {
@@ -398,44 +402,56 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(setAllCurrentTeamsToFalse).subscribe(
-                (setAllCurrentTeamsToFalseRes: AxiosResponse) => {
-                    this.httpRequestsService
-                        .request(switchCurrentTeamQuery)
-                        .subscribe(
-                            (switchCurrentTeamQueryRes: AxiosResponse) => resolve(switchCurrentTeamQueryRes),
-                            (switchCurrentTeamQueryError: AxiosError) => reject(switchCurrentTeamQueryError)
-                        );
+            this.httpRequestsService.request(getUserTeamQuery).subscribe(
+                (getUserTeamQueryRes: AxiosResponse) => {
+                    const teamData = getUserTeamQueryRes.data.user_team[0];
+                    if (!teamData) {
+                        return reject({
+                            message: 'An error occured while switching the team.',
+                        });
+                    }
+
+                    this.httpRequestsService.request(setAllCurrentTeamsToFalse).subscribe(
+                        (setAllCurrentTeamsToFalseRes: AxiosResponse) => {
+                            this.httpRequestsService
+                                .request(switchCurrentTeamQuery)
+                                .subscribe(
+                                    (switchCurrentTeamQueryRes: AxiosResponse) => resolve(switchCurrentTeamQueryRes),
+                                    (switchCurrentTeamQueryError: AxiosError) => reject(switchCurrentTeamQueryError)
+                                );
+                        },
+                        (setAllCurrentTeamsToFalseError: AxiosError) => reject(setAllCurrentTeamsToFalseError)
+                    );
                 },
-                (setAllCurrentTeamsToFalseError: AxiosError) => reject(setAllCurrentTeamsToFalseError)
+                (getUserTeamQueryError: AxiosError) => reject(getUserTeamQueryError)
             );
         });
     }
 
-    async renameTeam(teamId: string, newName: string) {
-        const getTeamQuery = `{
-            team(
-                where: {
-                    id: { _eq: "${teamId}" }
+    async renameTeam(userId: string, teamId: string, newName: string) {
+        const getUserTeamQuery = `{
+            user_team(where: {team_id: {_eq: "${teamId}"}, user_id: {_eq: "${userId}"}, role_collaboration_id: {_eq: "${
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
+        }"}}) {
+                team {
+                    id
+                    owner_id
                 }
-            ) {
-                id
-                owner_id
             }
         }
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(getTeamQuery).subscribe(
-                (getTeamQueryRes: AxiosResponse) => {
-                    const team = getTeamQueryRes.data.team[0];
-                    if (!team) {
-                        reject({
+            this.httpRequestsService.request(getUserTeamQuery).subscribe(
+                (getUserTeamQueryRes: AxiosResponse) => {
+                    const teamData = getUserTeamQueryRes.data.user_team[0];
+                    if (!teamData) {
+                        return reject({
                             message: 'An error occured while renaming the team.',
                         });
                     }
 
-                    const ownerId = team.owner_id;
+                    const ownerId = teamData.team.owner_id;
                     const newSlug = slugify(`${ownerId}-${newName}`, { lower: true });
                     const renameTeamQuery = `mutation{
                             update_team(
@@ -462,7 +478,7 @@ export class TeamService {
                             (renameTeamError: AxiosError) => reject(renameTeamError)
                         );
                 },
-                (getTeamQueryError: AxiosError) => reject(getTeamQueryError)
+                (getUserTeamQueryError: AxiosError) => reject(getUserTeamQueryError)
             );
         });
     }

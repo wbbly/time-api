@@ -70,7 +70,8 @@ export class ReportService {
                 (res: AxiosResponse) => {
                     const reportData = this.prepareReportData(res.data, startDate, endDate, timezoneOffset);
                     const reportPath = this.generateReport(reportData, timezoneOffset);
-                    resolve({ path: reportPath });
+
+                    return resolve({ path: reportPath });
                 },
                 (error: AxiosError) => reject(error)
             );

@@ -111,7 +111,7 @@ export class UserService {
                         };
                     }
 
-                    resolve(user);
+                    return resolve(user);
                 },
                 (error: AxiosError) => reject(error)
             );
@@ -132,7 +132,8 @@ export class UserService {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     const users = res.data.user || [];
-                    resolve(users.length > 0);
+
+                    return resolve(users.length > 0);
                 },
                 (error: AxiosError) => reject(error)
             );
@@ -193,9 +194,10 @@ export class UserService {
                         } catch (error) {
                             console.log(error);
                         }
-                        resolve(insertUserRes);
+
+                        return resolve(insertUserRes);
                     } else {
-                        resolve(insertUserRes);
+                        return resolve(insertUserRes);
                     }
                 },
                 (insertUserError: AxiosError) => reject(insertUserError)
@@ -302,7 +304,8 @@ export class UserService {
                                     if (ownTeamList.length) {
                                         const lastOwnerTeam = ownTeamList[0];
                                         await this.teamService.switchTeam(userId, lastOwnerTeam.id);
-                                        resolve(updateTeamRoleQueryRes);
+
+                                        return resolve(updateTeamRoleQueryRes);
                                     } else {
                                         const resetCurrentTeamQuery = `mutation{
                                             update_user_team(
@@ -331,10 +334,10 @@ export class UserService {
                                             );
                                     }
                                 } else {
-                                    resolve(updateTeamRoleQueryRes);
+                                    return resolve(updateTeamRoleQueryRes);
                                 }
                             } else {
-                                resolve(updateTeamRoleQueryRes);
+                                return resolve(updateTeamRoleQueryRes);
                             }
                         },
                         (updateTeamRoleQueryError: AxiosError) => reject(updateTeamRoleQueryError)

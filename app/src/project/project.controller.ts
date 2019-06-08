@@ -46,40 +46,6 @@ export class ProjectController {
         }
     }
 
-    @Get('admin-list')
-    @UseGuards(AuthGuard())
-    async adminProjectList(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
-        if (!userId) {
-            throw new UnauthorizedException();
-        }
-
-        try {
-            const adminProjectListRes = await this.projectService.getAdminProjectList(userId);
-            return res.status(HttpStatus.OK).json(adminProjectListRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
-        }
-    }
-
-    @Get('user-list')
-    @UseGuards(AuthGuard())
-    async userProjectList(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
-        if (!userId) {
-            throw new UnauthorizedException();
-        }
-
-        try {
-            const userProjectListRes = await this.projectService.getUserProjectList(userId);
-            return res.status(HttpStatus.OK).json(userProjectListRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
-        }
-    }
-
     @Get('reports-project')
     @UseGuards(AuthGuard())
     async reportsProjectList(@Headers() headers: any, @Response() res: any, @Query() params) {
@@ -194,8 +160,13 @@ export class ProjectController {
     @Get(':id')
     @UseGuards(AuthGuard())
     async getProjectById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
         try {
-            const getProjectByIdRes = await this.projectService.getProjectById(param.id);
+            const getProjectByIdRes = await this.projectService.getProjectById(userId, param.id);
             return res.status(HttpStatus.OK).json(getProjectByIdRes);
         } catch (e) {
             const error: AxiosError = e;
@@ -223,18 +194,6 @@ export class ProjectController {
         try {
             const updateProjectByIdRes = await this.projectService.updateProjectById(param.id, body.project, userId);
             return res.status(HttpStatus.OK).json(updateProjectByIdRes);
-        } catch (e) {
-            const error: AxiosError = e;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
-        }
-    }
-
-    @Delete(':id')
-    @UseGuards(AuthGuard())
-    async deleteProjectById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
-        try {
-            const deleteProjectByIdRes = await this.projectService.deleteProjectById(param.id);
-            return res.status(HttpStatus.OK).json(deleteProjectByIdRes);
         } catch (e) {
             const error: AxiosError = e;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);

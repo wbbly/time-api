@@ -6,6 +6,7 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 import { TimerService } from '../timer/timer.service';
 import { TimeService } from '../time/time.service';
 import { TeamService } from '../team/team.service';
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { Project } from './interfaces/project.interface';
 
 @Injectable()
@@ -14,84 +15,61 @@ export class ProjectService {
         private readonly httpRequestsService: HttpRequestsService,
         private readonly timerService: TimerService,
         private readonly timeService: TimeService,
-        private readonly teamService: TeamService
+        private readonly teamService: TeamService,
+        private readonly roleCollaborationService: RoleCollaborationService
     ) {}
 
     async getProjectList(userId) {
-        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
-        let currentTeamId = currentTeamData.data.user_team[0].team.id;
-        const query = `{
-            project_v2(
-                order_by: {name: asc}
-                where: {
-                    team_id: { _eq: "${currentTeamId}" }
-                }
-            ) {
-                id
-                name
-                is_active
-                project_color {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        let query;
+        if (isAdmin) {
+            query = `{
+                project_v2(
+                    order_by: {name: asc}
+                    where: {
+                        team_id: { _eq: "${currentTeamId}" }
+                    }
+                ) {
+                    id
                     name
-                }
-                timer(where: {user_id: {_eq: "${userId}"}}) {
-                    start_datetime
-                    end_datetime
+                    is_active
+                    project_color {
+                        name
+                    }
+                    timer {
+                        start_datetime
+                        end_datetime
+                    }
                 }
             }
-        }
-        `;
-
-        return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
-        });
-    }
-
-    async getAdminProjectList(userId) {
-        let currentTeamData: any = await this.teamService.getCurrentTeam(userId);
-        let currentTeamId = currentTeamData.data.user_team[0].team.id;
-        const query = `{
-            project_v2(
-                order_by: {name: asc}
-                where: {
-                    team_id: { _eq: "${currentTeamId}" }
-                }
-            ) {
-                id
-                name
-                is_active
-                project_color {
+            `;
+        } else {
+            query = `{
+                project_v2(
+                    order_by: {name: asc}
+                    where: {
+                        team_id: { _eq: "${currentTeamId}" }
+                    }
+                ) {
+                    id
                     name
-                }
-                timer {
-                    start_datetime
-                    end_datetime
-                }
-            }
-        }
-        `;
-
-        return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
-        });
-    }
-
-    getUserProjectList(userId: string) {
-        const query = `{
-            project_v2(order_by: {name: asc})  {
-                id
-                is_active
-                name
-                timer(where: {user_id: {_eq: "${userId}"}}) {
-                    start_datetime
-                    end_datetime
+                    is_active
+                    project_color {
+                        name
+                    }
+                    timer(where: {user_id: {_eq: "${userId}"}}) {
+                        start_datetime
+                        end_datetime
+                    }
                 }
             }
+            `;
         }
-        `;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
@@ -144,7 +122,7 @@ export class ProjectService {
                 (res: AxiosResponse) => {
                     this.prepareReportsProjectData(res.data.project_v2, startDate, endDate);
 
-                    resolve(res);
+                    return resolve(res);
                 },
                 (error: AxiosError) => reject(error)
             );
@@ -217,7 +195,7 @@ export class ProjectService {
                         this.timerService.limitTimeEntriesByStartEndDates(project.timer, startDate, endDate);
                     }
 
-                    resolve(res);
+                    return resolve(res);
                 },
                 (error: AxiosError) => reject(error)
             );
@@ -257,12 +235,12 @@ export class ProjectService {
         });
     }
 
-    getProjectById(id: string) {
+    getProjectById(userId: string, projectId: string) {
         const query = `{
-            project_v2 (where: {id: {_eq: "${id}"}}) {
+            project_v2(where: {id: {_eq: "${projectId}"}, team: {team_users: {user_id: {_eq: "${userId}"}}}}) {
                 id
                 name
-                project_color{ 
+                project_color {
                     id
                     name
                 }
@@ -288,7 +266,9 @@ export class ProjectService {
 
         const query = `mutation {
             update_project_v2(
-                where: {id: {_eq: "${id}"}},
+                where: {id: {_eq: "${id}"}, team: {team_users: {user_id: {_eq: "${userId}"}, role_collaboration_id: {_eq: "${
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
+        }"}}}},
                 _set: {
                     name: "${name}",
                     slug: "${slug}",
@@ -303,9 +283,18 @@ export class ProjectService {
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    if (!res.data.update_project_v2.returning[0]) {
+                        return reject({
+                            message: 'An error occured while updating the project.',
+                        });
+                    }
+
+                    return resolve(res);
+                },
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 

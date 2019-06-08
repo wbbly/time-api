@@ -96,12 +96,17 @@ export class TimerController {
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updateTimerById(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: Timer) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
         if (!body.projectId) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'Timer projectId is required!' });
         }
 
         try {
-            const updateTimerByIdRes = await this.timerService.updateTimerById(param.id, body);
+            const updateTimerByIdRes = await this.timerService.updateTimerById(userId, param.id, body);
             return res.status(HttpStatus.OK).json(updateTimerByIdRes);
         } catch (err) {
             const error: AxiosError = err;
@@ -112,8 +117,13 @@ export class TimerController {
     @Delete(':id')
     @UseGuards(AuthGuard())
     async deleteTimerById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
+        const userId = await this.authService.getUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
         try {
-            const deleteTimerByIdRes = await this.timerService.deleteTimerById(param.id);
+            const deleteTimerByIdRes = await this.timerService.deleteTimerById(userId, param.id);
             return res.status(HttpStatus.OK).json(deleteTimerByIdRes);
         } catch (err) {
             const error: AxiosError = err;

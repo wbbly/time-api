@@ -12,7 +12,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 
 import { AuthService } from '../auth/auth.service';
 import { UserService } from '../user/user.service';
@@ -86,7 +86,6 @@ export class UserController {
             }
 
             if (resetPasswordData) {
-                // Send an email:
                 const to = body.email;
                 const subject = `You've been requested the reset password!`;
                 const html = `
@@ -132,7 +131,6 @@ export class UserController {
             }
 
             if (setPasswordData) {
-                // Send an email:
                 const to = setPasswordData.data.update_user.returning[0].email;
                 const subject = `You've been successfully reset the password!`;
                 const html = `
@@ -190,7 +188,6 @@ export class UserController {
                 }
 
                 if (changePasswordData) {
-                    // Send an email:
                     const to = changePasswordData.data.update_user.returning[0].email;
                     const subject = `You've been successfully changed the password!`;
                     const html = `
@@ -262,10 +259,29 @@ export class UserController {
             throw new UnauthorizedException();
         }
 
-        if (!(body.teamId && body.teamName && body.email)) {
-            return res
-                .status(HttpStatus.BAD_REQUEST)
-                .json({ message: 'Params teamId, teamName and email are required' });
+        if (!body.email) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Param email is required' });
+        }
+
+        let teamId;
+        let teamName;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
+            const userTeamData = (currentTeamRes as AxiosResponse).data.user_team[0];
+            if (!userTeamData) {
+                return res
+                    .status(HttpStatus.FORBIDDEN)
+                    .json({ message: 'An error occured while creating an invite the user.' });
+            }
+            teamId = userTeamData.team.id;
+            teamName = userTeamData.team.name || '';
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+
+        if (!teamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
         }
 
         const usersData: any = await this.userService.getUserList();
@@ -276,19 +292,18 @@ export class UserController {
         if (userExists.length > 0) {
             // Such user is already registered
             try {
-                invitedData = await this.teamService.inviteMemberToTeam(userId, body.teamId, userExists[0].id);
+                invitedData = await this.teamService.inviteMemberToTeam(userId, teamId, userExists[0].id);
             } catch (e) {
                 const error: AxiosError = e;
                 return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
             }
 
-            // Send an email:
             const to = body.email;
-            const subject = `You've been invited to the "${body.teamName}" team!`;
+            const subject = `You've been invited to the "${teamName}" team!`;
             const html = `
-            Follow the link below to accept the invitation to the "${body.teamName}" team:
+            Follow the link below to accept the invitation to the "${teamName}" team:
             <br /><br />
-            ${this.configService.get('APP_URL')}/team/${body.teamId}/invite/${
+            ${this.configService.get('APP_URL')}/team/${teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
             }
             <br /><br />
@@ -313,16 +328,15 @@ export class UserController {
             // Get created user ID from createdData and process inviteRequest from Team Service
             invitedData = await this.teamService.inviteMemberToTeam(
                 userId,
-                body.teamId,
+                teamId,
                 createdData.data.insert_user.returning[0].id
             );
 
-            // Send an email:
-            const subject = `You've been invited to the "${body.teamName}" team!`;
+            const subject = `You've been invited to the "${teamName}" team!`;
             const html = `
-            Follow the link below to accept the invitation to the "${body.teamName}" team:
+            Follow the link below to accept the invitation to the "${teamName}" team:
             <br /><br />
-            ${this.configService.get('APP_URL')}/team/${body.teamId}/invite/${
+            ${this.configService.get('APP_URL')}/team/${teamId}/invite/${
                 invitedData.data.insert_user_team.returning[0].invite_hash
             }
             <br /><br />
@@ -391,11 +405,22 @@ export class UserController {
             throw new UnauthorizedException();
         }
 
-        if (!headers['x-team-id']) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'x-team-id header is required!' });
+        let teamId;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
+            const userTeamData = (currentTeamRes as AxiosResponse).data.user_team[0];
+            if (!userTeamData) {
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occured while updating the user.' });
+            }
+            teamId = userTeamData.team.id;
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
 
-        const teamId = headers['x-team-id'];
+        if (!teamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occured while updating the user.' });
+        }
 
         let userIsAdmin = false;
         let userIsActive = false;

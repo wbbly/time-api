@@ -70,7 +70,7 @@ export class TimerService {
                         };
                     }
 
-                    resolve(timer);
+                    return resolve(timer);
                 },
                 _ => reject(timer)
             );
@@ -221,14 +221,14 @@ export class TimerService {
                     const datePeriods = this.timeService.getDayPeriodsBetweenStartEndDates(startDate, endDate);
                     res.data.timer_v2 = this.cutTimeEntriesPartsByDatePeriods(res.data.timer_v2, datePeriods);
 
-                    resolve(res);
+                    return resolve(res);
                 },
                 (error: AxiosError) => reject(error)
             );
         });
     }
 
-    updateTimerById(id: string, timer: Timer) {
+    updateTimerById(userId: string, timerId: string, timer: Timer) {
         const { issue, projectId, startDatetime, endDatetime } = timer;
 
         const setParams = [`issue: "${issue || ''}"`, `project_id: "${projectId}"`];
@@ -241,9 +241,19 @@ export class TimerService {
             setParams.push(`end_datetime: "${endDatetime}"`);
         }
 
-        const query = `mutation {
+        const getTimerQuery = `{
+            timer_v2(where: {id: {_eq: "${timerId}"}}) {
+                id
+                user {
+                    id
+                }
+            }
+        }
+        `;
+
+        const updateTimerQuery = `mutation {
             update_timer_v2(
-                where: {id: {_eq: "${id}"}},
+                where: {id: {_eq: "${timerId}"}},
                 _set: {${setParams.join(', ')}}
             ) {
                 returning {
@@ -254,24 +264,78 @@ export class TimerService {
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(getTimerQuery).subscribe(
+                (getTimerQueryRes: AxiosResponse) => {
+                    const timer = getTimerQueryRes.data.timer_v2[0];
+                    if (!timer) {
+                        return reject({
+                            message: 'An error occured while updating the timer',
+                        });
+                    }
+
+                    const timerUserId = timer.user.id;
+                    if (timerUserId !== userId) {
+                        return reject({
+                            message: 'An error occured while updating the timer',
+                        });
+                    }
+
+                    this.httpRequestsService
+                        .request(updateTimerQuery)
+                        .subscribe(
+                            (updateTimerQueryRes: AxiosResponse) => resolve(updateTimerQueryRes),
+                            (updateTimerQueryError: AxiosError) => reject(updateTimerQueryError)
+                        );
+                },
+                (getTimerQueryError: AxiosError) => reject(getTimerQueryError)
+            );
         });
     }
 
-    deleteTimerById(id: string) {
-        const query = `mutation {
-            delete_timer_v2(where: {id: {_eq: "${id}"}}) {
+    deleteTimerById(userId: string, timerId: string) {
+        const getTimerQuery = `{
+            timer_v2(where: {id: {_eq: "${timerId}"}}) {
+                id
+                user {
+                    id
+                }
+            }
+        }
+        `;
+
+        const deleteTimerQuery = `mutation {
+            delete_timer_v2(where: {id: {_eq: "${timerId}"}}) {
                 affected_rows
             }
         }
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(getTimerQuery).subscribe(
+                (getTimerQueryRes: AxiosResponse) => {
+                    const timer = getTimerQueryRes.data.timer_v2[0];
+                    if (!timer) {
+                        return reject({
+                            message: 'An error occured while deleting the timer',
+                        });
+                    }
+
+                    const timerUserId = timer.user.id;
+                    if (timerUserId !== userId) {
+                        return reject({
+                            message: 'An error occured while deleting the timer',
+                        });
+                    }
+
+                    this.httpRequestsService
+                        .request(deleteTimerQuery)
+                        .subscribe(
+                            (deleteTimerQueryRes: AxiosResponse) => resolve(deleteTimerQueryRes),
+                            (deleteTimerQueryError: AxiosError) => reject(deleteTimerQueryError)
+                        );
+                },
+                (getTimerQueryError: AxiosError) => reject(getTimerQueryError)
+            );
         });
     }
 
