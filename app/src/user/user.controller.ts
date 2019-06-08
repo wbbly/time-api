@@ -22,7 +22,7 @@ import { MailService } from '../core/mail/mail.service';
 import { ConfigService } from '../core/config/config.service';
 import { User } from './interfaces/user.interface';
 
-const APP_VERSION = 'v1.0.1';
+const APP_VERSION = 'v1.0.2';
 
 @Controller('user')
 export class UserController {
