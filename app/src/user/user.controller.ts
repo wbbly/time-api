@@ -50,7 +50,7 @@ export class UserController {
     @Get('teams')
     @UseGuards(AuthGuard())
     async userTeams(@Headers() headers: any, @Response() res: any, @Param() param: any) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -162,7 +162,7 @@ export class UserController {
         @Response() res: any,
         @Body() body: { password: string; newPassword: string }
     ) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -254,7 +254,7 @@ export class UserController {
         @Response() res: any,
         @Body() body: { teamId: string; teamName: string; email: string }
     ) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -400,7 +400,7 @@ export class UserController {
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updateUser(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }

@@ -191,7 +191,7 @@ export class TeamService {
     }
 
     async acceptInvitation(teamId: string, inviteId: string) {
-        const getUserIdByInvitationQuery = `{
+        const getVerifiedUserIdByInvitationQuery = `{
             user_team (
                 where: {
                     invite_hash: { _eq: "${inviteId}" }
@@ -220,9 +220,9 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(getUserIdByInvitationQuery).subscribe(
-                async (getUserIdByInvitationQueryRes: AxiosResponse) => {
-                    const userTeam = getUserIdByInvitationQueryRes.data.user_team;
+            this.httpRequestsService.request(getVerifiedUserIdByInvitationQuery).subscribe(
+                async (getVerifiedUserIdByInvitationQueryRes: AxiosResponse) => {
+                    const userTeam = getVerifiedUserIdByInvitationQueryRes.data.user_team;
                     const userId = (userTeam[0] || {}).user_id;
                     try {
                         await this.switchTeam(userId, teamId);
@@ -236,7 +236,7 @@ export class TeamService {
                         return reject(switchTeamError);
                     }
                 },
-                (getUserIdByInvitationQueryError: AxiosError) => reject(getUserIdByInvitationQueryError)
+                (getVerifiedUserIdByInvitationQueryError: AxiosError) => reject(getVerifiedUserIdByInvitationQueryError)
             );
         });
     }

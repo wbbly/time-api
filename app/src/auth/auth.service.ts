@@ -11,10 +11,18 @@ export class AuthService {
         return this.jwtService.sign(data);
     }
 
-    async getUserId(jwt: string): Promise<string | null> {
+    async verify(token: string): Promise<JwtPayload> {
+        return this.jwtService.verify(token);
+    }
+
+    async decode(token: string): Promise<null | { [key: string]: any } | string> {
+        return this.jwtService.decode(token);
+    }
+
+    async getVerifiedUserId(jwt: string): Promise<string | null> {
         try {
             const token = this.getTokenFromJwt(jwt);
-            const payload: JwtPayload = await this.jwtService.verify(token);
+            const payload: JwtPayload = await this.verify(token);
 
             return payload.id;
         } catch (e) {
@@ -22,12 +30,42 @@ export class AuthService {
         }
     }
 
-    async getUserEmail(jwt: string): Promise<string | null> {
+    async getVerifiedUserEmail(jwt: string): Promise<string | null> {
         try {
             const token = this.getTokenFromJwt(jwt);
-            const payload: JwtPayload = await this.jwtService.verify(token);
+            const payload: JwtPayload = await this.verify(token);
 
             return payload.email;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async getDecodedUserId(jwt: string): Promise<string | null> {
+        try {
+            const token = this.getTokenFromJwt(jwt);
+            const payload: null | { [key: string]: any } | string = await this.decode(token);
+
+            if (typeof payload !== 'string') {
+                return payload.id || null;
+            }
+
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async getDecodedUserEmail(jwt: string): Promise<string | null> {
+        try {
+            const token = this.getTokenFromJwt(jwt);
+            const payload: null | { [key: string]: any } | string = await this.decode(token);
+
+            if (typeof payload !== 'string') {
+                return payload.email || null;
+            }
+
+            return null;
         } catch (e) {
             return null;
         }

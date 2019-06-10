@@ -26,7 +26,7 @@ export class ReportController {
     @Get('export')
     @UseGuards(AuthGuard())
     async reportExport(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }

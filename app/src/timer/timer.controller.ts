@@ -31,7 +31,7 @@ export class TimerController {
     @Get('user-list')
     @UseGuards(AuthGuard())
     async userTimerList(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -48,7 +48,7 @@ export class TimerController {
     @Get('reports-list')
     @UseGuards(AuthGuard())
     async reportsTimerList(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -96,7 +96,7 @@ export class TimerController {
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updateTimerById(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: Timer) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -117,7 +117,7 @@ export class TimerController {
     @Delete(':id')
     @UseGuards(AuthGuard())
     async deleteTimerById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }

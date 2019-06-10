@@ -30,7 +30,7 @@ export class TeamController {
     @Get('current')
     @UseGuards(AuthGuard())
     async currentTeam(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -47,7 +47,7 @@ export class TeamController {
     @Get('current/detailed-data')
     @UseGuards(AuthGuard())
     async getTeamDataById(@Headers() headers: any, @Response() res: any, @Param() param: any) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -101,7 +101,7 @@ export class TeamController {
     @Post('add')
     @UseGuards(AuthGuard())
     async addTeam(@Headers() headers: any, @Response() res: any, @Body() body: { teamName: string }) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -122,7 +122,7 @@ export class TeamController {
     @Patch('switch')
     @UseGuards(AuthGuard())
     async switchTeam(@Headers() headers: any, @Response() res: any, @Body() body: { teamId: string }) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -143,7 +143,7 @@ export class TeamController {
     @Patch('rename')
     @UseGuards(AuthGuard())
     async renameTeam(@Headers() headers: any, @Response() res: any, @Body() body: { teamId: string; newName: string }) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }

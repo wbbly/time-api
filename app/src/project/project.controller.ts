@@ -32,7 +32,7 @@ export class ProjectController {
     @Get('list')
     @UseGuards(AuthGuard())
     async projectList(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -49,7 +49,7 @@ export class ProjectController {
     @Get('reports-project')
     @UseGuards(AuthGuard())
     async reportsProjectList(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -95,7 +95,7 @@ export class ProjectController {
     @Get('reports-projects')
     @UseGuards(AuthGuard())
     async reportsProjectsList(@Headers() headers: any, @Response() res: any, @Query() params) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -139,7 +139,7 @@ export class ProjectController {
     @Post('add')
     @UseGuards(AuthGuard())
     async addProject(@Headers() headers: any, @Response() res: any, @Body() body: { project: Project }) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -160,7 +160,7 @@ export class ProjectController {
     @Get(':id')
     @UseGuards(AuthGuard())
     async getProjectById(@Headers() headers: any, @Param() param: any, @Response() res: any) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -182,7 +182,7 @@ export class ProjectController {
         @Response() res: any,
         @Body() body: { project: Project }
     ) {
-        const userId = await this.authService.getUserId(headers.authorization);
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
