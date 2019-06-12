@@ -22,8 +22,6 @@ import { MailService } from '../core/mail/mail.service';
 import { ConfigService } from '../core/config/config.service';
 import { User } from './interfaces/user.interface';
 
-const APP_VERSION = 'v1.0.3';
-
 @Controller('user')
 export class UserController {
     constructor(
@@ -230,15 +228,7 @@ export class UserController {
 
         if (user) {
             if (await this.userService.compareHash(body.password, user.password)) {
-                const token = await this.authService.signIn({
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    timezoneOffset: user.timezoneOffset,
-
-                    // @TODO: replace with real application version
-                    appVersion: APP_VERSION,
-                });
+                const token = await this.userService.signIn(user);
 
                 return res.status(HttpStatus.OK).json({ token });
             }
@@ -481,9 +471,26 @@ export class UserController {
         });
 
         try {
-            const updateUserRes = await this.userService.updateUser(userId, teamId, param.id, userData);
+            await this.userService.updateUser(userId, teamId, param.id, userData);
 
-            return res.status(HttpStatus.OK).json(updateUserRes);
+            if (param.id === userId) {
+                let userUpdated = null;
+                try {
+                    userUpdated = await this.userService.getUserById(param.id, false);
+                } catch (error) {
+                    console.log(error);
+                }
+
+                if (userUpdated) {
+                    const token = await this.userService.signIn(user);
+
+                    return res.status(HttpStatus.OK).json({ token });
+                }
+
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
+            } else {
+                return res.status(HttpStatus.OK).json({ mesage: 'The user was successfully updated!' });
+            }
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);

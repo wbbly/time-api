@@ -6,7 +6,10 @@ import * as bcrypt from 'bcrypt';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
+import { AuthService } from '../auth/auth.service';
 import { User } from './interfaces/user.interface';
+
+const APP_VERSION = 'v1.0.3';
 
 @Injectable()
 export class UserService {
@@ -15,7 +18,8 @@ export class UserService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly roleCollaborationService: RoleCollaborationService,
-        private readonly teamService: TeamService
+        private readonly teamService: TeamService,
+        private readonly authService: AuthService
     ) {}
 
     getUserList() {
@@ -434,6 +438,18 @@ export class UserService {
                     (changePasswordResponse: AxiosResponse) => resolve(changePasswordResponse),
                     (changePasswordError: AxiosError) => reject(changePasswordError)
                 );
+        });
+    }
+
+    async signIn(user: User): Promise<any> {
+        return await this.authService.signIn({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            timezoneOffset: user.timezoneOffset,
+
+            // @TODO: replace with real application version
+            appVersion: APP_VERSION,
         });
     }
 
