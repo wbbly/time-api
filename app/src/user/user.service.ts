@@ -9,7 +9,7 @@ import { TeamService } from '../team/team.service';
 import { AuthService } from '../auth/auth.service';
 import { User } from './interfaces/user.interface';
 
-const APP_VERSION = 'v1.0.3';
+const APP_VERSION = 'v1.0.4';
 
 @Injectable()
 export class UserService {
