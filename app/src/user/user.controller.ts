@@ -482,7 +482,7 @@ export class UserController {
                 }
 
                 if (userUpdated) {
-                    const token = await this.userService.signIn(user);
+                    const token = await this.userService.signIn(userUpdated);
 
                     return res.status(HttpStatus.OK).json({ token });
                 }
