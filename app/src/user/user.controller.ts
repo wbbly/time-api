@@ -352,8 +352,8 @@ export class UserController {
 
     @Post('register')
     async registerUser(@Response() res: any, @Body() body: any) {
-        if (!(body.email && body.password && body.language)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email, password and language are required!' });
+        if (!(body.email && body.password)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email and password are required!' });
         }
 
         let userExists = false;
