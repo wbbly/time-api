@@ -450,7 +450,6 @@ export class UserController {
         let allowedDataToUpdate: any = {
             username: body.username,
             email: body.email,
-            language: body.language,
             isActive: body.isActive,
             roleName: body.roleName,
         };
