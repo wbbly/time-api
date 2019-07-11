@@ -94,6 +94,7 @@ export class UserService {
                 email
                 password
                 timezone_offset
+                language
             }
         }
         `;
@@ -105,7 +106,14 @@ export class UserService {
                 (res: AxiosResponse) => {
                     const data = res.data.user.shift();
                     if (data) {
-                        const { id: userId, username, email, password, timezone_offset: timezoneOffset } = data;
+                        const {
+                            id: userId,
+                            username,
+                            email,
+                            password,
+                            timezone_offset: timezoneOffset,
+                            language,
+                        } = data;
 
                         user = {
                             id: userId,
@@ -113,6 +121,7 @@ export class UserService {
                             email,
                             password,
                             timezoneOffset,
+                            language,
                         };
                     }
 
@@ -456,6 +465,7 @@ export class UserService {
             username: user.username,
             email: user.email,
             timezoneOffset: user.timezoneOffset,
+            language: user.language,
 
             // @TODO: replace with real application version
             appVersion: APP_VERSION,

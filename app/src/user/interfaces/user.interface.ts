@@ -11,6 +11,7 @@ export interface User {
     createdAt?: string;
     timezoneOffset?: number;
     resetPasswordHash?: string;
+    language?: string;
     currentTimer?: TimerCurrentV2[];
     timer?: Timer[];
 }

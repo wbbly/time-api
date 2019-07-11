@@ -4,4 +4,5 @@ export interface JwtPayload {
     email?: string;
     timezoneOffset?: number;
     appVersion?: string;
+    language?: string;
 }
