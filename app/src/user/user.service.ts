@@ -10,6 +10,7 @@ import { AuthService } from '../auth/auth.service';
 import { User } from './interfaces/user.interface';
 
 const APP_VERSION = 'v1.0.4';
+const DEFAULT_LANGUAGE = 'en';
 
 @Injectable()
 export class UserService {
@@ -165,8 +166,13 @@ export class UserService {
         });
     }
 
-    async createUser(data: { username: string; email: string; password: string }): Promise<AxiosResponse | AxiosError> {
-        const { username, email, password } = data;
+    async createUser(data: {
+        username: string;
+        email: string;
+        password: string;
+        language?: string;
+    }): Promise<AxiosResponse | AxiosError> {
+        const { username, email, password, language } = data;
         const passwordHash = await this.getHash(password);
 
         const insertUserQuery = `mutation {
@@ -176,6 +182,7 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
+                        language: "${language || DEFAULT_LANGUAGE}",
                         is_active: true
                     }
                 ]
@@ -216,11 +223,12 @@ export class UserService {
         data: {
             username: string;
             email: string;
+            language: string;
             isActive: boolean;
             roleName: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, isActive, roleName } = data;
+        const { username, email, language, isActive, roleName } = data;
 
         const roleId =
             roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
@@ -236,6 +244,7 @@ export class UserService {
                 _set: {
                     username: "${username}"
                     email: "${email}"
+                    language: "${language}"
                 }
             ) {
                 returning {

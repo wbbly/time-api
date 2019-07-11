@@ -352,8 +352,8 @@ export class UserController {
 
     @Post('register')
     async registerUser(@Response() res: any, @Body() body: any) {
-        if (!(body.email && body.password)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email and password are required!' });
+        if (!(body.email && body.password && body.language)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email, password and language are required!' });
         }
 
         let userExists = false;
@@ -373,6 +373,7 @@ export class UserController {
                 username: body.username || body.email,
                 email: body.email,
                 password: body.password,
+                language: body.language,
             });
         } catch (error) {
             console.log(error);
@@ -449,17 +450,19 @@ export class UserController {
         let allowedDataToUpdate: any = {
             username: body.username,
             email: body.email,
+            language: body.language,
             isActive: body.isActive,
             roleName: body.roleName,
         };
         if (!userIsAdmin) {
-            allowedDataToUpdate = { username: body.username, email: body.email };
+            allowedDataToUpdate = { username: body.username, email: body.email, language: body.language };
         }
 
-        const { username, email } = user;
+        const { username, email, language } = user;
         const userData = {
             username,
             email,
+            language,
             isActive: userIsActive,
             roleName: userIsAdmin
                 ? this.roleCollaborationService.ROLES.ROLE_ADMIN
