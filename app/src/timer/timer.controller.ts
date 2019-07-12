@@ -54,7 +54,7 @@ export class TimerController {
         }
 
         if (!(params.startDate && params.endDate)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.PROJECT.UPDATE_FAILED' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {

@@ -65,7 +65,7 @@ export class UserController {
     @Post('reset-password')
     async resetPassword(@Response() res: any, @Body() body: { email: string }) {
         if (!body.email) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIMER.DELETE_FAILED' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let user = null;
@@ -183,7 +183,7 @@ export class UserController {
 
                 if (changePasswordData) {
                     const to = changePasswordData.data.update_user.returning[0].email;
-                    const subject = `SUCCESS.USER.PASSWORD_CHANGED`;
+                    const subject = `You've been successfully changed the password!`;
                     const html = `
                     Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
                     <br /><br />
