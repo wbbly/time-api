@@ -55,13 +55,11 @@ export class ProjectController {
         }
 
         if (!(params.projectName && params.startDate && params.endDate)) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'Parameters projectName, startDate and endDate are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let teamId;
@@ -74,7 +72,7 @@ export class ProjectController {
         }
 
         if (!teamId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
         }
 
         try {
@@ -101,11 +99,11 @@ export class ProjectController {
         }
 
         if (params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let teamId;
@@ -118,7 +116,7 @@ export class ProjectController {
         }
 
         if (!teamId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
         }
 
         try {
@@ -145,7 +143,7 @@ export class ProjectController {
         }
 
         if (!(body.project.name && body.project.projectColorId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {
@@ -188,7 +186,7 @@ export class ProjectController {
         }
 
         if (!(body.project.name && body.project.projectColorId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Project name and projectColorId are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {

@@ -287,7 +287,7 @@ export class ProjectService {
                 (res: AxiosResponse) => {
                     if (!res.data.update_project_v2.returning[0]) {
                         return reject({
-                            message: 'An error occured while updating the project.',
+                            message: 'ERROR.PROJECT.UPDATE_FAILED',
                         });
                     }
 

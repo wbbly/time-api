@@ -103,7 +103,7 @@ export class TeamService {
                         );
                     } else {
                         return reject({
-                            message: 'Failed to create association',
+                            message: 'ERROR.TEAM.CREATE_FAILED',
                         });
                     }
                 },
@@ -178,7 +178,7 @@ export class TeamService {
                                     );
                             } else {
                                 return reject({
-                                    message: alreadyMember ? 'User already in team' : 'Not Authorized',
+                                    message: alreadyMember ? 'ERROR.USER.ALREADY_TEAMMATE' : 'ERROR.NOT_AUTHORIZED',
                                 });
                             }
                         },
@@ -407,7 +407,7 @@ export class TeamService {
                     const teamData = getUserTeamQueryRes.data.user_team[0];
                     if (!teamData) {
                         return reject({
-                            message: 'An error occured while switching the team.',
+                            message: 'ERROR.TEAM.SWITCH_FAILED',
                         });
                     }
 
@@ -447,7 +447,7 @@ export class TeamService {
                     const teamData = getUserTeamQueryRes.data.user_team[0];
                     if (!teamData) {
                         return reject({
-                            message: 'An error occured while renaming the team.',
+                            message: 'ERROR.TEAM.RENAME_FAILED',
                         });
                     }
 

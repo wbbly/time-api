@@ -290,21 +290,21 @@ export class UserService {
                     if (ownTeam.id === teamId && roleId === this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER) {
                         if (adminId === userId) {
                             return reject({
-                                message: "You can't be able to change the role in your own team",
+                                message: 'ERROR.USER.UPDATE_USER_ROLE_FAILED',
                             });
                         } else {
                             return reject({
-                                message: "You can't be able to change the team owner's role",
+                                message: 'ERROR.USER.UPDATE_TEAM_OWNER_ROLE_FAILED',
                             });
                         }
                     } else if (ownTeam.id === teamId && isActive === false) {
                         if (adminId === userId) {
                             return reject({
-                                message: "You can't be able to set your account as inactive in your own team",
+                                message: 'ERROR.USER.UPDATE_ACTIVE_STATUS_FAILED',
                             });
                         } else {
                             return reject({
-                                message: "You can't be able to set team owner's account as inactive",
+                                message: 'ERROR.USER.UPDATE_TEAM_OWNER_ACTIVE_STATUS_FAILED',
                             });
                         }
                     }

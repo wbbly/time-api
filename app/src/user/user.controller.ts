@@ -65,7 +65,7 @@ export class UserController {
     @Post('reset-password')
     async resetPassword(@Response() res: any, @Body() body: { email: string }) {
         if (!body.email) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIMER.DELETE_FAILED' });
         }
 
         let user = null;
@@ -98,19 +98,17 @@ export class UserController {
                 © 2019 All rights reserved.
             `;
                 this.mailService.send(to, subject, html);
-                return res.status(HttpStatus.OK).json({ message: 'Check the mailbox for a password reset email!' });
+                return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.RESET_EMAIL_CHECK' });
             }
         }
 
-        return res
-            .status(HttpStatus.FORBIDDEN)
-            .json({ message: 'An error occurred while sending a password reset email!' });
+        return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.RESET_EMAIL_FAILED' });
     }
 
     @Post('set-password')
     async setPassword(@Response() res: any, @Body() body: { token: string; password: string }) {
         if (!(body.token && body.password)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Token and password are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let user = null;
@@ -144,13 +142,11 @@ export class UserController {
                 © 2019 All rights reserved.
             `;
                 this.mailService.send(to, subject, html);
-                return res.status(HttpStatus.OK).json({ message: "You've been successfully reset the password!" });
+                return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.RESET_PASSWORD' });
             }
         }
 
-        return res
-            .status(HttpStatus.FORBIDDEN)
-            .json({ message: 'Sorry, something went wrong. Please try again later!' });
+        return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.INTERNAL' });
     }
 
     @Post('change-password')
@@ -166,7 +162,7 @@ export class UserController {
         }
 
         if (!(body.password && body.newPassword)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Current and new passwords are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let user = null;
@@ -187,7 +183,7 @@ export class UserController {
 
                 if (changePasswordData) {
                     const to = changePasswordData.data.update_user.returning[0].email;
-                    const subject = `You've been successfully changed the password!`;
+                    const subject = `SUCCESS.USER.PASSWORD_CHANGED`;
                     const html = `
                     Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
                     <br /><br />
@@ -201,22 +197,20 @@ export class UserController {
                     © 2019 All rights reserved.
                 `;
                     this.mailService.send(to, subject, html);
-                    return res
-                        .status(HttpStatus.OK)
-                        .json({ message: "You've been successfully changed the password!" });
+                    return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.PASSWORD_CHANGED' });
                 }
             } else {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'Current password is wrong!' });
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.CURRENT_PASSWORD_WRONG' });
             }
         }
 
-        return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while changing a password!' });
+        return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.CHANGE_PASSWORD_FAILED' });
     }
 
     @Post('login')
     async loginUser(@Response() res: any, @Body() body: User) {
         if (!(body.email && body.password)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email and password are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let user = null;
@@ -234,7 +228,7 @@ export class UserController {
             }
         }
 
-        return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email or password wrong!' });
+        return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.EMAIL_PASSWORD_WRONG' });
     }
 
     @Post('invite')
@@ -250,7 +244,7 @@ export class UserController {
         }
 
         if (!body.email) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Param email is required' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let teamId;
@@ -259,9 +253,7 @@ export class UserController {
             const currentTeamRes = await this.teamService.getCurrentTeam(userId);
             const userTeamData = (currentTeamRes as AxiosResponse).data.user_team[0];
             if (!userTeamData) {
-                return res
-                    .status(HttpStatus.FORBIDDEN)
-                    .json({ message: 'An error occured while creating an invite the user.' });
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.CREATE_INVITE_FAILED' });
             }
             teamId = userTeamData.team.id;
             teamName = userTeamData.team.name || '';
@@ -271,7 +263,7 @@ export class UserController {
         }
 
         if (!teamId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
         }
 
         const usersData: any = await this.userService.getUserList();
@@ -353,7 +345,7 @@ export class UserController {
     @Post('register')
     async registerUser(@Response() res: any, @Body() body: any) {
         if (!(body.email && body.password)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email and password are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let userExists = false;
@@ -364,7 +356,7 @@ export class UserController {
         }
 
         if (userExists === true) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Email exists' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.EMAIL_EXISTS' });
         }
 
         let user = null;
@@ -383,9 +375,7 @@ export class UserController {
             return res.status(HttpStatus.OK).json(user);
         }
 
-        return res
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .json({ message: 'An error occurred while creating the user!' });
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'ERROR.USER.CREATE_USER_FAILED' });
     }
 
     @Patch(':id')
@@ -401,7 +391,7 @@ export class UserController {
             const currentTeamRes = await this.teamService.getCurrentTeam(userId);
             const userTeamData = (currentTeamRes as AxiosResponse).data.user_team[0];
             if (!userTeamData) {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occured while updating the user.' });
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
             }
             teamId = userTeamData.team.id;
         } catch (err) {
@@ -410,7 +400,7 @@ export class UserController {
         }
 
         if (!teamId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occured while updating the user.' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
         let userIsAdmin = false;
@@ -419,7 +409,7 @@ export class UserController {
             const userDataByTeamData = await this.userService.getUserDataByTeam(userId, teamId);
             const userTeam = userDataByTeamData.data.user[0].user_teams[0];
             if (!userTeam) {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
             }
 
             userIsAdmin = userTeam.role_collaboration.title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
@@ -430,9 +420,7 @@ export class UserController {
 
         if (!userIsAdmin) {
             if (param.id !== userId) {
-                return res
-                    .status(HttpStatus.FORBIDDEN)
-                    .json({ message: "You don't have a permissions to update the user!" });
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_PERMISSIONS_DENIED' });
             }
         }
 
@@ -444,7 +432,7 @@ export class UserController {
         }
 
         if (!user) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
         let allowedDataToUpdate: any = {
@@ -490,9 +478,9 @@ export class UserController {
                     return res.status(HttpStatus.OK).json({ token });
                 }
 
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'An error occurred while updating the user!' });
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
             } else {
-                return res.status(HttpStatus.OK).json({ mesage: 'The user was successfully updated!' });
+                return res.status(HttpStatus.OK).json({ mesage: 'SUCCESS.USER.UPDATE_USER' });
             }
         } catch (err) {
             const error: AxiosError = err;

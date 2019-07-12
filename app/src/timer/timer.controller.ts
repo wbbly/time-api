@@ -54,15 +54,15 @@ export class TimerController {
         }
 
         if (!(params.startDate && params.endDate)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters startDate and endDate are required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.PROJECT.UPDATE_FAILED' });
         }
 
         if (params.userEmails && Object.prototype.toString.call(params.userEmails) !== '[object Array]') {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters userEmails needs to be an array!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         if (params.projectNames && Object.prototype.toString.call(params.projectNames) !== '[object Array]') {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Parameters projectNames needs to be an array!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let teamId;
@@ -75,7 +75,7 @@ export class TimerController {
         }
 
         if (!teamId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
         }
 
         try {
@@ -102,7 +102,7 @@ export class TimerController {
         }
 
         if (!body.projectId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Timer projectId is required!' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {

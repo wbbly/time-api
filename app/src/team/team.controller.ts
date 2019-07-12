@@ -62,7 +62,7 @@ export class TeamController {
         }
 
         if (!teamId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: "The user isn't a member of any team!" });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
         }
 
         try {
@@ -107,7 +107,7 @@ export class TeamController {
         }
 
         if (!body.teamName) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Team Name required' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {
@@ -128,7 +128,7 @@ export class TeamController {
         }
 
         if (!body.teamId) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Team ID required' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {
@@ -149,7 +149,7 @@ export class TeamController {
         }
 
         if (!(body.teamId && body.newName)) {
-            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID, Team ID & New Team Name required' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {

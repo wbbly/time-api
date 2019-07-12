@@ -269,14 +269,14 @@ export class TimerService {
                     const timer = getTimerQueryRes.data.timer_v2[0];
                     if (!timer) {
                         return reject({
-                            message: 'An error occured while updating the timer',
+                            message: 'ERROR.TIMER.UPDATE_FAILED',
                         });
                     }
 
                     const timerUserId = timer.user.id;
                     if (timerUserId !== userId) {
                         return reject({
-                            message: 'An error occured while updating the timer',
+                            message: 'ERROR.TIMER.UPDATE_FAILED',
                         });
                     }
 
@@ -316,14 +316,14 @@ export class TimerService {
                     const timer = getTimerQueryRes.data.timer_v2[0];
                     if (!timer) {
                         return reject({
-                            message: 'An error occured while deleting the timer',
+                            message: 'ERROR.TIMER.DELETE_FAILED',
                         });
                     }
 
                     const timerUserId = timer.user.id;
                     if (timerUserId !== userId) {
                         return reject({
-                            message: 'An error occured while deleting the timer',
+                            message: 'ERROR.TIMER.DELETE_FAILED',
                         });
                     }
 
