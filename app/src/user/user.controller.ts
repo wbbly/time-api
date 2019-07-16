@@ -439,18 +439,25 @@ export class UserController {
             username: body.username,
             email: body.email,
             language: body.language,
+            tokenJira: body.tokenJira,
             isActive: body.isActive,
             roleName: body.roleName,
         };
         if (!userIsAdmin) {
-            allowedDataToUpdate = { username: body.username, email: body.email, language: body.language };
+            allowedDataToUpdate = {
+                username: body.username,
+                email: body.email,
+                language: body.language,
+                tokenJira: body.tokenJira,
+            };
         }
 
-        const { username, email, language } = user;
+        const { username, email, language, tokenJira } = user;
         const userData = {
             username,
             email,
             language,
+            tokenJira,
             isActive: userIsActive,
             roleName: userIsAdmin
                 ? this.roleCollaborationService.ROLES.ROLE_ADMIN

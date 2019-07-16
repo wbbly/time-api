@@ -12,6 +12,7 @@ export interface User {
     timezoneOffset?: number;
     resetPasswordHash?: string;
     language?: string;
+    tokenJira?: string;
     currentTimer?: TimerCurrentV2[];
     timer?: Timer[];
 }

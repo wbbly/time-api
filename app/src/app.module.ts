@@ -14,6 +14,7 @@ import { EmailModule } from './email/email.module';
 import { ReportModule } from './report/report.module';
 import { FileModule } from './file/file.module';
 import { TeamModule } from './team/team.module';
+import { SyncModule } from './sync/sync.module';
 
 @Module({
     imports: [
@@ -29,6 +30,7 @@ import { TeamModule } from './team/team.module';
         ReportModule,
         FileModule,
         TeamModule,
+        SyncModule,
     ],
     controllers: [AppController],
     providers: [AppService],

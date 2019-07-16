@@ -8,6 +8,7 @@ export interface Timer {
     projectId?: string;
     startDatetime?: string;
     endDatetime?: string;
+    syncJiraStatus?: boolean;
     createdAt?: string;
     project?: Project;
     user?: User;

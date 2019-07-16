@@ -154,6 +154,7 @@ export class TimerService {
                                 start_datetime,
                                 end_datetime,
                                 issue,
+                                sync_jira_status,
                                 project{
                                     name,
                                     id,

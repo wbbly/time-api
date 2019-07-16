@@ -95,6 +95,7 @@ export class UserService {
                 password
                 timezone_offset
                 language
+                token_jira
             }
         }
         `;
@@ -113,6 +114,7 @@ export class UserService {
                             password,
                             timezone_offset: timezoneOffset,
                             language,
+                            token_jira: tokenJira,
                         } = data;
 
                         user = {
@@ -122,6 +124,7 @@ export class UserService {
                             password,
                             timezoneOffset,
                             language,
+                            tokenJira,
                         };
                     }
 
@@ -233,11 +236,12 @@ export class UserService {
             username: string;
             email: string;
             language: string;
+            tokenJira: string;
             isActive: boolean;
             roleName: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, isActive, roleName } = data;
+        const { username, email, language, tokenJira, isActive, roleName } = data;
 
         const roleId =
             roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
@@ -254,6 +258,7 @@ export class UserService {
                     username: "${username}"
                     email: "${email}"
                     language: "${language}"
+                    token_jira: "${tokenJira}"
                 }
             ) {
                 returning {
@@ -466,6 +471,7 @@ export class UserService {
             email: user.email,
             timezoneOffset: user.timezoneOffset,
             language: user.language,
+            tokenJira: user.tokenJira,
 
             // @TODO: replace with real application version
             appVersion: APP_VERSION,

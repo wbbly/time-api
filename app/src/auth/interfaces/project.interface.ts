@@ -5,4 +5,5 @@ export interface JwtPayload {
     timezoneOffset?: number;
     appVersion?: string;
     language?: string;
+    tokenJira?: string;
 }

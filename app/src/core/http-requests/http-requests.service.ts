@@ -23,4 +23,25 @@ export class HttpRequestsService {
             )
             .pipe(map(response => response.data));
     }
+
+    requestJiraPost(url: string, query: any, token: string): Observable<AxiosResponse | AxiosError> {
+        return this.httpService
+            .post(this.configService.get('JIRA_URL') + url, query, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Basic ${token}`,
+                },
+            })
+            .pipe(map(response => response.data));
+    }
+
+    requestJiraGet(url: string, token: string): Observable<AxiosResponse | AxiosError> {
+        return this.httpService
+            .get(this.configService.get('JIRA_URL') + url, {
+                headers: {
+                    Authorization: `Basic ${token}`,
+                },
+            })
+            .pipe(map(response => response.data));
+    }
 }
