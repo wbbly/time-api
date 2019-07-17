@@ -30,4 +30,24 @@ export class EmailController {
 
         return res.status(HttpStatus.OK).json({ message: 'Email sent!' });
     }
+
+    @Post('send-alert')
+    async sendAlertEmail(@Response() res: any, @Body() body: any) {
+        if (!body.message) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'Message are required!' });
+        }
+
+        const to = this.configService.get('MAILER_MANAGER_EMAIL');
+        const subject = 'Alert from Wobbly!';
+        const html = `
+            Message: ${body.message}
+            <br /><br />
+            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <br />
+            © 2019 All rights reserved.
+        `;
+        this.mailService.send(to, subject, html);
+
+        return res.status(HttpStatus.OK).json({ message: 'Email sent!' });
+    }
 }
