@@ -45,6 +45,14 @@ export class TimeService {
         return new Date(value).getTime();
     }
 
+    getStartDateOfPrevMonth() {
+        const date = new Date();
+        date.setDate(0);
+        date.setDate(1);
+
+        return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    }
+
     getReadableTime(value: string | number, timeInPast: number): string {
         return this.getISOTimeByGivenValue(this.getTimestampByGivenValue(value) - timeInPast)
             .replace('T', ' ')

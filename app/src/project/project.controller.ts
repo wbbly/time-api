@@ -38,7 +38,10 @@ export class ProjectController {
         }
 
         try {
-            const projectListRes = await this.projectService.getProjectList(userId);
+            const projectListRes = await this.projectService.getProjectList(
+                userId,
+                params.withTimerList === 'true' ? true : false
+            );
             return res.status(HttpStatus.OK).json(projectListRes);
         } catch (e) {
             const error: AxiosError = e;

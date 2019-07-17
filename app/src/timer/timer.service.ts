@@ -148,8 +148,9 @@ export class TimerService {
                                     team_id: {
                                         _eq: "${teamId}"
                                     }
-                                }
-                            }, order_by: {start_datetime: desc}, limit: 500) {
+                                },
+                                start_datetime: {_gte: "${this.timeService.getStartDateOfPrevMonth()}"}
+                            }, order_by: {start_datetime: desc}) {
                                 id,
                                 start_datetime,
                                 end_datetime,
