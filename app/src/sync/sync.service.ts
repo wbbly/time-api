@@ -55,14 +55,23 @@ export class SyncService {
             const jiraIssueNumber = timerIssueSplitted.shift().trim();
             const jiraIssueComment = timerIssueSplitted.join(' ');
 
+            const timeSpentSeconds =
+                Math.round(
+                    (this.timeService.getTimestampByGivenValue(endDatetime) -
+                        this.timeService.getTimestampByGivenValue(startDatetime)) /
+                        60000
+                ) * 60;
+
+            if (timeSpentSeconds < 60) {
+                return reject({
+                    message: 'ERROR.TIMER.JIRA_WORKLOG_1_MIN_THRESHHOLD',
+                });
+            }
+
             const query = {
                 comment: jiraIssueComment,
                 started: this.timeService.getISOTimeByGivenValue(startDatetime).replace('Z', '+0000'),
-                timeSpentSeconds: Math.floor(
-                    (this.timeService.getTimestampByGivenValue(endDatetime) -
-                        this.timeService.getTimestampByGivenValue(startDatetime)) /
-                        1000
-                ),
+                timeSpentSeconds,
             };
 
             this.httpRequestsService
