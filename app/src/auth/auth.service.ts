@@ -12,7 +12,13 @@ export class AuthService {
     }
 
     async verify(token: string): Promise<JwtPayload> {
-        return this.jwtService.verify(token);
+        try {
+            const decoded = await this.jwtService.verifyAsync(token);
+
+            return decoded;
+        } catch (e) {
+            console.log('JWT VERIFY ERROR: ', JSON.stringify(e));
+        }
     }
 
     async decode(token: string): Promise<null | { [key: string]: any } | string> {

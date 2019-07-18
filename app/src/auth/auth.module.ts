@@ -18,6 +18,10 @@ import { BearerStrategy } from './bearer.strategy';
                 signOptions: {
                     expiresIn: configService.get('JWT_TTL'),
                 },
+                verifyOptions: {
+                    clockTolerance: 60,
+                    maxAge: configService.get('JWT_TTL'),
+                },
             }),
             inject: [ConfigService],
         }),
