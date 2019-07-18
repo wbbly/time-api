@@ -17,7 +17,7 @@ export class AuthService {
 
             return decoded;
         } catch (e) {
-            console.log(new Date().toISOString(), ' [JWT VERIFY ERROR] ', JSON.stringify(e));
+            console.log(new Date().toISOString(), ' [JWT VERIFY ERROR] ', JSON.stringify(e), ' [TOKEN] ', token);
         }
     }
 
