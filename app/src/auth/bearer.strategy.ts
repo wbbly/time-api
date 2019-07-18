@@ -13,7 +13,7 @@ export class BearerStrategy extends PassportStrategy(Strategy) {
         try {
             await this.jwtService.verifyAsync(token);
         } catch (e) {
-            console.log('JWT VERIFY ERROR: ', JSON.stringify(e));
+            console.log(new Date().toISOString(), ' [JWT VERIFY ERROR] ', JSON.stringify(e));
             throw new UnauthorizedException();
         }
 
