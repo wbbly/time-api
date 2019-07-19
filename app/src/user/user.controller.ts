@@ -33,6 +33,28 @@ export class UserController {
         private readonly mailService: MailService
     ) {}
 
+    @Get('')
+    @UseGuards(AuthGuard())
+    async getUser(@Headers() headers: any, @Response() res: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        let user = null;
+        try {
+            user = await this.userService.getUserById(userId);
+        } catch (err) {
+            console.log(err);
+        }
+
+        if (!user) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.GET_USER_FAILED' });
+        }
+
+        return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(user));
+    }
+
     @Get('list')
     @UseGuards(AuthGuard())
     async userList(@Headers() headers: any, @Response() res: any) {
@@ -167,7 +189,7 @@ export class UserController {
 
         let user = null;
         try {
-            user = await this.userService.getUserById(userId, true);
+            user = await this.userService.getUserById(userId);
         } catch (error) {
             console.log(error);
         }
@@ -382,113 +404,168 @@ export class UserController {
     @UseGuards(AuthGuard())
     async updateUser(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId) {
+        if (!userId || param.id !== userId) {
             throw new UnauthorizedException();
-        }
-
-        let teamId;
-        try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
-            const userTeamData = (currentTeamRes as AxiosResponse).data.user_team[0];
-            if (!userTeamData) {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
-            }
-            teamId = userTeamData.team.id;
-        } catch (err) {
-            const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
-        }
-
-        if (!teamId) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
-        }
-
-        let userIsAdmin = false;
-        let userIsActive = false;
-        try {
-            const userDataByTeamData = await this.userService.getUserDataByTeam(userId, teamId);
-            const userTeam = userDataByTeamData.data.user[0].user_teams[0];
-            if (!userTeam) {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
-            }
-
-            userIsAdmin = userTeam.role_collaboration.title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
-            userIsActive = userTeam.is_active;
-        } catch (error) {
-            console.log(error);
-        }
-
-        if (!userIsAdmin) {
-            if (param.id !== userId) {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_PERMISSIONS_DENIED' });
-            }
         }
 
         let user = null;
         try {
-            user = await this.userService.getUserById(param.id, false);
-        } catch (error) {
-            console.log(error);
+            user = await this.userService.getUserById(param.id);
+        } catch (err) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
         if (!user) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
-        let allowedDataToUpdate: any = {
+        const newUserData: any = {
             username: body.username,
             email: body.email,
             language: body.language,
             tokenJira: body.tokenJira,
+        };
+
+        const userData = {
+            username: user.username,
+            email: user.email,
+            language: user.language,
+            tokenJira: user.tokenJira,
+        };
+        Object.keys(userData).forEach(prop => {
+            const newValue = newUserData[prop];
+            userData[prop] = typeof newValue === 'undefined' || newValue === null ? userData[prop] : newValue;
+        });
+
+        try {
+            await this.userService.updateUser(userId, userData);
+
+            let userUpdated = null;
+            try {
+                userUpdated = await this.userService.getUserById(userId);
+            } catch (err) {
+                console.log(err);
+            }
+
+            if (!userUpdated) {
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+            }
+
+            return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
+        } catch (err) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+    }
+
+    @Patch(':id/team')
+    @UseGuards(AuthGuard())
+    async updateUserInTeam(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
+        // The user id to update
+        const userId = param.id;
+
+        // The admin id who want to update the user
+        const adminId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!adminId) {
+            throw new UnauthorizedException();
+        }
+
+        // An array of current teams information
+        let currentUserTeamData = null;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(adminId);
+            currentUserTeamData = (currentTeamRes.data.user_team || [])[0] || null;
+        } catch (err) {
+            console.log(err);
+        }
+
+        if (currentUserTeamData === null) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        // The id of the current admin's team
+        const adminTeamId = (currentUserTeamData.team || {}).id;
+
+        if (!adminTeamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        // Check the user who what to update is ADMIN and ACTIVE
+        const checkAdminIsAdmin =
+            (currentUserTeamData.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
+        const checkAdminIsActive = currentUserTeamData.is_active || false;
+
+        if (!checkAdminIsAdmin || !checkAdminIsActive) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        // Retreive all the team information of the user who will be updated
+        let userTeam = null;
+        try {
+            const userDataByTeamData = await this.userService.getUserDataByTeam(userId, adminTeamId);
+            userTeam = ((userDataByTeamData.data.user[0] || {}).user_teams || [])[0] || null;
+        } catch (err) {
+            console.log(err);
+        }
+
+        if (userTeam === null) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        const userIsAdmin =
+            (userTeam.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
+        const userIsActive = userTeam.is_active || false;
+
+        // Retreive all the user information of the user who will be updated
+        let user = null;
+        try {
+            user = await this.userService.getUserById(userId);
+        } catch (err) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        if (!user) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        const newUserData: any = {
+            username: body.username,
+            email: body.email,
             isActive: body.isActive,
             roleName: body.roleName,
         };
-        if (!userIsAdmin) {
-            allowedDataToUpdate = {
-                username: body.username,
-                email: body.email,
-                language: body.language,
-                tokenJira: body.tokenJira,
-            };
-        }
 
-        const { username, email, language, tokenJira } = user;
         const userData = {
-            username,
-            email,
-            language,
-            tokenJira,
+            username: user.username,
+            email: user.email,
             isActive: userIsActive,
             roleName: userIsAdmin
                 ? this.roleCollaborationService.ROLES.ROLE_ADMIN
                 : this.roleCollaborationService.ROLES.ROLE_MEMBER,
         };
         Object.keys(userData).forEach(prop => {
-            const value = allowedDataToUpdate[prop];
-            userData[prop] = typeof value === 'undefined' || value === null ? userData[prop] : value;
+            const newValue = newUserData[prop];
+            userData[prop] = typeof newValue === 'undefined' || newValue === null ? userData[prop] : newValue;
         });
 
         try {
-            await this.userService.updateUser(userId, teamId, param.id, userData);
+            await this.userService.updateUserInTeam(adminId, adminTeamId, userId, userData);
 
-            if (param.id === userId) {
+            if (adminId === userId) {
                 let userUpdated = null;
                 try {
-                    userUpdated = await this.userService.getUserById(param.id, false);
-                } catch (error) {
-                    console.log(error);
+                    userUpdated = await this.userService.getUserById(userId);
+                } catch (err) {
+                    console.log(err);
                 }
 
-                if (userUpdated) {
-                    const token = await this.userService.signIn(userUpdated);
-
-                    return res.status(HttpStatus.OK).json({ token });
+                if (!userUpdated) {
+                    return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
                 }
 
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
-            } else {
-                return res.status(HttpStatus.OK).json({ mesage: 'SUCCESS.USER.UPDATE_USER' });
+                return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
             }
+
+            return res.status(HttpStatus.OK).json({ mesage: 'SUCCESS.USER.UPDATE_USER' });
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);

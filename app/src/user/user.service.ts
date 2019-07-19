@@ -41,13 +41,9 @@ export class UserService {
         });
     }
 
-    async getUserById(id: string, isActive: boolean = true): Promise<User | AxiosError> {
+    async getUserById(id: string): Promise<User | AxiosError> {
         const whereStatements = [`id: { _eq: "${id}" }`];
 
-        if (isActive) {
-            whereStatements.push(`is_active: { _eq: true } `);
-        }
-
         return new Promise((resolve, reject) => {
             this.getUserData(whereStatements.join(',')).then(
                 (res: User) => resolve(res),
@@ -56,13 +52,9 @@ export class UserService {
         });
     }
 
-    async getUserByEmail(email: string, isActive: boolean = true): Promise<User | AxiosError> {
+    async getUserByEmail(email: string): Promise<User | AxiosError> {
         const whereStatements = [`email: { _eq: "${email}" }`];
 
-        if (isActive) {
-            whereStatements.push(`is_active: { _eq: true } `);
-        }
-
         return new Promise((resolve, reject) => {
             this.getUserData(whereStatements.join(',')).then(
                 (res: User) => resolve(res),
@@ -71,12 +63,8 @@ export class UserService {
         });
     }
 
-    async getUserByResetPasswordHash(token: string, isActive: boolean = true): Promise<User | AxiosError> {
+    async getUserByResetPasswordHash(token: string): Promise<User | AxiosError> {
         const whereStatements = [`reset_password_hash: { _eq: "${token}" }`];
-
-        if (isActive) {
-            whereStatements.push(`is_active: { _eq: true } `);
-        }
 
         return new Promise((resolve, reject) => {
             this.getUserData(whereStatements.join(',')).then(
@@ -133,6 +121,19 @@ export class UserService {
                 (error: AxiosError) => reject(error)
             );
         });
+    }
+
+    getPublicUserData(user: User) {
+        const { id, username, email, timezoneOffset, language, tokenJira } = user;
+
+        return {
+            id,
+            username,
+            email,
+            timezoneOffset,
+            language,
+            tokenJira,
+        };
     }
 
     async checkUserExists(data: { email: string }): Promise<boolean> {
@@ -229,30 +230,20 @@ export class UserService {
     }
 
     async updateUser(
-        adminId: string,
-        teamId: string,
         userId: string,
         data: {
             username: string;
             email: string;
             language: string;
             tokenJira: string;
-            isActive: boolean;
-            roleName: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, tokenJira, isActive, roleName } = data;
-
-        const roleId =
-            roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
-                ? this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
-                : this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER;
+        const { username, email, language, tokenJira } = data;
 
         const query = `mutation {
             update_user(
                 where: {
-                    id: {_eq: "${userId}"},
-                    user_teams: {team_id: {_eq: "${teamId}"}}
+                    id: {_eq: "${userId}"}
                 },
                 _set: {
                     username: "${username}"
@@ -267,11 +258,53 @@ export class UserService {
             }
         }`;
 
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async updateUserInTeam(
+        adminId: string,
+        adminTeamId: string,
+        userId: string,
+        userData: {
+            username: string;
+            email: string;
+            isActive: boolean;
+            roleName: string;
+        }
+    ): Promise<AxiosResponse | AxiosError> {
+        const { username, email, isActive, roleName } = userData;
+
+        const roleId =
+            roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
+                ? this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
+                : this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER;
+
+        const query = `mutation {
+            update_user(
+                where: {
+                    id: {_eq: "${userId}"},
+                    user_teams: {team_id: {_eq: "${adminTeamId}"}}
+                },
+                _set: {
+                    username: "${username}"
+                    email: "${email}"
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
+
         const updateTeamRoleQuery = `mutation{
             update_user_team(
                 where: {
                     user_id: { _eq: "${userId}"},
-                    team_id: { _eq: "${teamId}"}
+                    team_id: { _eq: "${adminTeamId}"}
                 },
                 _set: {
                     role_collaboration_id: "${roleId}"
@@ -292,7 +325,7 @@ export class UserService {
                 const ownerUserTeams = await this.teamService.getOwnerUserTeams(userId);
                 ownTeamList = ownerUserTeams.data.team;
                 for (const ownTeam of ownTeamList) {
-                    if (ownTeam.id === teamId && roleId === this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER) {
+                    if (ownTeam.id === adminTeamId && roleId === this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER) {
                         if (adminId === userId) {
                             return reject({
                                 message: 'ERROR.USER.UPDATE_USER_ROLE_FAILED',
@@ -302,7 +335,7 @@ export class UserService {
                                 message: 'ERROR.USER.UPDATE_TEAM_OWNER_ROLE_FAILED',
                             });
                         }
-                    } else if (ownTeam.id === teamId && isActive === false) {
+                    } else if (ownTeam.id === adminTeamId && isActive === false) {
                         if (adminId === userId) {
                             return reject({
                                 message: 'ERROR.USER.UPDATE_ACTIVE_STATUS_FAILED',
@@ -338,7 +371,7 @@ export class UserService {
                                             update_user_team(
                                                 where: {
                                                     user_id: { _eq: "${userId}"},
-                                                    team_id: { _eq: "${teamId}"}
+                                                    team_id: { _eq: "${adminTeamId}"}
                                                 },
                                                 _set: {
                                                     current_team: false
@@ -467,13 +500,6 @@ export class UserService {
     async signIn(user: User): Promise<any> {
         return await this.authService.signIn({
             id: user.id,
-            username: user.username,
-            email: user.email,
-            timezoneOffset: user.timezoneOffset,
-            language: user.language,
-            tokenJira: user.tokenJira,
-
-            // @TODO: replace with real application version
             appVersion: APP_VERSION,
         });
     }

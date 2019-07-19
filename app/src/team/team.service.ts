@@ -241,7 +241,7 @@ export class TeamService {
         });
     }
 
-    async getCurrentTeam(userId: string) {
+    async getCurrentTeam(userId: string): Promise<any | AxiosError> {
         const getCurrentTeamQuery = `{
             user_team(where: {
                 user_id: { _eq: "${userId}" },
@@ -252,6 +252,7 @@ export class TeamService {
                     name
                     slug
                 }
+                is_active
                 role_collaboration_id
                 role_collaboration {
                     title
