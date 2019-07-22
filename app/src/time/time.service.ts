@@ -9,6 +9,10 @@ export class TimeService {
         return new Date().toISOString();
     }
 
+    getISOTimeWithZeroMilliseconds(): string {
+        return new Date().toISOString().replace(/[0-9]{3}Z$/, '000Z');
+    }
+
     getISOTimeByGivenValue(value: string | number): string {
         return new Date(value).toISOString();
     }
@@ -59,7 +63,7 @@ export class TimeService {
             .split('.')[0]; // 2019-01-01 00:00:00
     }
 
-    getTimeDurationByGivenTimestamp(number: string): string {
+    getTimeDurationByGivenTimestamp(number: number): string {
         const shortEnglishHumanizer = humanizeDuration.humanizer({
             language: 'shortEn',
             round: true,
@@ -78,13 +82,7 @@ export class TimeService {
             },
         });
 
-        let duration = shortEnglishHumanizer(number).replace(/,/g, ''); // 2w 2d 45m or 45m 15s
-
-        // remove seconds if the duration contains not only hours and seconds (length will be > 7, 1h 45m 15s)
-        duration =
-            duration.length > 7
-                ? `${duration.split('m').length > 1 ? duration.split('m')[0] + 'm' : duration.split('m')[0]}`
-                : duration;
+        const duration = shortEnglishHumanizer(number).replace(/,/g, ''); // 2w 2d 45m or 45m 15s
 
         return duration;
     }

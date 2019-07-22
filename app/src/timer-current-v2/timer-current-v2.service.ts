@@ -173,7 +173,7 @@ export class TimerCurrentV2Service {
                         issue: "${issue}",
                         user_id: "${userId}"
                         project_id: "${projectId}"
-                        start_datetime: "${this.timeService.getISOTime()}",
+                        start_datetime: "${this.timeService.getISOTimeWithZeroMilliseconds()}",
                     }
                 ]
             ){
@@ -280,7 +280,7 @@ export class TimerCurrentV2Service {
                                     .addTimer({
                                         issue,
                                         startDatetime,
-                                        endDatetime: this.timeService.getISOTime(),
+                                        endDatetime: this.timeService.getISOTimeWithZeroMilliseconds(),
                                         userId: user.id,
                                         projectId: project.id,
                                     })
