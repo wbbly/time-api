@@ -24,8 +24,7 @@ export class TimerCurrentV2Gateway {
     async onRoomJoin(client: Socket, data: { token: string }): Promise<string> {
         const userId = await this.authService.getVerifiedUserId(data.token);
         if (!userId) {
-            const decodedUserId = await this.authService.getDecodedUserId(data.token);
-            this.server.in(decodedUserId).emit('user-unauthorized', {
+            client.emit('user-unauthorized', {
                 statusCode: 401,
                 error: 'Unauthorized',
             });
@@ -42,8 +41,7 @@ export class TimerCurrentV2Gateway {
     async onLeaveJoin(client: Socket, data: { token: string }): Promise<string> {
         const userId = await this.authService.getVerifiedUserId(data.token);
         if (!userId) {
-            const decodedUserId = await this.authService.getDecodedUserId(data.token);
-            this.server.in(decodedUserId).emit('user-unauthorized', {
+            client.emit('user-unauthorized', {
                 statusCode: 401,
                 error: 'Unauthorized',
             });
@@ -60,8 +58,7 @@ export class TimerCurrentV2Gateway {
     async checkTimer(client: Socket, data: { token: string }): Promise<string> {
         const userId = await this.authService.getVerifiedUserId(data.token);
         if (!userId) {
-            const decodedUserId = await this.authService.getDecodedUserId(data.token);
-            this.server.in(decodedUserId).emit('user-unauthorized', {
+            client.emit('user-unauthorized', {
                 statusCode: 401,
                 error: 'Unauthorized',
             });
@@ -89,8 +86,7 @@ export class TimerCurrentV2Gateway {
     async startTimer(client: Socket, data: { token: string; issue: string; projectId: string }): Promise<string> {
         const userId = await this.authService.getVerifiedUserId(data.token);
         if (!userId) {
-            const decodedUserId = await this.authService.getDecodedUserId(data.token);
-            this.server.in(decodedUserId).emit('user-unauthorized', {
+            client.emit('user-unauthorized', {
                 statusCode: 401,
                 error: 'Unauthorized',
             });
@@ -122,8 +118,7 @@ export class TimerCurrentV2Gateway {
     async updateTimer(client: Socket, data: { token: string; issue: string; projectId: string }): Promise<string> {
         const userId = await this.authService.getVerifiedUserId(data.token);
         if (!userId) {
-            const decodedUserId = await this.authService.getDecodedUserId(data.token);
-            this.server.in(decodedUserId).emit('user-unauthorized', {
+            client.emit('user-unauthorized', {
                 statusCode: 401,
                 error: 'Unauthorized',
             });
@@ -155,8 +150,7 @@ export class TimerCurrentV2Gateway {
     async endTimer(client: Socket, data: { token: string }): Promise<string> {
         const userId = await this.authService.getVerifiedUserId(data.token);
         if (!userId) {
-            const decodedUserId = await this.authService.getDecodedUserId(data.token);
-            this.server.in(decodedUserId).emit('user-unauthorized', {
+            client.emit('user-unauthorized', {
                 statusCode: 401,
                 error: 'Unauthorized',
             });
