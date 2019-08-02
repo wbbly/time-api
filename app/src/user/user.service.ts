@@ -500,11 +500,6 @@ export class UserService {
     async signIn(user: User): Promise<any> {
         return await this.authService.signIn({
             id: user.id,
-            username: user.username,
-            email: user.email,
-            timezoneOffset: user.timezoneOffset,
-            language: user.language,
-            tokenJira: user.tokenJira,
             appVersion: APP_VERSION,
         });
     }
