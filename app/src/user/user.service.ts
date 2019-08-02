@@ -249,7 +249,7 @@ export class UserService {
                     username: "${username}"
                     email: "${email}"
                     language: "${language}"
-                    token_jira: "${tokenJira || ''}"
+                    token_jira: ${tokenJira ? '"' + tokenJira + '"' : null}
                 }
             ) {
                 returning {
