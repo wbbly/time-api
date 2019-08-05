@@ -424,6 +424,7 @@ export class UserController {
             email: body.email,
             language: body.language,
             tokenJira: body.tokenJira,
+            phone: body.phone,
         };
 
         const userData = {
@@ -431,6 +432,7 @@ export class UserController {
             email: user.email,
             language: user.language,
             tokenJira: user.tokenJira,
+            phone: user.phone,
         };
         Object.keys(userData).forEach(prop => {
             const newValue = newUserData[prop];

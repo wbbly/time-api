@@ -84,6 +84,7 @@ export class UserService {
                 timezone_offset
                 language
                 token_jira
+                phone
             }
         }
         `;
@@ -103,6 +104,7 @@ export class UserService {
                             timezone_offset: timezoneOffset,
                             language,
                             token_jira: tokenJira,
+                            phone,
                         } = data;
 
                         user = {
@@ -113,6 +115,7 @@ export class UserService {
                             timezoneOffset,
                             language,
                             tokenJira,
+                            phone,
                         };
                     }
 
@@ -124,7 +127,7 @@ export class UserService {
     }
 
     getPublicUserData(user: User) {
-        const { id, username, email, timezoneOffset, language, tokenJira } = user;
+        const { id, username, email, timezoneOffset, language, tokenJira, phone } = user;
 
         return {
             id,
@@ -133,6 +136,7 @@ export class UserService {
             timezoneOffset,
             language,
             tokenJira,
+            phone,
         };
     }
 
@@ -236,9 +240,10 @@ export class UserService {
             email: string;
             language: string;
             tokenJira: string;
+            phone: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, tokenJira } = data;
+        const { username, email, language, tokenJira, phone } = data;
 
         const query = `mutation {
             update_user(
@@ -250,6 +255,7 @@ export class UserService {
                     email: "${email}"
                     language: "${language}"
                     token_jira: ${tokenJira ? '"' + tokenJira + '"' : null}
+                    phone: ${phone ? '"' + phone + '"' : null}
                 }
             ) {
                 returning {
