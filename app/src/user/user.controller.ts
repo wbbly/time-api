@@ -19,6 +19,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AxiosError, AxiosResponse } from 'axios';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import * as fs from 'fs';
 
 import { AuthService } from '../auth/auth.service';
 import { UserService } from '../user/user.service';
@@ -499,8 +500,10 @@ export class UserController {
         }
 
         let user = null;
+        let avatarPath = null;
         try {
             user = await this.userService.getUserById(param.id);
+            avatarPath = user.avatar;
         } catch (err) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
@@ -523,6 +526,10 @@ export class UserController {
                 return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
             }
 
+            if (avatarPath) {
+                fs.unlinkSync(avatarPath);
+            }
+
             return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
         } catch (err) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
@@ -538,8 +545,10 @@ export class UserController {
         }
 
         let user = null;
+        let avatarPath = null;
         try {
             user = await this.userService.getUserById(param.id);
+            avatarPath = user.avatar;
         } catch (err) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
@@ -560,6 +569,10 @@ export class UserController {
 
             if (!userUpdated) {
                 return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+            }
+
+            if (avatarPath) {
+                fs.unlinkSync(avatarPath);
             }
 
             return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
