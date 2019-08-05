@@ -6,6 +6,7 @@
 /tmp
 /out-tsc
 /public
+/avatars
 
 # dependencies
 node_modules

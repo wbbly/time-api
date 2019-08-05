@@ -85,6 +85,7 @@ export class UserService {
                 language
                 token_jira
                 phone
+                avatar
             }
         }
         `;
@@ -105,6 +106,7 @@ export class UserService {
                             language,
                             token_jira: tokenJira,
                             phone,
+                            avatar,
                         } = data;
 
                         user = {
@@ -116,6 +118,7 @@ export class UserService {
                             language,
                             tokenJira,
                             phone,
+                            avatar,
                         };
                     }
 
@@ -127,7 +130,7 @@ export class UserService {
     }
 
     getPublicUserData(user: User) {
-        const { id, username, email, timezoneOffset, language, tokenJira, phone } = user;
+        const { id, username, email, timezoneOffset, language, tokenJira, phone, avatar } = user;
 
         return {
             id,
@@ -137,6 +140,7 @@ export class UserService {
             language,
             tokenJira,
             phone,
+            avatar,
         };
     }
 
@@ -256,6 +260,29 @@ export class UserService {
                     language: "${language}"
                     token_jira: ${tokenJira ? '"' + tokenJira + '"' : null}
                     phone: ${phone ? '"' + phone + '"' : null}
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async updateUserAvatar(userId: string, avatar: string): Promise<AxiosResponse | AxiosError> {
+        const query = `mutation {
+            update_user(
+                where: {
+                    id: {_eq: "${userId}"}
+                },
+                _set: {
+                    avatar: ${avatar ? '"' + avatar + '"' : null}
                 }
             ) {
                 returning {

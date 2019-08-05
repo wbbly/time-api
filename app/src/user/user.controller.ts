@@ -3,6 +3,7 @@ import {
     Get,
     Post,
     Patch,
+    Delete,
     HttpStatus,
     Headers,
     Param,
@@ -10,9 +11,14 @@ import {
     Body,
     UseGuards,
     UnauthorizedException,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { AxiosError, AxiosResponse } from 'axios';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 import { AuthService } from '../auth/auth.service';
 import { UserService } from '../user/user.service';
@@ -441,6 +447,109 @@ export class UserController {
 
         try {
             await this.userService.updateUser(userId, userData);
+
+            let userUpdated = null;
+            try {
+                userUpdated = await this.userService.getUserById(userId);
+            } catch (err) {
+                console.log(err);
+            }
+
+            if (!userUpdated) {
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+            }
+
+            return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
+        } catch (err) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+    }
+
+    @Post(':id/avatar')
+    @UseGuards(AuthGuard())
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: './avatars',
+                filename: (req, file, cb) => {
+                    const randomName = Array(32)
+                        .fill(null)
+                        .map(() => Math.round(Math.random() * 16).toString(16))
+                        .join('');
+
+                    return cb(null, `${randomName}${extname(file.originalname)}`);
+                },
+            }),
+        })
+    )
+    async addUserAvatar(
+        @Headers() headers: any,
+        @Param() param: any,
+        @Response() res: any,
+        @Body() body: any,
+        @UploadedFile() file
+    ) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId || param.id !== userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!(file && file.path)) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        let user = null;
+        try {
+            user = await this.userService.getUserById(param.id);
+        } catch (err) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        if (!user) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        try {
+            await this.userService.updateUserAvatar(userId, file.path);
+
+            let userUpdated = null;
+            try {
+                userUpdated = await this.userService.getUserById(userId);
+            } catch (err) {
+                console.log(err);
+            }
+
+            if (!userUpdated) {
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+            }
+
+            return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
+        } catch (err) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+    }
+
+    @Delete(':id/avatar')
+    @UseGuards(AuthGuard())
+    async removeUserAvatar(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId || param.id !== userId) {
+            throw new UnauthorizedException();
+        }
+
+        let user = null;
+        try {
+            user = await this.userService.getUserById(param.id);
+        } catch (err) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        if (!user) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
+        }
+
+        try {
+            await this.userService.updateUserAvatar(userId, null);
 
             let userUpdated = null;
             try {

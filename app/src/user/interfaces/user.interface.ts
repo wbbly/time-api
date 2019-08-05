@@ -14,6 +14,7 @@ export interface User {
     language?: string;
     tokenJira?: string;
     phone?: string;
+    avatar?: string;
     currentTimer?: TimerCurrentV2[];
     timer?: Timer[];
 }
