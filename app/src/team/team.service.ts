@@ -285,6 +285,8 @@ export class TeamService {
                         id
                         username
                         email
+                        phone
+                        avatar
                     }
                     role_collaboration{
                         title
