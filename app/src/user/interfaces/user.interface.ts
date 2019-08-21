@@ -13,6 +13,8 @@ export interface User {
     resetPasswordHash?: string;
     language?: string;
     tokenJira?: string;
+    urlJira?: string;
+    typeJira?: string;
     phone?: string;
     avatar?: string;
     currentTimer?: TimerCurrentV2[];

@@ -36,47 +36,6 @@ export class AuthService {
         }
     }
 
-    async getVerifiedUserEmail(jwt: string): Promise<string | null> {
-        try {
-            const token = this.getTokenFromJwt(jwt);
-            const payload: JwtPayload = await this.verify(token);
-
-            return payload.email;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    async getDecodedUserId(jwt: string): Promise<string | null> {
-        try {
-            const token = this.getTokenFromJwt(jwt);
-            const payload: null | { [key: string]: any } | string = await this.decode(token);
-
-            if (typeof payload !== 'string') {
-                return payload.id || null;
-            }
-
-            return null;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    async getDecodedUserEmail(jwt: string): Promise<string | null> {
-        try {
-            const token = this.getTokenFromJwt(jwt);
-            const payload: null | { [key: string]: any } | string = await this.decode(token);
-
-            if (typeof payload !== 'string') {
-                return payload.email || null;
-            }
-
-            return null;
-        } catch (e) {
-            return null;
-        }
-    }
-
     private getTokenFromJwt(jwt: string) {
         return jwt.split(' ')[1];
     }

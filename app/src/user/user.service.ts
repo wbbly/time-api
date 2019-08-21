@@ -84,6 +84,8 @@ export class UserService {
                 timezone_offset
                 language
                 token_jira
+                url_jira
+                type_jira
                 phone
                 avatar
             }
@@ -105,6 +107,8 @@ export class UserService {
                             timezone_offset: timezoneOffset,
                             language,
                             token_jira: tokenJira,
+                            url_jira: urlJira,
+                            type_jira: typeJira,
                             phone,
                             avatar,
                         } = data;
@@ -117,6 +121,8 @@ export class UserService {
                             timezoneOffset,
                             language,
                             tokenJira,
+                            urlJira,
+                            typeJira,
                             phone,
                             avatar,
                         };
@@ -130,7 +136,7 @@ export class UserService {
     }
 
     getPublicUserData(user: User) {
-        const { id, username, email, timezoneOffset, language, tokenJira, phone, avatar } = user;
+        const { id, username, email, timezoneOffset, language, tokenJira, urlJira, typeJira, phone, avatar } = user;
 
         return {
             id,
@@ -139,6 +145,8 @@ export class UserService {
             timezoneOffset,
             language,
             tokenJira,
+            urlJira,
+            typeJira,
             phone,
             avatar,
         };
@@ -244,10 +252,12 @@ export class UserService {
             email: string;
             language: string;
             tokenJira: string;
+            urlJira: string;
+            typeJira: string;
             phone: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, tokenJira, phone } = data;
+        const { username, email, language, tokenJira, urlJira, typeJira, phone } = data;
 
         const query = `mutation {
             update_user(
@@ -259,6 +269,10 @@ export class UserService {
                     email: "${email}"
                     language: "${language}"
                     token_jira: ${tokenJira ? '"' + tokenJira + '"' : null}
+                    url_jira: ${tokenJira ? (urlJira ? '"' + urlJira.replace(/\/$/, '') + '"' : null) : null}
+                    type_jira: ${
+                        tokenJira ? (typeJira ? '"' + (typeJira === 'self' ? 'self' : 'cloud') + '"' : null) : null
+                    }
                     phone: ${phone ? '"' + phone + '"' : null}
                 }
             ) {

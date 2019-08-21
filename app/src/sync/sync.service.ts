@@ -8,18 +8,20 @@ import { TimeService } from '../time/time.service';
 export class SyncService {
     constructor(private readonly httpRequestsService: HttpRequestsService, private readonly timeService: TimeService) {}
 
-    async checkJiraSync(token: string): Promise<any> {
+    async checkJiraSync(urlJira: string, token: string): Promise<any> {
         return new Promise(async (resolve, reject) => {
-            this.httpRequestsService.requestJiraGet(`/api/2/mypermissions`, token).subscribe(
-                _ =>
-                    resolve({
-                        message: 'ERROR.TIMER.JIRA_SYNC_SUCCESS',
-                    }),
-                _ =>
-                    reject({
-                        message: 'ERROR.TIMER.JIRA_SYNC_FAILED',
-                    })
-            );
+            this.httpRequestsService
+                .requestJiraGet(`${urlJira.replace(/\/$/, '')}/rest/api/2/mypermissions`, token)
+                .subscribe(
+                    _ =>
+                        resolve({
+                            message: 'ERROR.TIMER.JIRA_SYNC_SUCCESS',
+                        }),
+                    _ =>
+                        reject({
+                            message: 'ERROR.TIMER.JIRA_SYNC_FAILED',
+                        })
+                );
         });
     }
 
@@ -75,7 +77,7 @@ export class SyncService {
             };
 
             this.httpRequestsService
-                .requestJiraPost(`/api/2/issue/${jiraIssueNumber}/worklog`, query, user.token)
+                .requestJiraPost(`${user.urlJira}/rest/api/2/issue/${jiraIssueNumber}/worklog`, query, user.tokenJira)
                 .subscribe(
                     async _ => {
                         try {
@@ -107,6 +109,7 @@ export class SyncService {
                 sync_jira_status
                 user {
                     token_jira
+                    url_jira
                 }
             }
         }
@@ -128,7 +131,7 @@ export class SyncService {
                         sync_jira_status: syncJiraStatus,
                         user,
                     } = timer;
-                    const { token_jira: tokenJira } = user;
+                    const { token_jira: tokenJira, url_jira: urlJira } = user;
 
                     return resolve({
                         issue,
@@ -136,7 +139,8 @@ export class SyncService {
                         endDatetime,
                         syncJiraStatus,
                         user: {
-                            token: tokenJira,
+                            tokenJira,
+                            urlJira,
                         },
                     });
                 },

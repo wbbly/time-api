@@ -431,6 +431,8 @@ export class UserController {
             email: body.email,
             language: body.language,
             tokenJira: body.tokenJira,
+            urlJira: body.urlJira,
+            typeJira: body.typeJira,
             phone: body.phone,
         };
 
@@ -439,6 +441,8 @@ export class UserController {
             email: user.email,
             language: user.language,
             tokenJira: user.tokenJira,
+            urlJira: user.urlJira,
+            typeJira: user.typeJira,
             phone: user.phone,
         };
         Object.keys(userData).forEach(prop => {

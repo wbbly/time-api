@@ -28,12 +28,12 @@ export class SyncController {
             throw new UnauthorizedException();
         }
 
-        if (!params.token) {
+        if (!(params.token && params.urlJira)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {
-            const checkJiraSyncRes = await this.syncService.checkJiraSync(params.token);
+            const checkJiraSyncRes = await this.syncService.checkJiraSync(params.urlJira, params.token);
             return res.status(HttpStatus.OK).json(checkJiraSyncRes);
         } catch (err) {
             const error: AxiosError = err;
