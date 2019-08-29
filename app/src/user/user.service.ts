@@ -88,6 +88,7 @@ export class UserService {
                 type_jira
                 phone
                 avatar
+                onboarding_mobile
             }
         }
         `;
@@ -111,6 +112,7 @@ export class UserService {
                             type_jira: typeJira,
                             phone,
                             avatar,
+                            onboarding_mobile: onboardingMobile,
                         } = data;
 
                         user = {
@@ -125,6 +127,7 @@ export class UserService {
                             typeJira,
                             phone,
                             avatar,
+                            onboardingMobile,
                         };
                     }
 
@@ -136,7 +139,19 @@ export class UserService {
     }
 
     getPublicUserData(user: User) {
-        const { id, username, email, timezoneOffset, language, tokenJira, urlJira, typeJira, phone, avatar } = user;
+        const {
+            id,
+            username,
+            email,
+            timezoneOffset,
+            language,
+            tokenJira,
+            urlJira,
+            typeJira,
+            phone,
+            avatar,
+            onboardingMobile,
+        } = user;
 
         return {
             id,
@@ -149,6 +164,7 @@ export class UserService {
             typeJira,
             phone,
             avatar,
+            onboardingMobile,
         };
     }
 
@@ -255,9 +271,10 @@ export class UserService {
             urlJira: string;
             typeJira: string;
             phone: string;
+            onboardingMobile: boolean;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, tokenJira, urlJira, typeJira, phone } = data;
+        const { username, email, language, tokenJira, urlJira, typeJira, phone, onboardingMobile } = data;
 
         const query = `mutation {
             update_user(
@@ -273,7 +290,8 @@ export class UserService {
                     type_jira: ${
                         tokenJira ? (typeJira ? '"' + (typeJira === 'self' ? 'self' : 'cloud') + '"' : null) : null
                     }
-                    phone: ${phone ? '"' + phone + '"' : null}
+                    phone: ${phone ? '"' + phone + '"' : null},
+                    onboarding_mobile: ${onboardingMobile === true ? true : false},
                 }
             ) {
                 returning {

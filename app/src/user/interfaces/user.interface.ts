@@ -17,6 +17,7 @@ export interface User {
     typeJira?: string;
     phone?: string;
     avatar?: string;
+    onboardingMobile?: boolean;
     currentTimer?: TimerCurrentV2[];
     timer?: Timer[];
 }

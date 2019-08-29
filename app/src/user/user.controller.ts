@@ -434,6 +434,7 @@ export class UserController {
             urlJira: body.urlJira,
             typeJira: body.typeJira,
             phone: body.phone,
+            onboardingMobile: body.onboardingMobile,
         };
 
         const userData = {
@@ -444,6 +445,7 @@ export class UserController {
             urlJira: user.urlJira,
             typeJira: user.typeJira,
             phone: user.phone,
+            onboardingMobile: user.onboardingMobile,
         };
         Object.keys(userData).forEach(prop => {
             const newValue = newUserData[prop];
