@@ -309,7 +309,7 @@ export class UserService {
                     type_jira: ${
                         tokenJira ? (typeJira ? '"' + (typeJira === 'self' ? 'self' : 'cloud') + '"' : null) : null
                     }
-                    login_jira: ${loginJira ? loginJira : null}
+                    login_jira: ${loginJira ? '"' + loginJira + '"' : null}
                     phone: ${phone ? '"' + phone + '"' : null},
                     onboarding_mobile: ${onboardingMobile === true ? true : false},
                 }
