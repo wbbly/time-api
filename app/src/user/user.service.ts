@@ -86,6 +86,7 @@ export class UserService {
                 token_jira
                 url_jira
                 type_jira
+                login_jira
                 phone
                 avatar
                 onboarding_mobile
@@ -110,6 +111,7 @@ export class UserService {
                             token_jira: tokenJira,
                             url_jira: urlJira,
                             type_jira: typeJira,
+                            login_jira: loginJira,
                             phone,
                             avatar,
                             onboarding_mobile: onboardingMobile,
@@ -125,6 +127,7 @@ export class UserService {
                             tokenJira,
                             urlJira,
                             typeJira,
+                            loginJira,
                             phone,
                             avatar,
                             onboardingMobile,
@@ -148,6 +151,7 @@ export class UserService {
             tokenJira,
             urlJira,
             typeJira,
+            loginJira,
             phone,
             avatar,
             onboardingMobile,
@@ -162,6 +166,7 @@ export class UserService {
             tokenJira,
             urlJira,
             typeJira,
+            loginJira,
             phone,
             avatar,
             onboardingMobile,
@@ -270,11 +275,12 @@ export class UserService {
             tokenJira: string;
             urlJira: string;
             typeJira: string;
+            loginJira: string;
             phone: string;
             onboardingMobile: boolean;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, tokenJira, urlJira, typeJira, phone, onboardingMobile } = data;
+        const { username, email, language, tokenJira, urlJira, typeJira, loginJira, phone, onboardingMobile } = data;
 
         const query = `mutation {
             update_user(
@@ -290,6 +296,7 @@ export class UserService {
                     type_jira: ${
                         tokenJira ? (typeJira ? '"' + (typeJira === 'self' ? 'self' : 'cloud') + '"' : null) : null
                     }
+                    login_jira: ${loginJira ? loginJira : null}
                     phone: ${phone ? '"' + phone + '"' : null},
                     onboarding_mobile: ${onboardingMobile === true ? true : false},
                 }

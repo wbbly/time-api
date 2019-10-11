@@ -15,6 +15,7 @@ export interface User {
     tokenJira?: string;
     urlJira?: string;
     typeJira?: string;
+    loginJira?: string;
     phone?: string;
     avatar?: string;
     onboardingMobile?: boolean;

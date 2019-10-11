@@ -433,6 +433,7 @@ export class UserController {
             tokenJira: body.tokenJira,
             urlJira: body.urlJira,
             typeJira: body.typeJira,
+            loginJira: body.loginJira,
             phone: body.phone,
             onboardingMobile: body.onboardingMobile,
         };
@@ -444,6 +445,7 @@ export class UserController {
             tokenJira: user.tokenJira,
             urlJira: user.urlJira,
             typeJira: user.typeJira,
+            loginJira: user.loginJira,
             phone: user.phone,
             onboardingMobile: user.onboardingMobile,
         };
