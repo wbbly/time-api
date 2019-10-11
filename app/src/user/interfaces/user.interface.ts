@@ -19,6 +19,7 @@ export interface User {
     phone?: string;
     avatar?: string;
     onboardingMobile?: boolean;
+    facebook?: boolean;
     currentTimer?: TimerCurrentV2[];
     timer?: Timer[];
 }

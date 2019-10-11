@@ -63,6 +63,17 @@ export class UserService {
         });
     }
 
+    async getFacebookUserByEmail(email: string): Promise<User | AxiosError> {
+        const whereStatements = [`email: { _eq: "${email}" }`, `facebook: { _eq: true }`];
+
+        return new Promise((resolve, reject) => {
+            this.getUserData(whereStatements.join(',')).then(
+                (res: User) => resolve(res),
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
     async getUserByResetPasswordHash(token: string): Promise<User | AxiosError> {
         const whereStatements = [`reset_password_hash: { _eq: "${token}" }`];
 
@@ -220,9 +231,10 @@ export class UserService {
         username: string;
         email: string;
         password: string;
+        facebook: boolean;
         language?: string;
     }): Promise<AxiosResponse | AxiosError> {
-        const { username, email, password, language } = data;
+        const { username, email, password, facebook, language } = data;
         const passwordHash = await this.getHash(password);
 
         const insertUserQuery = `mutation {
@@ -232,6 +244,7 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
+                        facebook: "${facebook}"
                         language: "${language || DEFAULT_LANGUAGE}",
                         is_active: true
                     }

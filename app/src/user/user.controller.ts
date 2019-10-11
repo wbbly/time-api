@@ -260,6 +260,64 @@ export class UserController {
         return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.EMAIL_PASSWORD_WRONG' });
     }
 
+    @Post('login-fb')
+    async loginFacebookUser(@Response() res: any, @Body() body: User) {
+        if (!(body.id && body.username)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        const userEmail = body.email || `fb${body.id}@wobbly.me`;
+        const userName = body.username || userEmail;
+
+        let userFb = null;
+        try {
+            userFb = await this.userService.getFacebookUserByEmail(userEmail);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (userFb) {
+            const token = await this.userService.signIn(userFb);
+
+            return res.status(HttpStatus.OK).json({ token });
+        } else {
+            let user = null;
+            try {
+                user = await this.userService.getUserByEmail(userEmail);
+            } catch (error) {
+                console.log(error);
+            }
+
+            if (user) {
+                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.ACCOUNT_ALREADY_EXISTED' });
+            }
+
+            let newUserFb = null;
+            try {
+                const userPassword = Math.random()
+                    .toString(36)
+                    .slice(-8);
+                newUserFb = await this.userService.createUser({
+                    username: userName,
+                    email: userEmail,
+                    password: userPassword,
+                    facebook: true,
+                    language: body.language,
+                });
+            } catch (error) {
+                console.log(error);
+            }
+
+            if (newUserFb) {
+                const token = await this.userService.signIn(newUserFb);
+
+                return res.status(HttpStatus.OK).json({ token });
+            }
+
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'ERROR.USER.USER_FAILED' });
+        }
+    }
+
     @Post('invite')
     @UseGuards(AuthGuard())
     async inviteByEmail(
@@ -334,6 +392,7 @@ export class UserController {
                 username: body.email,
                 email: body.email,
                 password: userPassword,
+                facebook: false,
             });
 
             // Get created user ID from createdData and process inviteRequest from Team Service
@@ -394,6 +453,7 @@ export class UserController {
                 username: body.username || body.email,
                 email: body.email,
                 password: body.password,
+                facebook: false,
                 language: body.language,
             });
         } catch (error) {
