@@ -266,7 +266,8 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        const userEmail = body.email || `fb${body.id}@wobbly.me`;
+        const userId = body.id;
+        const userEmail = body.email || `fb${userId}@wobbly.me`;
         const userName = body.username || userEmail;
 
         let userFb = null;
@@ -288,8 +289,23 @@ export class UserController {
                 console.log(error);
             }
 
+            let addSocialEntryData = null;
+            try {
+                addSocialEntryData = await this.userService.addSocialEntry(userId);
+            } catch (error) {
+                console.log(error);
+            }
+
+            let socialId = null;
+            if (addSocialEntryData) {
+                socialId = addSocialEntryData.data.update_user.returning[0].id;
+                await this.userService.updateUserSocial(userEmail, socialId);
+            }
+
             if (user) {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.ACCOUNT_ALREADY_EXISTED' });
+                const token = await this.userService.signIn(user);
+
+                return res.status(HttpStatus.OK).json({ token });
             }
 
             let newUserFb = null;
@@ -301,7 +317,7 @@ export class UserController {
                     username: userName,
                     email: userEmail,
                     password: userPassword,
-                    facebook: true,
+                    socialId,
                     language: body.language,
                 });
             } catch (error) {
@@ -392,7 +408,7 @@ export class UserController {
                 username: body.email,
                 email: body.email,
                 password: userPassword,
-                facebook: false,
+                socialId: null,
             });
 
             // Get created user ID from createdData and process inviteRequest from Team Service
@@ -453,7 +469,7 @@ export class UserController {
                 username: body.username || body.email,
                 email: body.email,
                 password: body.password,
-                facebook: false,
+                socialId: null,
                 language: body.language,
             });
         } catch (error) {

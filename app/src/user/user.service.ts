@@ -64,7 +64,7 @@ export class UserService {
     }
 
     async getFacebookUserByEmail(email: string): Promise<User | AxiosError> {
-        const whereStatements = [`email: { _eq: "${email}" }`, `facebook: { _eq: true }`];
+        const whereStatements = [`email: { _eq: "${email}" }`, `social: {facebook_id: {_is_null: false}}`];
 
         return new Promise((resolve, reject) => {
             this.getUserData(whereStatements.join(',')).then(
@@ -231,10 +231,10 @@ export class UserService {
         username: string;
         email: string;
         password: string;
-        facebook: boolean;
+        socialId: string;
         language?: string;
     }): Promise<AxiosResponse | AxiosError> {
-        const { username, email, password, facebook, language } = data;
+        const { username, email, password, socialId, language } = data;
         const passwordHash = await this.getHash(password);
 
         const insertUserQuery = `mutation {
@@ -244,7 +244,7 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        facebook: "${facebook}"
+                        social_id: ${socialId ? '"' + socialId + '"' : null}
                         language: "${language || DEFAULT_LANGUAGE}",
                         is_active: true
                     }
@@ -335,6 +335,49 @@ export class UserService {
                 },
                 _set: {
                     avatar: ${avatar ? '"' + avatar + '"' : null}
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async addSocialEntry(facebookId: string): Promise<AxiosResponse | AxiosError> {
+        const query = `mutation {
+            insert_social(
+                _set: {
+                    facebook_id: "${facebookId}"
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async updateUserSocial(userEmail: string, socialId: string): Promise<AxiosResponse | AxiosError> {
+        const query = `mutation {
+            update_user(
+                where: {
+                    email: {_eq: "${userEmail}"}
+                },
+                _set: {
+                    social_id: ${socialId ? '"' + socialId + '"' : null}
                 }
             ) {
                 returning {
