@@ -26,62 +26,33 @@ export class ProjectService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        let query;
-        if (isAdmin) {
-            query = `{
-                project_v2(
-                    order_by: {name: asc}
-                    where: {
-                        team_id: { _eq: "${currentTeamId}" }
-                    }
-                ) {
-                    id
+        const clientQueryParam = isAdmin ? `client { id, name }` : '';
+        const timerWhereStatement = isAdmin ? '' : `(where: {user_id: {_eq: "${userId}"}})`;
+
+        const query = `{
+            project_v2(
+                order_by: {name: asc}
+                where: {
+                    team_id: { _eq: "${currentTeamId}" }
+                }
+            ) {
+                id
+                name
+                is_active
+                project_color {
                     name
-                    is_active
-                    project_color {
-                        name
-                    }
-                    client {
-                        id
-                        name
-                    }
-                    ${
-                        withTimerList
-                            ? `timer {
+                }
+                ${clientQueryParam}
+                ${
+                    withTimerList
+                        ? `timer ${timerWhereStatement} {
                             start_datetime
                             end_datetime
                         }`
-                            : ``
-                    }
+                        : ``
                 }
             }
-            `;
-        } else {
-            query = `{
-                project_v2(
-                    order_by: {name: asc}
-                    where: {
-                        team_id: { _eq: "${currentTeamId}" }
-                    }
-                ) {
-                    id
-                    name
-                    is_active
-                    project_color {
-                        name
-                    }
-                    ${
-                        withTimerList
-                            ? `timer(where: {user_id: {_eq: "${userId}"}}) {
-                            start_datetime
-                            end_datetime
-                        }`
-                            : ``
-                    }
-                }
-            }
-            `;
-        }
+        }`;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
@@ -228,8 +199,12 @@ export class ProjectService {
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
         let clientQueryParam = '';
-        if (isAdmin && (clientId || clientId === null)) {
-            clientQueryParam = clientId === null ? `client_id: null` : `client_id: "${clientId}"`;
+        if (isAdmin) {
+            if (clientId) {
+                clientQueryParam = `client_id: "${clientId}"`;
+            } else if (clientId === null) {
+                clientQueryParam = `client_id: null`;
+            }
         }
 
         const query = `mutation {
@@ -267,17 +242,16 @@ export class ProjectService {
         const clientQueryParam = isAdmin ? `client { id, name }` : '';
 
         const query = `{
-                project_v2(where: {id: {_eq: "${projectId}"}, team: {team_users: {user_id: {_eq: "${userId}"}}}}) {
+            project_v2(where: {id: {_eq: "${projectId}"}, team: {team_users: {user_id: {_eq: "${userId}"}}}}) {
+                id
+                name
+                project_color {
                     id
                     name
-                    project_color {
-                        id
-                        name
-                    }
-                    ${clientQueryParam}
                 }
+                ${clientQueryParam}
             }
-            `;
+        }`;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
@@ -300,8 +274,12 @@ export class ProjectService {
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
         let clientQueryParam = '';
-        if (isAdmin && (clientId || clientId === null)) {
-            clientQueryParam = clientId === null ? `client_id: null` : `client_id: "${clientId}"`;
+        if (isAdmin) {
+            if (clientId) {
+                clientQueryParam = `client_id: "${clientId}"`;
+            } else if (clientId === null) {
+                clientQueryParam = `client_id: null`;
+            }
         }
 
         const query = `mutation {
