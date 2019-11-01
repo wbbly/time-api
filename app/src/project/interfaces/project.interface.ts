@@ -13,4 +13,5 @@ export interface Project {
     projectColor?: ProjectColor;
     timer?: Timer[];
     team?: Team;
+    clientId?: string;
 }
