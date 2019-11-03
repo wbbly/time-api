@@ -35,6 +35,9 @@ export class ClientService {
                     project {
                         id
                         name
+                        project_color {
+                            name
+                        }
                     }
                 }
             }`;
