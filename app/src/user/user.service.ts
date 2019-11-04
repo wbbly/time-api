@@ -259,12 +259,12 @@ export class UserService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(insertUserQuery).subscribe(
-                (insertUserRes: AxiosResponse) => {
+                async (insertUserRes: AxiosResponse) => {
                     const returningRows = insertUserRes.data.insert_user.returning;
                     if (returningRows.length) {
                         const userId = insertUserRes.data.insert_user.returning[0].id;
                         try {
-                            this.teamService.createTeam(userId);
+                            await this.teamService.createTeam(userId);
                         } catch (error) {
                             console.log(error);
                         }
