@@ -26,58 +26,33 @@ export class ProjectService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        let query;
-        if (isAdmin) {
-            query = `{
-                project_v2(
-                    order_by: {name: asc}
-                    where: {
-                        team_id: { _eq: "${currentTeamId}" }
-                    }
-                ) {
-                    id
+        const clientQueryParam = isAdmin ? `client { id, name }` : '';
+        const timerWhereStatement = isAdmin ? '' : `(where: {user_id: {_eq: "${userId}"}})`;
+
+        const query = `{
+            project_v2(
+                order_by: {name: asc}
+                where: {
+                    team_id: { _eq: "${currentTeamId}" }
+                }
+            ) {
+                id
+                name
+                is_active
+                project_color {
                     name
-                    is_active
-                    project_color {
-                        name
-                    }
-                    ${
-                        withTimerList
-                            ? `timer {
+                }
+                ${clientQueryParam}
+                ${
+                    withTimerList
+                        ? `timer ${timerWhereStatement} {
                             start_datetime
                             end_datetime
                         }`
-                            : ``
-                    }
+                        : ``
                 }
             }
-            `;
-        } else {
-            query = `{
-                project_v2(
-                    order_by: {name: asc}
-                    where: {
-                        team_id: { _eq: "${currentTeamId}" }
-                    }
-                ) {
-                    id
-                    name
-                    is_active
-                    project_color {
-                        name
-                    }
-                    ${
-                        withTimerList
-                            ? `timer(where: {user_id: {_eq: "${userId}"}}) {
-                            start_datetime
-                            end_datetime
-                        }`
-                            : ``
-                    }
-                }
-            }
-            `;
-        }
+        }`;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
@@ -213,11 +188,25 @@ export class ProjectService {
     async addProject(project: Project, userId: string) {
         let { name } = project;
         name = name.trim();
-        const { projectColorId } = project;
+        const { projectColorId, clientId } = project;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         const slug = `${currentTeamId}-${slugify(name, { lower: true })}`;
+
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        let clientQueryParam = '';
+        if (isAdmin) {
+            if (clientId) {
+                clientQueryParam = `client_id: "${clientId}"`;
+            } else if (clientId === null) {
+                clientQueryParam = `client_id: null`;
+            }
+        }
+
         const query = `mutation {
             insert_project_v2(
                 objects: [
@@ -226,6 +215,7 @@ export class ProjectService {
                         slug: "${slug}",
                         project_color_id: "${projectColorId}",
                         team_id: "${currentTeamId}"
+                        ${clientQueryParam}
                     }
                 ]
             ){
@@ -243,7 +233,14 @@ export class ProjectService {
         });
     }
 
-    getProjectById(userId: string, projectId: string) {
+    async getProjectById(userId: string, projectId: string) {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        const clientQueryParam = isAdmin ? `client { id, name }` : '';
+
         const query = `{
             project_v2(where: {id: {_eq: "${projectId}"}, team: {team_users: {user_id: {_eq: "${userId}"}}}}) {
                 id
@@ -252,9 +249,9 @@ export class ProjectService {
                     id
                     name
                 }
+                ${clientQueryParam}
             }
-        }
-        `;
+        }`;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
@@ -266,11 +263,24 @@ export class ProjectService {
     async updateProjectById(id: string, project: Project, userId: string) {
         let { name } = project;
         name = name.trim();
-        const { projectColorId } = project;
+        const { projectColorId, clientId } = project;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         const slug = `${currentTeamId}-${slugify(name, { lower: true })}`;
+
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        let clientQueryParam = '';
+        if (isAdmin) {
+            if (clientId) {
+                clientQueryParam = `client_id: "${clientId}"`;
+            } else if (clientId === null) {
+                clientQueryParam = `client_id: null`;
+            }
+        }
 
         const query = `mutation {
             update_project_v2(
@@ -281,6 +291,7 @@ export class ProjectService {
                     name: "${name}",
                     slug: "${slug}",
                     project_color_id: "${projectColorId}"
+                    ${clientQueryParam}
                 }
             ) {
                 returning {

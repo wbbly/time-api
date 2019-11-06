@@ -313,13 +313,14 @@ export class UserController {
                 const userPassword = Math.random()
                     .toString(36)
                     .slice(-8);
-                newUserFb = await this.userService.createUser({
+                await this.userService.createUser({
                     username: userName,
                     email: userEmail,
                     password: userPassword,
                     socialId,
                     language: body.language,
                 });
+                newUserFb = await this.userService.getFacebookUserByEmail(userEmail);
             } catch (error) {
                 console.log(error);
             }
