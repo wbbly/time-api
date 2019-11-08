@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
+import { SocialService } from '../social/social.service';
 import { AuthService } from '../auth/auth.service';
 import { User } from './interfaces/user.interface';
 
@@ -20,6 +21,7 @@ export class UserService {
         private readonly httpRequestsService: HttpRequestsService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly teamService: TeamService,
+        private readonly socialService: SocialService,
         private readonly authService: AuthService
     ) {}
 
@@ -63,8 +65,8 @@ export class UserService {
         });
     }
 
-    async getFacebookUserByEmail(email: string): Promise<User | AxiosError> {
-        const whereStatements = [`email: { _eq: "${email}" }`, `social: {facebook_id: {_is_null: false}}`];
+    async getUserBySocial(socialKey: string, socialId: string): Promise<User | AxiosError> {
+        const whereStatements = [`social: {${socialKey}: {_eq: "${socialId}"}}`];
 
         return new Promise((resolve, reject) => {
             this.getUserData(whereStatements.join(',')).then(
@@ -99,6 +101,10 @@ export class UserService {
                 type_jira
                 login_jira
                 phone
+                social {
+                    facebook_id
+                }
+                social_id
                 avatar
                 onboarding_mobile
             }
@@ -124,9 +130,15 @@ export class UserService {
                             type_jira: typeJira,
                             login_jira: loginJira,
                             phone,
+                            social_id: socialId,
                             avatar,
                             onboarding_mobile: onboardingMobile,
                         } = data;
+
+                        let { social } = data;
+                        social = social && {
+                            facebookId: social.facebook_id,
+                        };
 
                         user = {
                             id: userId,
@@ -140,6 +152,8 @@ export class UserService {
                             typeJira,
                             loginJira,
                             phone,
+                            social,
+                            socialId,
                             avatar,
                             onboardingMobile,
                         };
@@ -164,6 +178,7 @@ export class UserService {
             typeJira,
             loginJira,
             phone,
+            social,
             avatar,
             onboardingMobile,
         } = user;
@@ -179,6 +194,7 @@ export class UserService {
             typeJira,
             loginJira,
             phone,
+            social,
             avatar,
             onboardingMobile,
         };
@@ -231,11 +247,11 @@ export class UserService {
         username: string;
         email: string;
         password: string;
-        socialId: string;
         language?: string;
     }): Promise<AxiosResponse | AxiosError> {
-        const { username, email, password, socialId, language } = data;
+        const { username, email, password, language } = data;
         const passwordHash = await this.getHash(password);
+        const socialId = await this.socialService.createSocialTable();
 
         const insertUserQuery = `mutation {
             insert_user(
@@ -244,7 +260,7 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        social_id: ${socialId ? '"' + socialId + '"' : null}
+                        social_id: "${socialId}"
                         language: "${language || DEFAULT_LANGUAGE}",
                         is_active: true
                     }
@@ -335,49 +351,6 @@ export class UserService {
                 },
                 _set: {
                     avatar: ${avatar ? '"' + avatar + '"' : null}
-                }
-            ) {
-                returning {
-                    id
-                }
-            }
-        }`;
-
-        return new Promise(async (resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
-        });
-    }
-
-    async addSocialEntry(facebookId: string): Promise<AxiosResponse | AxiosError> {
-        const query = `mutation {
-            insert_social(
-                _set: {
-                    facebook_id: "${facebookId}"
-                }
-            ) {
-                returning {
-                    id
-                }
-            }
-        }`;
-
-        return new Promise(async (resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
-        });
-    }
-
-    async updateUserSocial(userEmail: string, socialId: string): Promise<AxiosResponse | AxiosError> {
-        const query = `mutation {
-            update_user(
-                where: {
-                    email: {_eq: "${userEmail}"}
-                },
-                _set: {
-                    social_id: ${socialId ? '"' + socialId + '"' : null}
                 }
             ) {
                 returning {
