@@ -116,7 +116,7 @@ export class SocialService {
         try {
             await this.checkSocialEntries(socialKey, value);
         } catch (error) {
-            Promise.reject(error)
+            return Promise.reject(error);
         }
 
         return new Promise((resolve, reject) => {
