@@ -24,6 +24,7 @@ import * as fs from 'fs';
 import { AuthService } from '../auth/auth.service';
 import { UserService } from '../user/user.service';
 import { TeamService } from '../team/team.service';
+import { SocialService } from '../social/social.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { MailService } from '../core/mail/mail.service';
 import { ConfigService } from '../core/config/config.service';
@@ -35,6 +36,7 @@ export class UserController {
         private readonly authService: AuthService,
         private readonly userService: UserService,
         private readonly teamService: TeamService,
+        private readonly socialService: SocialService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly configService: ConfigService,
         private readonly mailService: MailService
@@ -250,6 +252,11 @@ export class UserController {
         }
 
         if (user) {
+            if (!user.social) {
+                const socialId: any = await this.socialService.createSocialTable();
+                await this.socialService.addSocialTable(user.id, socialId);
+            }
+
             if (await this.userService.compareHash(body.password, user.password)) {
                 const token = await this.userService.signIn(user);
 
@@ -266,12 +273,13 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        const userEmail = body.email || `fb${body.id}@wobbly.me`;
+        const facebookId = body.id;
+        const userEmail = body.email || `fb${facebookId}@wobbly.me`;
         const userName = body.username || userEmail;
 
         let userFb = null;
         try {
-            userFb = await this.userService.getFacebookUserByEmail(userEmail);
+            userFb = await this.userService.getUserBySocial('facebook_id', facebookId);
         } catch (error) {
             console.log(error);
         }
@@ -289,7 +297,21 @@ export class UserController {
             }
 
             if (user) {
-                return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.ACCOUNT_ALREADY_EXISTED' });
+                let socialId = user.socialId;
+
+                if (user.social && user.social.facebookId) {
+                    return res
+                        .status(HttpStatus.FORBIDDEN)
+                        .json({ message: 'ERROR.USER.THIS_EMAIL_ALREADY_CONNECTED_TO_ANOTHER_FB_ACCOUNT' });
+                } else if (!socialId) {
+                    socialId = await this.socialService.createSocialTable();
+                    await this.socialService.addSocialTable(user.id, socialId);
+                }
+
+                await this.socialService.setSocial(socialId, 'facebook', facebookId);
+                const token = await this.userService.signIn(user);
+
+                return res.status(HttpStatus.OK).json({ token });
             }
 
             let newUserFb = null;
@@ -301,15 +323,15 @@ export class UserController {
                     username: userName,
                     email: userEmail,
                     password: userPassword,
-                    facebook: true,
                     language: body.language,
                 });
-                newUserFb = await this.userService.getFacebookUserByEmail(userEmail);
+                newUserFb = await this.userService.getUserByEmail(userEmail);
             } catch (error) {
                 console.log(error);
             }
 
             if (newUserFb) {
+                await this.socialService.setSocial(newUserFb.socialId, 'facebook', facebookId);
                 const token = await this.userService.signIn(newUserFb);
 
                 return res.status(HttpStatus.OK).json({ token });
@@ -393,7 +415,6 @@ export class UserController {
                 username: body.email,
                 email: body.email,
                 password: userPassword,
-                facebook: false,
             });
 
             // Get created user ID from createdData and process inviteRequest from Team Service
@@ -454,7 +475,6 @@ export class UserController {
                 username: body.username || body.email,
                 email: body.email,
                 password: body.password,
-                facebook: false,
                 language: body.language,
             });
         } catch (error) {
@@ -762,6 +782,34 @@ export class UserController {
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Post(':id/set-social/:social')
+    @UseGuards(AuthGuard())
+    async setFacebook(@Headers() headers: any, @Response() res: any, @Param() param: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId || param.id !== userId) {
+            throw new UnauthorizedException();
+        }
+
+        const socialName = param.social;
+        const socialId = body.socialId;
+
+        const user: any = await this.userService.getUserById(param.id);
+
+        if (socialId || socialId === null) {
+            try {
+                const newId = await this.socialService.setSocial(user.socialId, socialName, socialId);
+                return res.status(HttpStatus.OK).json({ id: newId });
+            } catch (e) {
+                const error: AxiosError = e;
+                return res
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .json(error.response ? error.response.data.errors : error);
+            }
+        } else {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
     }
 }

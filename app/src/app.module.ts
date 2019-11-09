@@ -16,6 +16,7 @@ import { FileModule } from './file/file.module';
 import { TeamModule } from './team/team.module';
 import { SyncModule } from './sync/sync.module';
 import { ClientModule } from './client/client.module';
+import { SocialModule } from './social/social.module';
 
 @Module({
     imports: [
@@ -33,6 +34,7 @@ import { ClientModule } from './client/client.module';
         TeamModule,
         SyncModule,
         ClientModule,
+        SocialModule,
     ],
     controllers: [AppController],
     providers: [AppService],

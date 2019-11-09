@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
+import { SocialService } from '../social/social.service';
 import { AuthService } from '../auth/auth.service';
 import { User } from './interfaces/user.interface';
 
@@ -20,6 +21,7 @@ export class UserService {
         private readonly httpRequestsService: HttpRequestsService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly teamService: TeamService,
+        private readonly socialService: SocialService,
         private readonly authService: AuthService
     ) {}
 
@@ -63,8 +65,8 @@ export class UserService {
         });
     }
 
-    async getFacebookUserByEmail(email: string): Promise<User | AxiosError> {
-        const whereStatements = [`email: { _eq: "${email}" }`, `facebook: { _eq: true }`];
+    async getUserBySocial(socialKey: string, socialId: string): Promise<User | AxiosError> {
+        const whereStatements = [`social: {${socialKey}: {_eq: "${socialId}"}}`];
 
         return new Promise((resolve, reject) => {
             this.getUserData(whereStatements.join(',')).then(
@@ -99,6 +101,10 @@ export class UserService {
                 type_jira
                 login_jira
                 phone
+                social {
+                    facebook_id
+                }
+                social_id
                 avatar
                 onboarding_mobile
             }
@@ -124,9 +130,15 @@ export class UserService {
                             type_jira: typeJira,
                             login_jira: loginJira,
                             phone,
+                            social_id: socialId,
                             avatar,
                             onboarding_mobile: onboardingMobile,
                         } = data;
+
+                        let { social } = data;
+                        social = social && {
+                            facebookId: social.facebook_id,
+                        };
 
                         user = {
                             id: userId,
@@ -140,6 +152,8 @@ export class UserService {
                             typeJira,
                             loginJira,
                             phone,
+                            social,
+                            socialId,
                             avatar,
                             onboardingMobile,
                         };
@@ -164,6 +178,7 @@ export class UserService {
             typeJira,
             loginJira,
             phone,
+            social,
             avatar,
             onboardingMobile,
         } = user;
@@ -179,6 +194,7 @@ export class UserService {
             typeJira,
             loginJira,
             phone,
+            social,
             avatar,
             onboardingMobile,
         };
@@ -231,11 +247,11 @@ export class UserService {
         username: string;
         email: string;
         password: string;
-        facebook: boolean;
         language?: string;
     }): Promise<AxiosResponse | AxiosError> {
-        const { username, email, password, facebook, language } = data;
+        const { username, email, password, language } = data;
         const passwordHash = await this.getHash(password);
+        const socialId = await this.socialService.createSocialTable();
 
         const insertUserQuery = `mutation {
             insert_user(
@@ -244,7 +260,7 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        facebook: "${facebook}"
+                        social_id: "${socialId}"
                         language: "${language || DEFAULT_LANGUAGE}",
                         is_active: true
                     }
