@@ -785,17 +785,18 @@ export class UserController {
         }
     }
 
-    @Post('social/set/:social')
+    @Post(':id/set-social/:social')
     @UseGuards(AuthGuard())
     async setFacebook(@Headers() headers: any, @Response() res: any, @Param() param: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId) {
+        if (!userId || param.id !== userId) {
             throw new UnauthorizedException();
         }
+
         const socialName = param.social;
         const socialId = body.socialId;
 
-        const user: any = await this.userService.getUserById(userId);
+        const user: any = await this.userService.getUserById(param.id);
 
         if (socialId || socialId === null) {
             try {

@@ -113,7 +113,11 @@ export class SocialService {
             return Promise.reject({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        await this.checkSocialEntries(socialKey, value);
+        try {
+            await this.checkSocialEntries(socialKey, value);
+        } catch (error) {
+            Promise.reject(error)
+        }
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
