@@ -6,7 +6,9 @@ import { AuthService } from '../auth/auth.service';
 import { TimerCurrentV2 } from './interfaces/timer-current-v2.interface';
 import { Timer } from '../timer/interfaces/timer.interface';
 
-@WebSocketGateway()
+@WebSocketGateway({
+    pingTimeout: 60000,
+})
 export class TimerCurrentV2Gateway {
     @WebSocketServer()
     server: Server;
@@ -38,15 +40,10 @@ export class TimerCurrentV2Gateway {
     }
 
     @SubscribeMessage('leave-v2')
-    async onLeaveJoin(client: Socket, data: { token: string }): Promise<string> {
-        const userId = await this.authService.getVerifiedUserId(data.token);
+    onLeaveJoin(client: Socket, data: { token: string }): string {
+        const userId = this.authService.getUserId(data.token);
         if (!userId) {
-            client.emit('user-unauthorized', {
-                statusCode: 401,
-                error: 'Unauthorized',
-            });
-
-            return 'Unauthorized';
+            return 'Invalid JWT';
         }
 
         client.leave(userId);
@@ -95,6 +92,17 @@ export class TimerCurrentV2Gateway {
         }
 
         let startedTimer: TimerCurrentV2 = null;
+
+        try {
+            startedTimer = await this.timerCurrentV2Service.getTimerCurrent(userId);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (startedTimer) {
+            await this.timerCurrentV2Service.deleteTimerCurrent(userId);
+        }
+
         try {
             startedTimer = await this.timerCurrentV2Service.addTimerCurrent({
                 userId,
@@ -174,9 +182,9 @@ export class TimerCurrentV2Gateway {
         }
 
         if (timer) {
-            this.server.in(userId).emit('stop-timer-v2', timer);
+            this.server.in(userId).emit('check-timer-v2', null);
         } else {
-            this.server.in(userId).emit('stop-timer-v2', null);
+            return 'Stop timer error';
         }
     }
 }
