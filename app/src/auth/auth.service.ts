@@ -21,14 +21,31 @@ export class AuthService {
         }
     }
 
-    async decode(token: string): Promise<null | { [key: string]: any } | string> {
-        return this.jwtService.decode(token);
+    decode(token: string): JwtPayload | any {
+        try {
+            const decoded = this.jwtService.decode(token);
+
+            return decoded;
+        } catch (e) {
+            console.log(new Date().toISOString(), ' [JWT VERIFY ERROR] ', JSON.stringify(e), ' [TOKEN] ', token);
+        }
     }
 
     async getVerifiedUserId(jwt: string): Promise<string | null> {
         try {
             const token = this.getTokenFromJwt(jwt);
             const payload: JwtPayload = await this.verify(token);
+
+            return payload.id;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    getUserId(jwt: string): string | null {
+        try {
+            const token = this.getTokenFromJwt(jwt);
+            const payload: JwtPayload = this.decode(token);
 
             return payload.id;
         } catch (e) {

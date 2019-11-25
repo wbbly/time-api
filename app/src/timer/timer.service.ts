@@ -123,7 +123,7 @@ export class TimerService {
         });
     }
 
-    getUserTimerList(userId: string) {
+    getUserTimerList(userId: string, params: { page?: string; limit?: string }) {
         const getCurrentTeamQuery = `{
             user_team(where: { 
                 user_id: { _eq: "${userId}" }, 
@@ -134,38 +134,46 @@ export class TimerService {
                     name
                 }
             }
+        }`;
+
+        let { page, limit } = params;
+        let amountQuery = '';
+
+        if (page && limit) {
+            const offset = +page === 1 ? 0 : +limit * (+page - 1);
+            amountQuery = `limit: ${limit}, offset: ${offset}`;
         }
-        `;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(getCurrentTeamQuery).subscribe(
                 (getCurrentTeamRes: AxiosResponse) => {
                     let teamId = getCurrentTeamRes.data.user_team[0].team.id;
-                    const query = `{
-                            timer_v2(where: {
-                                user_id: {_eq: "${userId}"},
-                                project:{
-                                    team_id: {
-                                        _eq: "${teamId}"
-                                    }
-                                },
-                                start_datetime: {_gte: "${this.timeService.getStartDateOfPrevMonth()}"}
-                            }, order_by: {start_datetime: desc}) {
+                    const query = `{ timer_v2(
+                        where: {
+                            user_id: {_eq: "${userId}"},
+                            project: {
+                                team_id: {
+                                    _eq: "${teamId}"
+                                }
+                            },
+                        },
+                        ${amountQuery}
+                        order_by: {start_datetime: desc},
+                    ) {
+                            id,
+                            start_datetime,
+                            end_datetime,
+                            issue,
+                            sync_jira_status,
+                            project {
+                                name,
                                 id,
-                                start_datetime,
-                                end_datetime,
-                                issue,
-                                sync_jira_status,
-                                project{
-                                    name,
-                                    id,
-                                    project_color {
-                                        name
-                                    }
+                                project_color {
+                                    name
                                 }
                             }
                         }
-                        `;
+                    }`;
 
                     this.httpRequestsService
                         .request(query)

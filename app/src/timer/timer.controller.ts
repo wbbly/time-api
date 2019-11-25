@@ -30,14 +30,25 @@ export class TimerController {
 
     @Get('user-list')
     @UseGuards(AuthGuard())
-    async userTimerList(@Headers() headers: any, @Response() res: any, @Query() params) {
+    async userTimerList(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Query() params: { page?: string; limit?: string }
+    ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
 
+        if (Object.keys(params).length) {
+            const { page, limit } = params;
+            if (!Number.parseInt(page) || !Number.parseInt(limit) || +page <= 0 || +limit <= 0) {
+                return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+            }
+        }
+
         try {
-            const userTimerListRes = await this.timerService.getUserTimerList(userId);
+            const userTimerListRes = await this.timerService.getUserTimerList(userId, params);
             return res.status(HttpStatus.OK).json(userTimerListRes);
         } catch (err) {
             const error: AxiosError = err;

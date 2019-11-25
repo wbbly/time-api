@@ -7,6 +7,7 @@ import { TimerService } from '../timer/timer.service';
 import { TimeService } from '../time/time.service';
 import { TimerCurrentV2 } from './interfaces/timer-current-v2.interface';
 import { Timer } from '../timer/interfaces/timer.interface';
+import { Time } from '../time/interfaces/time.interface';
 
 @Injectable()
 export class TimerCurrentV2Service {
@@ -133,6 +134,7 @@ export class TimerCurrentV2Service {
                 (res: AxiosResponse) => {
                     const data = res.data.timer_current_v2.shift();
                     if (data) {
+                        const time: Time = { timeISO: this.timeService.getISOTime() };
                         const { id, issue, start_datetime: startDatetime, project, user } = data;
                         const { id: projectId, name: projectName, project_color: projectColor } = project;
                         const { id: projectColorId, name: projectColorName } = projectColor;
@@ -153,6 +155,7 @@ export class TimerCurrentV2Service {
                                 id: userId,
                                 email: userEmail,
                             },
+                            time,
                         };
                     }
 
@@ -203,12 +206,15 @@ export class TimerCurrentV2Service {
     updateTimerCurrent(data: { userId: string; issue: string; projectId: string }): Promise<TimerCurrentV2 | null> {
         const { userId, issue, projectId } = data;
 
+        const queryIssue = issue ? `issue: "${issue}"` : `issue: "Untitled issue"`;
+        const queryProjectId = projectId ? `project_id: "${projectId}"` : '';
+
         const query = `mutation {
             update_timer_current_v2(
                 where: {user_id: {_eq: "${userId}"}},
                 _set: {
-                    issue: "${issue}",
-                    project_id: "${projectId}"
+                    ${queryIssue}
+                    ${queryProjectId}
                 }
             ){
                 returning {
