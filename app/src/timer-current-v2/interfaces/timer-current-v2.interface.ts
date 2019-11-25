@@ -1,6 +1,6 @@
 import { Project } from '../../project/interfaces/project.interface';
 import { User } from '../../user/interfaces/user.interface';
-import { Time } from 'src/time/interfaces/time.interface';
+import { Time } from '../../time/interfaces/time.interface';
 
 export interface TimerCurrentV2 {
     id?: string;
