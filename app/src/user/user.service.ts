@@ -10,7 +10,7 @@ import { SocialService } from '../social/social.service';
 import { AuthService } from '../auth/auth.service';
 import { User } from './interfaces/user.interface';
 
-const APP_VERSION = 'v1.0.5';
+const APP_VERSION = 'v1.0.7';
 const DEFAULT_LANGUAGE = 'en';
 
 @Injectable()
