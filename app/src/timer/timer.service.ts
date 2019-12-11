@@ -147,7 +147,9 @@ export class TimerService {
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(getCurrentTeamQuery).subscribe(
                 (getCurrentTeamRes: AxiosResponse) => {
-                    let teamId = getCurrentTeamRes.data.user_team[0].team.id;
+                    // let teamId = getCurrentTeamRes.data.user_team[0].team.id;
+                    // @TODO: HOTFIX. cause 502 error code on PROD
+                    let teamId = (((((getCurrentTeamRes || {}).data || {}).user_team || [])[0] || {}).team || {}).id;
                     const query = `{ timer_v2(
                         where: {
                             user_id: {_eq: "${userId}"},
