@@ -61,7 +61,14 @@ export class ProjectService {
         });
     }
 
-    getReportsProject(teamId: string, projectName: string, userEmails: string[], startDate: string, endDate: string) {
+    getReportsProject(
+        teamId: string,
+        projectName: string,
+        userEmails: string[],
+        startDate: string,
+        endDate: string,
+        durationTimeFormat: string
+    ) {
         const timerStatementArray = [
             `_or: [
             {start_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
@@ -103,7 +110,7 @@ export class ProjectService {
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    this.prepareReportsProjectData(res.data.project_v2, startDate, endDate);
+                    this.prepareReportsProjectData(res.data.project_v2, startDate, endDate, durationTimeFormat);
 
                     return resolve(res);
                 },
@@ -332,7 +339,7 @@ export class ProjectService {
         });
     }
 
-    private prepareReportsProjectData(data: any, startDate: string, endDate: string): void {
+    private prepareReportsProjectData(data: any, startDate: string, endDate: string, durationTimeFormat: string): void {
         for (let i = 0; i < data.length; i++) {
             const projectV2 = data[i];
             this.timerService.limitTimeEntriesByStartEndDates(projectV2.timer, startDate, endDate);
@@ -373,7 +380,8 @@ export class ProjectService {
             for (let i = 0, projectV2ReportLength = projectV2ReportValues.length; i < projectV2ReportLength; i++) {
                 let timeEntry = projectV2ReportValues[i];
                 timeEntry['duration'] = this.timeService.getTimeDurationByGivenTimestamp(
-                    timeEntry['durationTimestamp']
+                    timeEntry['durationTimestamp'],
+                    durationTimeFormat
                 );
             }
 

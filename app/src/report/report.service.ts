@@ -21,7 +21,8 @@ export class ReportService {
         projectNames: string[],
         startDate: string,
         endDate: string,
-        timezoneOffset: number = 0
+        timezoneOffset: number = 0,
+        durationTimeFormat: string
     ): Promise<{ path: string } | AxiosError> {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -68,7 +69,13 @@ export class ReportService {
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    const reportData = this.prepareReportData(res.data, startDate, endDate, timezoneOffset);
+                    const reportData = this.prepareReportData(
+                        res.data,
+                        startDate,
+                        endDate,
+                        timezoneOffset,
+                        durationTimeFormat
+                    );
                     const reportPath = this.generateReport(reportData, timezoneOffset);
 
                     return resolve({ path: reportPath });
@@ -78,7 +85,13 @@ export class ReportService {
         });
     }
 
-    private prepareReportData(data: any, startDate: string, endDate: string, timezoneOffset: number): any[] {
+    private prepareReportData(
+        data: any,
+        startDate: string,
+        endDate: string,
+        timezoneOffset: number,
+        durationTimeFormat: string
+    ): any[] {
         const { timer_v2: timerV2 } = data;
         const timerEntriesReport = {};
         for (let i = 0, timerV2Length = timerV2.length; i < timerV2Length; i++) {
@@ -112,7 +125,7 @@ export class ReportService {
         timerEntriesReportValues.sort((a, b) => a['Start date'] - b['Start date']);
         for (let i = 0, timerEntriesReportLength = timerEntriesReportValues.length; i < timerEntriesReportLength; i++) {
             let timeEntry = timerEntriesReportValues[i];
-            timeEntry['Time'] = this.timeService.getTimeDurationByGivenTimestamp(timeEntry['Time']);
+            timeEntry['Time'] = this.timeService.getTimeDurationByGivenTimestamp(timeEntry['Time'], durationTimeFormat);
             timeEntry['Start date'] = this.timeService.getReadableTime(timeEntry['Start date'], timezoneOffset);
         }
 

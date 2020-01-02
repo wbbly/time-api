@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import * as humanizeDuration from 'humanize-duration';
 
 @Injectable()
 export class TimeService {
@@ -63,28 +62,57 @@ export class TimeService {
             .split('.')[0]; // 2019-01-01 00:00:00
     }
 
-    getTimeDurationByGivenTimestamp(number: number): string {
-        const shortEnglishHumanizer = humanizeDuration.humanizer({
-            language: 'shortEn',
-            round: true,
-            spacer: '',
-            units: ['y', 'mo', 'w', 'd', 'h', 'm', 's'],
-            languages: {
-                shortEn: {
-                    y: () => 'y',
-                    mo: () => 'm',
-                    w: () => 'w',
-                    d: () => 'd',
-                    h: () => 'h',
-                    m: () => 'm',
-                    s: () => 's',
-                },
-            },
-        });
+    getTimeDurationByGivenTimestamp(number: number, durationTimeFormat: string = 'improved'): string {
+        const padTime = (item: number) => {
+            if (!item) {
+                return '00';
+            }
+            if ((item + '').length === 1) {
+                return '0' + item;
+            }
+            return item;
+        };
 
-        const duration = shortEnglishHumanizer(number).replace(/,/g, ''); // 2w 2d 45m or 45m 15s
+        const decimal = (time: number) => {
+            let h = time / 1000 / 60 / 60;
+            return `${h.toFixed(2)} h`;
+        };
 
-        return duration;
+        const classic = (time: number) => {
+            let hour: number, minute: number, seconds: number;
+            seconds = Math.floor(time / 1000);
+            minute = Math.floor(seconds / 60);
+            seconds = seconds % 60;
+            hour = Math.floor(minute / 60);
+            minute = minute % 60;
+
+            if (hour === 0 && minute === 0) {
+                return `${padTime(seconds)} s`;
+            } else if (hour === 0 && minute !== 0) {
+                return `${padTime(minute)}:${padTime(seconds)} min`;
+            } else if (hour !== 0) {
+                return `${padTime(hour)}:${padTime(minute)}:${padTime(seconds)}`;
+            }
+        };
+
+        const improved = (time: number) => {
+            let hour: number, minute: number, seconds: number;
+            seconds = Math.floor(time / 1000);
+            minute = Math.floor(seconds / 60);
+            seconds = seconds % 60;
+            hour = Math.floor(minute / 60);
+            minute = minute % 60;
+
+            return `${padTime(hour)}:${padTime(minute)}:${padTime(seconds)}`;
+        };
+
+        if (durationTimeFormat === 'improved') {
+            return improved(number);
+        } else if (durationTimeFormat === 'decimal') {
+            return decimal(number);
+        } else if (durationTimeFormat === 'classic') {
+            return classic(number);
+        }
     }
 
     getDayPeriodsBetweenStartEndDates(startDate: string, endDate: string): any[] {

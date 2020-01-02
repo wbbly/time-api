@@ -84,7 +84,8 @@ export class ProjectController {
                 params.projectName,
                 params.userEmails || [],
                 params.startDate,
-                params.endDate
+                params.endDate,
+                params.durationTimeFormat
             );
             return res.status(HttpStatus.OK).json(reportsProjectRes);
         } catch (e) {

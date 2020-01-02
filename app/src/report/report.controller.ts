@@ -27,6 +27,7 @@ export class ReportController {
     @UseGuards(AuthGuard())
     async reportExport(@Headers() headers: any, @Response() res: any, @Query() params) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
+
         if (!userId) {
             throw new UnauthorizedException();
         }
@@ -63,7 +64,8 @@ export class ReportController {
                 params.projectNames || [],
                 params.startDate,
                 params.endDate,
-                params.timezoneOffset
+                params.timezoneOffset,
+                params.durationTimeFormat
             );
 
             return res.status(HttpStatus.OK).json(reportExportRes);
