@@ -1,4 +1,4 @@
-export interface ResourcePlaning {
+export interface PlanResource {
     id?: string;
     userId?: string;
     projectId?: string;
