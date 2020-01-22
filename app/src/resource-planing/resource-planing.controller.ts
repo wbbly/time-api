@@ -11,6 +11,7 @@ import {
     UseGuards,
     Headers,
     UnauthorizedException,
+    Delete,
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
@@ -125,6 +126,24 @@ export class ResourcePlaningController {
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
+        }
+    }
+    @Delete(':id')
+    @UseGuards(AuthGuard())
+    async deletePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId || param.id !== userId) {
+            throw new UnauthorizedException();
+        }
+
+        let deletedResourceById = null;
+        try {
+            deletedResourceById = await this.ResourcePlaningService.deleteResourceById(body.id, userId);
+            return res.status(HttpStatus.OK).json(deletedResourceById);
+        } catch (error) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'ERROR.PLAN_RESOURCE.DELETE_PLAN_RESOURCE_FAILED' });
         }
     }
 }
