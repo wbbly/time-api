@@ -176,6 +176,7 @@ export class ResourcePlaningService {
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
+
     async deleteResourceById(resourceId: string, userId: string): Promise<AxiosResponse | AxiosError> {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const isAdmin =
@@ -196,5 +197,87 @@ export class ResourcePlaningService {
         } else {
             return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
         }
+    }
+
+    async getShortResourceList(
+        userId: string,
+        startDate: string,
+        endDate: string
+    ): Promise<AxiosResponse | AxiosError> {
+        const resourceStatement =`
+            _or: [
+                {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
+                {end_date: {_gte: "${startDate}", _lte: "${endDate}"}},
+                {start_date: {_lt: "${startDate}"}, end_date: {_gt: "${endDate}"}}
+            ],
+            user_id: {_eq: "${userId}"}
+        `;
+
+        const query = `query{
+            plan_resource(where: {${resourceStatement}}, order_by: {end_date: desc}) {
+                start_date
+                end_date
+                total_duration
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    divideResourcesByWeeks(resourceArr: any) {
+        resourceArr = resourceArr.map(resource => {
+            return ({
+                startDate: resource.start_date,
+                endDate: resource.end_date,
+                totalDuration: resource.total_duration,
+            })
+        })
+        resourceArr.forEach(resource => {
+            resource.firstWeekNumber = this.getWeekNumber(resource.startDate)
+            resource.lastWeekNumber = this.getWeekNumber(resource.endDate)
+            resource.totalWeeksQuantity = resource.lastWeekNumber - resource.firstWeekNumber + 1
+            resource.hoursPerWeek = resource.totalDuration / resource.totalWeeksQuantity
+        });
+
+        return this.distributeByWeek(resourceArr)
+    }
+
+    distributeByWeek(resourceArr) {
+        let resourcesByWeek = {}
+        resourceArr.forEach(resource => {
+            let weekCounter = resource.firstWeekNumber
+            while (weekCounter <= resource.lastWeekNumber) {
+                if (!resourcesByWeek[weekCounter]) {
+                    resourcesByWeek[weekCounter] = 0
+                }
+                resourcesByWeek[weekCounter] = resourcesByWeek[weekCounter] + resource.hoursPerWeek
+
+                weekCounter++
+            }
+        })
+        
+        return resourcesByWeek
+    }
+
+    getWeeksInMonth(startDate: string) {
+        const year = new Date(startDate).getFullYear()
+        const month = new Date(startDate).getMonth()
+        const l = new Date(year, month + 1, 0);
+
+        return Math.ceil((l.getDate() - (l.getDay() ? l.getDay() : 7)) / 7) + 1;
+    }
+
+    getWeekNumber(currentDate: string) {
+        let date = new Date(currentDate);
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+        const week1 = new Date(date.getFullYear(), 0, 4);
+
+        return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000
+            - 3 + (week1.getDay() + 6) % 7) / 7);
     }
 }
