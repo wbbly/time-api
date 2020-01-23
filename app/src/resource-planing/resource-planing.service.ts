@@ -228,13 +228,53 @@ export class ResourcePlaningService {
         });
     }
 
+    getFullResourceList(userId: string,
+        startDate: string,
+        endDate: string
+    ): Promise<AxiosResponse | AxiosError> {
+        const resourceStatement = `
+            _or: [
+                {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
+                {end_date: {_gte: "${startDate}", _lte: "${endDate}"}},
+                {start_date: {_lt: "${startDate}"}, end_date: {_gt: "${endDate}"}}
+            ],
+            user_id: {_eq: "${userId}"}
+        `;
+
+        const query = `query{
+            plan_resource(where: {${resourceStatement}}, order_by: {end_date: desc}) {
+                start_date
+                end_date
+                total_duration
+                project_v2 {
+                    name
+                }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
     divideResourcesByWeeks(resourceArr: any) {
         resourceArr = resourceArr.map(resource => {
-            return ({
+            const firstWeekNumber = this.getWeekNumber(resource.start_date)
+            const lastWeekNumber = this.getWeekNumber(resource.end_date)
+            const totalWeeksQuantity = lastWeekNumber - firstWeekNumber + 1
+            const hoursPerWeek = resource.total_duration / totalWeeksQuantity
+
+            return {
+                firstWeekNumber: firstWeekNumber,
+                lastWeekNumber: lastWeekNumber,
+                totalWeeksQuantity: totalWeeksQuantity,
+                hoursPerWeek: hoursPerWeek,
                 startDate: resource.start_date,
                 endDate: resource.end_date,
                 totalDuration: resource.total_duration,
-            })
+            }
         })
         resourceArr.forEach(resource => {
             resource.firstWeekNumber = this.getWeekNumber(resource.startDate)
@@ -244,6 +284,48 @@ export class ResourcePlaningService {
         });
 
         return this.distributeByWeek(resourceArr)
+    }
+
+    divideResourcesByWeeksAndProject(resourceArr) {
+        resourceArr = resourceArr.map(resource => {
+            const firstWeekNumber = this.getWeekNumber(resource.start_date)
+            const lastWeekNumber = this.getWeekNumber(resource.end_date)
+            const totalWeeksQuantity = lastWeekNumber - firstWeekNumber + 1
+            const hoursPerWeek = resource.total_duration / totalWeeksQuantity
+
+            return {
+                firstWeekNumber: firstWeekNumber,
+                lastWeekNumber: lastWeekNumber,
+                totalWeeksQuantity: totalWeeksQuantity,
+                hoursPerWeek: hoursPerWeek,
+                startDate: resource.start_date,
+                endDate: resource.end_date,
+                totalDuration: resource.total_duration,
+                projectName: resource.project_v2.name
+            }
+        })
+
+        return this.distributeByWeekAndProject(resourceArr)
+    }
+
+    distributeByWeekAndProject(resourceArr) {
+        let resourcesByWeek = {}
+        resourceArr.forEach(resource => {
+            let weekCounter = resource.firstWeekNumber
+            while (weekCounter <= resource.lastWeekNumber) {
+                if (!resourcesByWeek[weekCounter]) {
+                    resourcesByWeek[weekCounter] = []
+                }
+                resourcesByWeek[weekCounter].push({
+                    projectName: resource.projectName,
+                    hours: resource.hoursPerWeek
+                })
+
+                weekCounter++
+            } 
+        })
+
+        return resourcesByWeek
     }
 
     distributeByWeek(resourceArr) {
@@ -261,14 +343,6 @@ export class ResourcePlaningService {
         })
         
         return resourcesByWeek
-    }
-
-    getWeeksInMonth(startDate: string) {
-        const year = new Date(startDate).getFullYear()
-        const month = new Date(startDate).getMonth()
-        const l = new Date(year, month + 1, 0);
-
-        return Math.ceil((l.getDate() - (l.getDay() ? l.getDay() : 7)) / 7) + 1;
     }
 
     getWeekNumber(currentDate: string) {
