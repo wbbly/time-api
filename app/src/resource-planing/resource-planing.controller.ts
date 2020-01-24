@@ -148,11 +148,7 @@ export class ResourcePlaningController {
     }
 
     @Get('short-list')
-    async shortListOfPlanResources(
-        @Headers() headers: any,
-        @Response() res: any,
-        @Body() body: any
-    ) {
+    async shortListOfPlanResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
@@ -164,9 +160,17 @@ export class ResourcePlaningController {
                 body.userId,
                 body.startDate,
                 body.endDate
-            )
-            
-            return res.status(HttpStatus.OK).json(this.ResourcePlaningService.divideResourcesByWeeks(resourceList.data.plan_resource, body.startDate, body.endDate));
+            );
+
+            return res
+                .status(HttpStatus.OK)
+                .json(
+                    this.ResourcePlaningService.divideResourcesByWeeks(
+                        resourceList.data.plan_resource,
+                        body.startDate,
+                        body.endDate
+                    )
+                );
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
@@ -175,11 +179,7 @@ export class ResourcePlaningController {
     }
 
     @Get('full-list')
-    async fullListOfPlanResources(
-        @Headers() headers: any,
-        @Response() res: any,
-        @Body() body: any
-    ) {
+    async fullListOfPlanResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
@@ -191,8 +191,16 @@ export class ResourcePlaningController {
                 body.userId,
                 body.startDate,
                 body.endDate
-            )
-            return res.status(HttpStatus.OK).json(this.ResourcePlaningService.divideResourcesByWeeksAndProject(resourceList.data.plan_resource, body.startDate, body.endDate));
+            );
+            return res
+                .status(HttpStatus.OK)
+                .json(
+                    this.ResourcePlaningService.divideResourcesByWeeksAndProject(
+                        resourceList.data.plan_resource,
+                        body.startDate,
+                        body.endDate
+                    )
+                );
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
