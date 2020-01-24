@@ -18,6 +18,7 @@ import { SyncModule } from './sync/sync.module';
 import { ClientModule } from './client/client.module';
 import { SocialModule } from './social/social.module';
 import { ResourcePlaningModule } from './resource-planing/resource-planing.module';
+import { TimeOfDayModule } from './time-of-day/time-of-day.module';
 
 @Module({
     imports: [
@@ -37,6 +38,7 @@ import { ResourcePlaningModule } from './resource-planing/resource-planing.modul
         ClientModule,
         SocialModule,
         ResourcePlaningModule,
+        TimeOfDayModule,
     ],
     controllers: [AppController],
     providers: [AppService],
