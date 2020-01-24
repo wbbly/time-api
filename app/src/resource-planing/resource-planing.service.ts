@@ -257,7 +257,7 @@ export class ResourcePlaningService {
         });
     }
 
-    divideResourcesByWeeks(resourceArr: any) {
+    divideResourcesByWeeks(resourceArr: any, startDate: string, endDate: string) {
         resourceArr = resourceArr.map(resource => {
             const firstWeekNumber = this.getWeekNumber(resource.start_date);
             const lastWeekNumber = this.getWeekNumber(resource.end_date);
@@ -268,20 +268,16 @@ export class ResourcePlaningService {
                 firstWeekNumber: firstWeekNumber,
                 lastWeekNumber: lastWeekNumber,
                 totalWeeksQuantity: totalWeeksQuantity,
-                hoursPerWeek: hoursPerWeek,
+                hoursPerWeek: hoursPerWeek * 3600000,
                 startDate: resource.start_date,
                 endDate: resource.end_date,
                 totalDuration: resource.total_duration,
             };
         });
-        resourceArr.forEach(resource => {
-            resource.firstWeekNumber = this.getWeekNumber(resource.startDate);
-            resource.lastWeekNumber = this.getWeekNumber(resource.endDate);
-            resource.totalWeeksQuantity = resource.lastWeekNumber - resource.firstWeekNumber + 1;
-            resource.hoursPerWeek = resource.totalDuration / resource.totalWeeksQuantity;
-        });
+        let weeks = this.splitPeriodToWeeks(startDate, endDate);
+        weeks = this.addWeekNumbers(weeks.weeksNormalized);
 
-        return this.distributeByWeek(resourceArr);
+        return this.distributeByWeek(resourceArr, weeks);
     }
 
     divideResourcesByWeeksAndProject(resourceArr: any, startDate: string, endDate: string) {
@@ -304,14 +300,13 @@ export class ResourcePlaningService {
         });
 
         let weeks = this.splitPeriodToWeeks(startDate, endDate);
-        console.log(weeks)
+        // console.log(weeks)
         weeks = this.addWeekNumbers(weeks.weeksNormalized);
-        console.log(weeks);
+        // console.log(weeks);
         return this.distributeByWeekAndProject(resourceArr, weeks);
     }
 
     distributeByWeekAndProject(resourceArr: any, weeks: any) {
-        // let resourcesByWeek = {};
         resourceArr.forEach(resource => {
             weeks.forEach(week => {
                 if (week.weekNumber >= resource.firstWeekNumber && week.weekNumber <= resource.lastWeekNumber) {
@@ -326,39 +321,23 @@ export class ResourcePlaningService {
                 }
             })
         })
-        // resourceArr.forEach(resource => {
-        //     let weekCounter = resource.firstWeekNumber;
-        //     while (weekCounter <= resource.lastWeekNumber) {
-        //         if (!resourcesByWeek[weekCounter]) {
-        //             resourcesByWeek[weekCounter] = [];
-        //         }
-        //         resourcesByWeek[weekCounter].push({
-        //             projectName: resource.projectName,
-        //             hours: resource.hoursPerWeek,
-        //         });
-
-        //         weekCounter++;
-        //     }
-        // });
 
         return weeks;
     }
 
-    distributeByWeek(resourceArr: any) {
-        let resourcesByWeek = {};
+    distributeByWeek(resourceArr: any, weeks: any) {
         resourceArr.forEach(resource => {
-            let weekCounter = resource.firstWeekNumber;
-            while (weekCounter <= resource.lastWeekNumber) {
-                if (!resourcesByWeek[weekCounter]) {
-                    resourcesByWeek[weekCounter] = 0;
+            weeks.forEach(week => {
+                if (week.weekNumber >= resource.firstWeekNumber && week.weekNumber <= resource.lastWeekNumber) {
+                    if (!week.hoursPerWeek) {
+                        week.hoursPerWeek = 0;
+                    }
+                    week.hoursPerWeek = week.hoursPerWeek + resource.hoursPerWeek
                 }
-                resourcesByWeek[weekCounter] = resourcesByWeek[weekCounter] + resource.hoursPerWeek;
-
-                weekCounter++;
-            }
+            });
         });
 
-        return resourcesByWeek;
+        return weeks;
     }
 
     addWeekNumbers(weeks: any) {

@@ -166,7 +166,7 @@ export class ResourcePlaningController {
                 body.endDate
             )
             
-            return res.status(HttpStatus.OK).json(this.ResourcePlaningService.divideResourcesByWeeks(resourceList.data.plan_resource));
+            return res.status(HttpStatus.OK).json(this.ResourcePlaningService.divideResourcesByWeeks(resourceList.data.plan_resource, body.startDate, body.endDate));
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
