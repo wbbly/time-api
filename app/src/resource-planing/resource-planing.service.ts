@@ -4,7 +4,7 @@ import { AxiosResponse, AxiosError } from 'axios';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { PlanResource } from './interfaces/resource-planing.interface';
-import  moment from "moment";
+import moment from 'moment';
 
 @Injectable()
 export class ResourcePlaningService {
@@ -275,6 +275,7 @@ export class ResourcePlaningService {
             };
         });
         let weeks = this.splitPeriodToWeeks(startDate, endDate);
+        console.log(weeks);
         weeks = this.addWeekNumbers(weeks.weeksNormalized);
 
         return this.distributeByWeek(resourceArr, weeks);
@@ -301,7 +302,7 @@ export class ResourcePlaningService {
 
         let weeks = this.splitPeriodToWeeks(startDate, endDate);
         weeks = this.addWeekNumbers(weeks.weeksNormalized);
-        
+
         return this.distributeByWeekAndProject(resourceArr, weeks);
     }
 
@@ -310,16 +311,15 @@ export class ResourcePlaningService {
             weeks.forEach(week => {
                 if (week.weekNumber >= resource.firstWeekNumber && week.weekNumber <= resource.lastWeekNumber) {
                     if (!week.planResources) {
-                        week.planResources = []
+                        week.planResources = [];
                     }
                     week.planResources.push({
                         timeForPlanResource: resource.hoursPerWeek,
-                        projectName: resource.projectName
-                    })
-                    
+                        projectName: resource.projectName,
+                    });
                 }
-            })
-        })
+            });
+        });
 
         return weeks;
     }
@@ -331,7 +331,7 @@ export class ResourcePlaningService {
                     if (!week.hoursPerWeek) {
                         week.hoursPerWeek = 0;
                     }
-                    week.hoursPerWeek = week.hoursPerWeek + resource.hoursPerWeek
+                    week.hoursPerWeek = week.hoursPerWeek + resource.hoursPerWeek;
                 }
             });
         });
@@ -343,7 +343,7 @@ export class ResourcePlaningService {
         weeks.forEach(week => (week.weekNumber = this.getWeekNumber(week.start)));
         return weeks;
     }
-    
+
     getWeekNumber(currentDate: string) {
         let date = new Date(currentDate);
         date.setHours(0, 0, 0, 0);
@@ -354,12 +354,18 @@ export class ResourcePlaningService {
     }
 
     getWeekPeriodByDate(date: any) {
+        // moment.locale('en', {
+        //     week: {
+        //         dow: 1, // Monday is the first day of the week.
+        //         doy: 7, // Sunday is the last day of the week.
+        //     },
+        // });
         const startOfWeek = moment(date)
-            .startOf('isoWeek')
+            .startOf('week')
             .startOf('day')
             .format('YYYY-MM-DDTHH:mm:ss');
         const endOfWeek = moment(date)
-            .endOf('isoWeek')
+            .endOf('week')
             .endOf('day')
             .format('YYYY-MM-DDTHH:mm:ss');
 
@@ -371,33 +377,30 @@ export class ResourcePlaningService {
 
     splitPeriodToWeeks(start: string, end: string) {
         const weeks = [];
+        const weeksNormalized = [];
 
-        let current = moment(start);
-        while (current.isSameOrBefore(moment(end))) {
+        let current = moment(start)
+            .endOf('week')
+            .startOf('day');
+        while (current.isBefore(moment(end))) {
             weeks.push(this.getWeekPeriodByDate(current));
-
+            weeksNormalized.push(this.getWeekPeriodByDate(current));
             current = current.add(7, 'days');
         }
 
         weeks.push(this.getWeekPeriodByDate(current));
+        weeksNormalized.push(this.getWeekPeriodByDate(current));
+
+        weeksNormalized[0].start = moment(start)
+            .startOf('day')
+            .format('YYYY-MM-DDTHH:mm:ss');
+        weeksNormalized.slice(-1)[0].end = moment(end)
+            .endOf('day')
+            .format('YYYY-MM-DDTHH:mm:ss');
 
         return {
             weeks,
-            weeksNormalized: [
-                {
-                    ...weeks[0],
-                    start: moment(start)
-                        .startOf('day')
-                        .format('YYYY-MM-DDTHH:mm:ss'),
-                },
-                ...weeks.slice(1, -1),
-                {
-                    ...weeks.slice(-1)[0],
-                    end: moment(end)
-                        .endOf('day')
-                        .format('YYYY-MM-DDTHH:mm:ss'),
-                },
-            ],
+            weeksNormalized,
         };
     }
 }
