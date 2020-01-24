@@ -4,6 +4,7 @@ import { AxiosResponse, AxiosError } from 'axios';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { PlanResource } from './interfaces/resource-planing.interface';
+import  moment from "moment";
 
 @Injectable()
 export class ResourcePlaningService {
@@ -204,7 +205,7 @@ export class ResourcePlaningService {
         startDate: string,
         endDate: string
     ): Promise<AxiosResponse | AxiosError> {
-        const resourceStatement =`
+        const resourceStatement = `
             _or: [
                 {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
                 {end_date: {_gte: "${startDate}", _lte: "${endDate}"}},
@@ -228,10 +229,7 @@ export class ResourcePlaningService {
         });
     }
 
-    getFullResourceList(userId: string,
-        startDate: string,
-        endDate: string
-    ): Promise<AxiosResponse | AxiosError> {
+    getFullResourceList(userId: string, startDate: string, endDate: string): Promise<AxiosResponse | AxiosError> {
         const resourceStatement = `
             _or: [
                 {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
@@ -261,10 +259,10 @@ export class ResourcePlaningService {
 
     divideResourcesByWeeks(resourceArr: any) {
         resourceArr = resourceArr.map(resource => {
-            const firstWeekNumber = this.getWeekNumber(resource.start_date)
-            const lastWeekNumber = this.getWeekNumber(resource.end_date)
-            const totalWeeksQuantity = lastWeekNumber - firstWeekNumber + 1
-            const hoursPerWeek = resource.total_duration / totalWeeksQuantity
+            const firstWeekNumber = this.getWeekNumber(resource.start_date);
+            const lastWeekNumber = this.getWeekNumber(resource.end_date);
+            const totalWeeksQuantity = lastWeekNumber - firstWeekNumber + 1;
+            const hoursPerWeek = resource.total_duration / totalWeeksQuantity;
 
             return {
                 firstWeekNumber: firstWeekNumber,
@@ -274,84 +272,154 @@ export class ResourcePlaningService {
                 startDate: resource.start_date,
                 endDate: resource.end_date,
                 totalDuration: resource.total_duration,
-            }
-        })
+            };
+        });
         resourceArr.forEach(resource => {
-            resource.firstWeekNumber = this.getWeekNumber(resource.startDate)
-            resource.lastWeekNumber = this.getWeekNumber(resource.endDate)
-            resource.totalWeeksQuantity = resource.lastWeekNumber - resource.firstWeekNumber + 1
-            resource.hoursPerWeek = resource.totalDuration / resource.totalWeeksQuantity
+            resource.firstWeekNumber = this.getWeekNumber(resource.startDate);
+            resource.lastWeekNumber = this.getWeekNumber(resource.endDate);
+            resource.totalWeeksQuantity = resource.lastWeekNumber - resource.firstWeekNumber + 1;
+            resource.hoursPerWeek = resource.totalDuration / resource.totalWeeksQuantity;
         });
 
-        return this.distributeByWeek(resourceArr)
+        return this.distributeByWeek(resourceArr);
     }
 
-    divideResourcesByWeeksAndProject(resourceArr) {
+    divideResourcesByWeeksAndProject(resourceArr: any, startDate: string, endDate: string) {
         resourceArr = resourceArr.map(resource => {
-            const firstWeekNumber = this.getWeekNumber(resource.start_date)
-            const lastWeekNumber = this.getWeekNumber(resource.end_date)
-            const totalWeeksQuantity = lastWeekNumber - firstWeekNumber + 1
-            const hoursPerWeek = resource.total_duration / totalWeeksQuantity
+            const firstWeekNumber = this.getWeekNumber(resource.start_date);
+            const lastWeekNumber = this.getWeekNumber(resource.end_date);
+            const totalWeeksQuantity = lastWeekNumber - firstWeekNumber + 1;
+            const hoursPerWeek = resource.total_duration / totalWeeksQuantity;
 
             return {
                 firstWeekNumber: firstWeekNumber,
                 lastWeekNumber: lastWeekNumber,
                 totalWeeksQuantity: totalWeeksQuantity,
-                hoursPerWeek: hoursPerWeek,
+                hoursPerWeek: hoursPerWeek * 3600000,
                 startDate: resource.start_date,
                 endDate: resource.end_date,
                 totalDuration: resource.total_duration,
-                projectName: resource.project_v2.name
-            }
-        })
+                projectName: resource.project_v2.name,
+            };
+        });
 
-        return this.distributeByWeekAndProject(resourceArr)
+        let weeks = this.splitPeriodToWeeks(startDate, endDate);
+        console.log(weeks)
+        weeks = this.addWeekNumbers(weeks.weeksNormalized);
+        console.log(weeks);
+        return this.distributeByWeekAndProject(resourceArr, weeks);
     }
 
-    distributeByWeekAndProject(resourceArr) {
-        let resourcesByWeek = {}
+    distributeByWeekAndProject(resourceArr: any, weeks: any) {
+        // let resourcesByWeek = {};
         resourceArr.forEach(resource => {
-            let weekCounter = resource.firstWeekNumber
+            weeks.forEach(week => {
+                if (week.weekNumber >= resource.firstWeekNumber && week.weekNumber <= resource.lastWeekNumber) {
+                    if (!week.planResources) {
+                        week.planResources = []
+                    }
+                    week.planResources.push({
+                        timeForPlanResource: resource.hoursPerWeek,
+                        projectName: resource.projectName
+                    })
+                    
+                }
+            })
+        })
+        // resourceArr.forEach(resource => {
+        //     let weekCounter = resource.firstWeekNumber;
+        //     while (weekCounter <= resource.lastWeekNumber) {
+        //         if (!resourcesByWeek[weekCounter]) {
+        //             resourcesByWeek[weekCounter] = [];
+        //         }
+        //         resourcesByWeek[weekCounter].push({
+        //             projectName: resource.projectName,
+        //             hours: resource.hoursPerWeek,
+        //         });
+
+        //         weekCounter++;
+        //     }
+        // });
+
+        return weeks;
+    }
+
+    distributeByWeek(resourceArr: any) {
+        let resourcesByWeek = {};
+        resourceArr.forEach(resource => {
+            let weekCounter = resource.firstWeekNumber;
             while (weekCounter <= resource.lastWeekNumber) {
                 if (!resourcesByWeek[weekCounter]) {
-                    resourcesByWeek[weekCounter] = []
+                    resourcesByWeek[weekCounter] = 0;
                 }
-                resourcesByWeek[weekCounter].push({
-                    projectName: resource.projectName,
-                    hours: resource.hoursPerWeek
-                })
+                resourcesByWeek[weekCounter] = resourcesByWeek[weekCounter] + resource.hoursPerWeek;
 
-                weekCounter++
-            } 
-        })
-
-        return resourcesByWeek
-    }
-
-    distributeByWeek(resourceArr) {
-        let resourcesByWeek = {}
-        resourceArr.forEach(resource => {
-            let weekCounter = resource.firstWeekNumber
-            while (weekCounter <= resource.lastWeekNumber) {
-                if (!resourcesByWeek[weekCounter]) {
-                    resourcesByWeek[weekCounter] = 0
-                }
-                resourcesByWeek[weekCounter] = resourcesByWeek[weekCounter] + resource.hoursPerWeek
-
-                weekCounter++
+                weekCounter++;
             }
-        })
-        
-        return resourcesByWeek
+        });
+
+        return resourcesByWeek;
     }
 
+    addWeekNumbers(weeks: any) {
+        weeks.forEach(week => (week.weekNumber = this.getWeekNumber(week.start)));
+        return weeks;
+    }
+    
     getWeekNumber(currentDate: string) {
         let date = new Date(currentDate);
         date.setHours(0, 0, 0, 0);
-        date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+        date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
         const week1 = new Date(date.getFullYear(), 0, 4);
 
-        return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000
-            - 3 + (week1.getDay() + 6) % 7) / 7);
+        return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    }
+
+    getWeekPeriodByDate(date: any) {
+        const startOfWeek = moment(date)
+            .startOf('isoWeek')
+            .startOf('day')
+            .format('YYYY-MM-DDTHH:mm:ss');
+        const endOfWeek = moment(date)
+            .endOf('isoWeek')
+            .endOf('day')
+            .format('YYYY-MM-DDTHH:mm:ss');
+
+        return {
+            start: startOfWeek,
+            end: endOfWeek,
+        };
+    }
+
+    splitPeriodToWeeks(start: string, end: string) {
+        const weeks = [];
+
+        let current = moment(start);
+        while (current.isSameOrBefore(moment(end))) {
+            weeks.push(this.getWeekPeriodByDate(current));
+
+            current = current.add(7, 'days');
+        }
+
+        weeks.push(this.getWeekPeriodByDate(current));
+
+        return {
+            weeks,
+            weeksNormalized: [
+                {
+                    ...weeks[0],
+                    start: moment(start)
+                        .startOf('day')
+                        .format('YYYY-MM-DDTHH:mm:ss'),
+                },
+                ...weeks.slice(1, -1),
+                {
+                    ...weeks.slice(-1)[0],
+                    end: moment(end)
+                        .endOf('day')
+                        .format('YYYY-MM-DDTHH:mm:ss'),
+                },
+            ],
+        };
     }
 }
