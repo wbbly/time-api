@@ -137,12 +137,12 @@ export class ResourcePlaningService {
                 _set: {
                     end_date: "${endDate}",
                     modified_at: "${this.timeService.getISOTime()}",
-                    project_id: ${projectId ? '"' + projectId + '"' : ''},
+                    project_id: ${projectId ? '"' + projectId + '"' : null},
                     start_date: "${startDate}",
                     team_id: "${teamId}",
                     total_duration: "${totalDuration}",
                     user_id: "${userId}",
-                    user_time_off_id: ${userTimeOffId ? '"' + userTimeOffId + '"' : ''}
+                    user_time_off_id: ${userTimeOffId ? '"' + userTimeOffId + '"' : null},
                 }
             ) {
                 returning {
@@ -160,6 +160,8 @@ export class ResourcePlaningService {
                 }
             }
         }`;
+
+        console.log(query)
 
         return new Promise(async (resolve, reject) => {
             this.httpRequestsService
