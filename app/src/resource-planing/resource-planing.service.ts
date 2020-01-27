@@ -177,4 +177,27 @@ export class ResourcePlaningService {
             return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
         }
     }
+
+    async deleteResourceById(resourceId: string, userId: string): Promise<AxiosResponse | AxiosError> {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        if (isAdmin) {
+            const query = `mutation {
+                delete_plan_resource(where: {id: {_eq: "${resourceId}"}}) {
+                    affected_rows
+                }
+            }`;
+
+            return new Promise(async (resolve, reject) => {
+                this.httpRequestsService
+                    .request(query)
+                    .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            });
+        } else {
+            return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
+        }
+    }
 }
