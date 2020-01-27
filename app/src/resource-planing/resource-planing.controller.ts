@@ -10,6 +10,7 @@ import {
     Headers,
     UnauthorizedException,
     Delete,
+    Get,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -133,6 +134,67 @@ export class ResourcePlaningController {
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'ERROR.PLAN_RESOURCE.DELETE_PLAN_RESOURCE_FAILED' });
+        }
+    }
+
+    @Get('short-list')
+    async shortListOfPlanResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        let resourceList = null;
+        try {
+            resourceList = await this.resourcePlaningService.getShortResourceList(
+                body.userId,
+                body.startDate,
+                body.endDate
+            );
+
+            return res
+                .status(HttpStatus.OK)
+                .json(
+                    this.resourcePlaningService.divideResourcesByWeeks(
+                        resourceList.data.plan_resource,
+                        body.startDate,
+                        body.endDate
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
+        }
+    }
+
+    @Get('full-list')
+    async fullListOfPlanResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        let resourceList = null;
+        try {
+            resourceList = await this.resourcePlaningService.getFullResourceList(
+                body.userId,
+                body.startDate,
+                body.endDate
+            );
+            return res
+                .status(HttpStatus.OK)
+                .json(
+                    this.resourcePlaningService.divideResourcesByWeeksAndProject(
+                        resourceList.data.plan_resource,
+                        body.startDate,
+                        body.endDate
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
         }
     }
 }
