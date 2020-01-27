@@ -85,7 +85,6 @@ export class ResourcePlaningController {
             startDate: body.startDate,
             endDate: body.endDate,
             userTimeOffId: body.userTimeOffId,
-            modifiedAt: body.modifiedAt,
         };
 
         resourceData = {
@@ -96,7 +95,6 @@ export class ResourcePlaningController {
             startDate: resourceData.start_date,
             endDate: resourceData.end_date,
             userTimeOffId: resourceData.user_time_off_id,
-            modifiedAt: body.modifiedAt,
         };
 
         Object.keys(resourceData).forEach(prop => {
@@ -105,21 +103,8 @@ export class ResourcePlaningController {
         });
 
         try {
-            await this.resourcePlaningService.updateResource(param.id, resourceData);
-
-            let resourceUpdated = null;
-
-            try {
-                resourceUpdated = await this.resourcePlaningService.getResourceById(param.id);
-            } catch (err) {
-                console.log(err);
-            }
-
-            if (!resourceUpdated) {
-                return res
-                    .status(HttpStatus.FORBIDDEN)
-                    .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
-            }
+            const resourceUpdated = await this.resourcePlaningService.updateResource(param.id, resourceData);
+            
             return res.status(HttpStatus.OK).json(resourceUpdated);
         } catch (err) {
             return res
