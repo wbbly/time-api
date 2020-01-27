@@ -161,8 +161,6 @@ export class ResourcePlaningService {
             }
         }`;
 
-        console.log(query)
-
         return new Promise(async (resolve, reject) => {
             this.httpRequestsService
                 .request(query)
