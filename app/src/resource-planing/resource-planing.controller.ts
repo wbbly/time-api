@@ -1,19 +1,15 @@
 import {
     Controller,
-    Get,
     Response,
     HttpStatus,
-    Query,
     Post,
     Body,
-    Patch,
-    Param,
     UseGuards,
     Headers,
     UnauthorizedException,
 } from '@nestjs/common';
-
 import { AuthGuard } from '@nestjs/passport';
+
 import { AuthService } from '../auth/auth.service';
 import { ResourcePlaningService } from './resource-planing.service';
 
@@ -21,8 +17,9 @@ import { ResourcePlaningService } from './resource-planing.service';
 export class ResourcePlaningController {
     constructor(
         private readonly authService: AuthService,
-        private readonly ResourcePlaningService: ResourcePlaningService
-    ) {}
+        private readonly resourcePlaningService: ResourcePlaningService
+    ) { }
+    
     @Post('add')
     @UseGuards(AuthGuard())
     async currentUserResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
@@ -30,9 +27,10 @@ export class ResourcePlaningController {
         if (!userId) {
             throw new UnauthorizedException();
         }
+
         let resource = null;
         try {
-            resource = await this.ResourcePlaningService.createPlanResource({
+            resource = await this.resourcePlaningService.createPlanResource({
                 userId: body.userId,
                 projectId: body.projectId,
                 teamId: body.teamId,

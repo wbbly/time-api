@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { HttpRequestsService } from '../core/http-requests/http-requests.service';
+
 import { AxiosResponse, AxiosError } from 'axios';
+
+import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 
@@ -52,10 +54,13 @@ export class ResourcePlaningService {
             return new Promise((resolve, reject) => {
                 this.httpRequestsService.request(query).subscribe(
                     async (insertResourceRes: AxiosResponse) => {
-                        console.log(query);
                         const returningRows = insertResourceRes.data.plan_resource.returning;
                         if (returningRows.length) {
                             return resolve(insertResourceRes);
+                        } else {
+                            return Promise.reject({
+                                message: 'ERROR.PLAN_RESOURCE.CREATE_PLAN_RESOURCE_REQUEST_TIMEOUT',
+                            });
                         }
                     },
                     (insertResourceError: AxiosError) => reject(insertResourceError)
