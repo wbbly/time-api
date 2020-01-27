@@ -6,7 +6,7 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { PlanResource } from './interfaces/resource-planing.interface';
-import { TimeService } from "../time/time.service";
+import { TimeService } from '../time/time.service';
 @Injectable()
 export class ResourcePlaningService {
     constructor(

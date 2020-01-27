@@ -104,7 +104,7 @@ export class ResourcePlaningController {
 
         try {
             const resourceUpdated = await this.resourcePlaningService.updateResource(param.id, resourceData);
-            
+
             return res.status(HttpStatus.OK).json(resourceUpdated);
         } catch (err) {
             return res
