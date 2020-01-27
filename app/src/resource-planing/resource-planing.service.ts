@@ -277,7 +277,6 @@ export class ResourcePlaningService {
             };
         });
         let weeks = this.splitPeriodToWeeks(startDate, endDate);
-        console.log(weeks);
         weeks = this.addWeekNumbers(weeks.weeksNormalized);
 
         return this.distributeByWeek(resourceArr, weeks);
