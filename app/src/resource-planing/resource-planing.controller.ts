@@ -57,8 +57,8 @@ export class ResourcePlaningController {
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updatePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
-        const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId) {
+        const updatedById = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!updatedById) {
             throw new UnauthorizedException();
         }
 
@@ -103,7 +103,11 @@ export class ResourcePlaningController {
         });
 
         try {
-            const resourceUpdated = await this.resourcePlaningService.updateResource(param.id, resourceData);
+            const resourceUpdated = await this.resourcePlaningService.updateResource(
+                param.id,
+                resourceData,
+                updatedById
+            );
 
             return res.status(HttpStatus.OK).json(resourceUpdated);
         } catch (err) {

@@ -7,6 +7,7 @@ import { RoleCollaborationService } from '../role-collaboration/role-collaborati
 import { TeamService } from '../team/team.service';
 import { PlanResource } from './interfaces/resource-planing.interface';
 import { TimeService } from '../time/time.service';
+
 @Injectable()
 export class ResourcePlaningService {
     constructor(
@@ -125,46 +126,55 @@ export class ResourcePlaningService {
             startDate: string;
             endDate: string;
             userTimeOffId: string;
-        }
+        },
+        updatedById: string
     ): Promise<AxiosResponse | AxiosError> {
         const { projectId, teamId, totalDuration, startDate, endDate, userId, userTimeOffId } = data;
+        const currentTeamData: any = await this.teamService.getCurrentTeam(updatedById);
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        const query = `mutation {
-            update_plan_resource(
-                where: {
-                    id: {_eq: "${resourceId}"}
-                },
-                _set: {
-                    end_date: "${endDate}",
-                    modified_at: "${this.timeService.getISOTime()}",
-                    project_id: ${projectId ? '"' + projectId + '"' : null},
-                    start_date: "${startDate}",
-                    team_id: "${teamId}",
-                    total_duration: "${totalDuration}",
-                    user_id: "${userId}",
-                    user_time_off_id: ${userTimeOffId ? '"' + userTimeOffId + '"' : null},
+        if (isAdmin) {
+            const query = `mutation {
+                update_plan_resource(
+                    where: {
+                        id: {_eq: "${resourceId}"}
+                    },
+                    _set: {
+                        end_date: "${endDate}",
+                        modified_at: "${this.timeService.getISOTime()}",
+                        project_id: ${projectId ? '"' + projectId + '"' : null},
+                        start_date: "${startDate}",
+                        team_id: "${teamId}",
+                        total_duration: "${totalDuration}",
+                        user_id: "${userId}",
+                        user_time_off_id: ${userTimeOffId ? '"' + userTimeOffId + '"' : null},
+                    }
+                ) {
+                    returning {
+                        id
+                        created_at
+                        created_by_id
+                        end_date
+                        modified_at
+                        project_id
+                        start_date
+                        team_id
+                        total_duration
+                        user_id
+                        user_time_off_id
+                    }
                 }
-            ) {
-                returning {
-                    id
-                    created_at
-                    created_by_id
-                    end_date
-                    modified_at
-                    project_id
-                    start_date
-                    team_id
-                    total_duration
-                    user_id
-                    user_time_off_id
-                }
-            }
-        }`;
+            }`;
 
-        return new Promise(async (resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
-        });
+            return new Promise(async (resolve, reject) => {
+                this.httpRequestsService
+                    .request(query)
+                    .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            });
+        } else {
+            return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
+        }
     }
 }
