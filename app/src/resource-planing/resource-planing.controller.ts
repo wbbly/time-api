@@ -194,7 +194,7 @@ export class ResourcePlaningController {
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
+                .json({ message: 'ERROR.PLAN_RESOURCE.FULL_PLAN_RESOURCE_LIST_FAILED' });
         }
     }
 }
