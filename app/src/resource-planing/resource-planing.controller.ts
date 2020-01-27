@@ -117,17 +117,17 @@ export class ResourcePlaningController {
                 .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
         }
     }
-    @Delete(':id')
+    @Delete()
     @UseGuards(AuthGuard())
-    async deletePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
+    async deletePlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId || param.id !== userId) {
+        if (!userId) {
             throw new UnauthorizedException();
         }
 
         let deletedResourceById = null;
         try {
-            deletedResourceById = await this.resourcePlaningService.deleteResourceById(body.id, userId);
+            deletedResourceById = await this.resourcePlaningService.deleteResourceById(body.resourceId, userId);
             return res.status(HttpStatus.OK).json(deletedResourceById);
         } catch (error) {
             return res
