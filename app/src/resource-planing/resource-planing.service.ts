@@ -29,7 +29,7 @@ export class ResourcePlaningService {
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
-        
+
         if (isAdmin) {
             const query = `mutation {
                 insert_plan_resource(

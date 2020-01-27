@@ -18,8 +18,8 @@ export class ResourcePlaningController {
     constructor(
         private readonly authService: AuthService,
         private readonly resourcePlaningService: ResourcePlaningService
-    ) { }
-    
+    ) {}
+
     @Post('add')
     @UseGuards(AuthGuard())
     async currentUserResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
