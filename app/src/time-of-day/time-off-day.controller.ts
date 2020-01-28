@@ -18,8 +18,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from '../auth/auth.service';
 import { TimeOffDayService } from './time-off-day.service';
 
-@Controller('resource-planing')
-export class ResourcePlaningController {
+@Controller('time-off-day')
+export class TimeOffDayController {
     constructor(
         private readonly authService: AuthService,
         private readonly timeOffDayService: TimeOffDayService
@@ -28,16 +28,17 @@ export class ResourcePlaningController {
     @Post('add')
     @UseGuards(AuthGuard())
     async createTimeOffDay(@Headers() headers: any, @Response() res: any, @Body() body: any) {
-        const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId) {
+        const createdById = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!createdById) {
             throw new UnauthorizedException();
         }
 
         try {
             const timeOffDay = await this.timeOffDayService.createTimeOffDay({
-                createdById: body.createdById,
+                createdById: createdById,
                 timeOffType: body.timeOffType,
                 teamId: body.teamId,
+                isActive: body.isActive,
             });
             return res.status(HttpStatus.OK).json(timeOffDay);
         } catch (error) {

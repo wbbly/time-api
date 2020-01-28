@@ -3,7 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
-
+import { TeamService } from "../team/team.service";
+import { RoleCollaborationService } from "../role-collaboration/role-collaboration.service";
 
 @Injectable()
 export class TimeOffDayService {
@@ -12,15 +13,15 @@ export class TimeOffDayService {
         private readonly teamService: TeamService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly timeOffDayService: TimeOffDayService
     ) { }
     
     async createTimeOffDay(data: {
         createdById: string,
         timeOffType: string;
         teamId: string;
+        isActive: boolean;
     }): Promise<AxiosResponse | AxiosError> {
-        const { teamId, createdById, timeOffType } = data;
+        const { teamId, createdById, timeOffType, isActive } = data;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(createdById);
         const isAdmin =
@@ -28,13 +29,38 @@ export class TimeOffDayService {
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
         
         if (isAdmin) {
-            const query = ``;
+            const query = `mutation {
+                insert_time_off_day(
+                    objects: [
+                        {
+                            time_off_type: "${timeOffType}",
+                            team_id: "${teamId}",
+                            isActive: ${isActive},
+                        }
+                    ]
+                ){
+                    returning {
+                        id
+                        time_off_type
+                        created_at
+                        modified_at
+                        team_id
+                        isActive
+                    }
+                }
+            }`;
+
             return new Promise((resolve, reject) => {
                 this.httpRequestsService.request(query).subscribe(
-                    async (insertResourceRes: AxiosResponse) => {
-                        const returningRows = insertResourceRes.data.plan_resource.returning;
-                        if (returningRows.length) {
-                            return resolve(insertResourceRes);
+                    async (insertTimeOffDayRes: AxiosResponse) => {
+                        const returningRows = insertTimeOffDayRes.data.insert_time_off_day.returning[0];
+                        if (returningRows) {
+                            return resolve(returningRows);
+                        } else {
+                            return Promise.reject({
+                                message:
+                                    'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_REQUEST_TIMEOUT',
+                            });
                         }
                     },
                     (insertResourceError: AxiosError) => reject(insertResourceError)
