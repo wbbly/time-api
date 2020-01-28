@@ -58,12 +58,11 @@ export class TimeOffDayService {
                             return resolve(returningRows);
                         } else {
                             return Promise.reject({
-                                message:
-                                    'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_REQUEST_TIMEOUT',
+                                message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_REQUEST_TIMEOUT',
                             });
                         }
                     },
-                    (insertResourceError: AxiosError) => reject(insertResourceError)
+                    (insertTimeOffDayError: AxiosError) => reject(insertTimeOffDayError)
                 );
             });
         } else {
