@@ -35,7 +35,7 @@ export class TimeOffDayService {
                         {
                             time_off_type: "${timeOffType}",
                             team_id: "${teamId}",
-                            isActive: ${isActive},
+                            is_active: ${isActive},
                         }
                     ]
                 ){
@@ -45,7 +45,7 @@ export class TimeOffDayService {
                         created_at
                         modified_at
                         team_id
-                        isActive
+                        is_active
                     }
                 }
             }`;
