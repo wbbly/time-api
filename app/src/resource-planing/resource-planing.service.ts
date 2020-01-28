@@ -21,13 +21,12 @@ export class ResourcePlaningService {
     async createPlanResource(data: {
         userId: string;
         projectId: string;
-        teamId: string;
         createdById: string;
         totalDuration: string;
         startDate: string;
         endDate: string;
     }): Promise<AxiosResponse | AxiosError> {
-        const { userId, projectId, teamId, createdById, totalDuration, startDate, endDate } = data;
+        const { userId, projectId, createdById, totalDuration, startDate, endDate } = data;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(createdById);
         const isAdmin =
@@ -42,7 +41,7 @@ export class ResourcePlaningService {
                             user_id: "${userId}",
                             project_id: "${projectId}",
                             created_by_id: "${createdById}",
-                            team_id: "${teamId}",
+                            team_id: "${currentTeamData.data.user_team[0].team.id}",
                             total_duration: "${totalDuration}",
                             start_date: "${startDate}",
                             end_date: "${endDate}"
@@ -58,7 +57,7 @@ export class ResourcePlaningService {
             return new Promise((resolve, reject) => {
                 this.httpRequestsService.request(query).subscribe(
                     async (insertResourceRes: AxiosResponse) => {
-                        const returningRows = insertResourceRes.data.plan_resource.returning;
+                        const returningRows = insertResourceRes.data.insert_plan_resource.returning[0];
                         if (returningRows.length) {
                             return resolve(insertResourceRes);
                         } else {

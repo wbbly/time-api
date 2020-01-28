@@ -32,28 +32,21 @@ export class ResourcePlaningController {
             throw new UnauthorizedException();
         }
 
-        let resource = null;
         try {
-            resource = await this.resourcePlaningService.createPlanResource({
+            const resource = await this.resourcePlaningService.createPlanResource({
                 userId: body.userId,
                 projectId: body.projectId,
-                teamId: body.teamId,
                 createdById: userId,
                 totalDuration: body.totalDuration,
                 startDate: body.startDate,
                 endDate: body.endDate,
             });
-        } catch (error) {
-            console.log(error);
-        }
-
-        if (resource) {
             return res.status(HttpStatus.OK).json(resource);
+        } catch (error) {
+            return res
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .json({ message: 'ERROR.PLAN_RESOURCE.CREATE_PLAN_RESOURCE_FAILED' });
         }
-
-        return res
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .json({ message: 'ERROR.PLAN_RESOURCE.CREATE_PLAN_RESOURCE_FAILED' });
     }
 
     @Patch(':id')
