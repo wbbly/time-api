@@ -3,8 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
-import { TeamService } from "../team/team.service";
-import { RoleCollaborationService } from "../role-collaboration/role-collaboration.service";
+import { TeamService } from '../team/team.service';
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 
 @Injectable()
 export class TimeOffDayService {

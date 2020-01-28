@@ -20,10 +20,7 @@ import { TimeOffDayService } from './time-off-day.service';
 
 @Controller('time-off-day')
 export class TimeOffDayController {
-    constructor(
-        private readonly authService: AuthService,
-        private readonly timeOffDayService: TimeOffDayService
-    ) { }
+    constructor(private readonly authService: AuthService, private readonly timeOffDayService: TimeOffDayService) {}
 
     @Post('add')
     @UseGuards(AuthGuard())
