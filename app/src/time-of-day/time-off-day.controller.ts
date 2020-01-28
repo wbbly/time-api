@@ -33,7 +33,6 @@ export class TimeOffDayController {
             const timeOffDay = await this.timeOffDayService.createTimeOffDay({
                 createdById: createdById,
                 timeOffType: body.timeOffType,
-                teamId: body.teamId,
                 isActive: body.isActive,
             });
             return res.status(HttpStatus.OK).json(timeOffDay);
@@ -65,13 +64,11 @@ export class TimeOffDayController {
 
         const newTimeOffDayData: any = {
             timeOffType: body.timeOffType,
-            teamId: body.teamId,
             isActive: body.isActive,
         };
 
         timeOffDayData = {
             timeOffType: timeOffDayData.time_off_type,
-            teamId: timeOffDayData.team_id,
             isActive: timeOffDayData.is_active,
         };
 

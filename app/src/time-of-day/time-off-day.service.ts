@@ -20,10 +20,9 @@ export class TimeOffDayService {
     async createTimeOffDay(data: {
         createdById: string;
         timeOffType: string;
-        teamId: string;
         isActive: boolean;
     }): Promise<AxiosResponse | AxiosError> {
-        const { teamId, createdById, timeOffType, isActive } = data;
+        const { createdById, timeOffType, isActive } = data;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(createdById);
         const isAdmin =
@@ -36,8 +35,8 @@ export class TimeOffDayService {
                     objects: [
                         {
                             time_off_type: "${timeOffType}",
-                            team_id: "${teamId}",
-                            isActive: ${isActive},
+                            team_id: "${currentTeamData.data.user_team[0].team.id}",
+                            is_active: ${isActive},
                         }
                     ]
                 ){
@@ -104,16 +103,16 @@ export class TimeOffDayService {
             );
         });
     }
+    
     async updateTimeOffDay(
         timeOffId: string,
         data: {
             timeOffType: string;
-            teamId: string;
             isActive: boolean;
         },
         updatedById: string
     ): Promise<AxiosResponse | AxiosError> {
-        const { timeOffType, teamId, isActive } = data;
+        const { timeOffType, isActive } = data;
         const currentTeamData: any = await this.teamService.getCurrentTeam(updatedById);
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
@@ -128,7 +127,6 @@ export class TimeOffDayService {
                     _set: {
                         time_off_type: "${timeOffType}",
                         modified_at: "${this.timeService.getISOTime()}",
-                        team_id: "${teamId}",
                         is_active: ${isActive},
                     }
                 ) {
