@@ -3,20 +3,22 @@ import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
-import { TeamService } from "../team/team.service";
-import { RoleCollaborationService } from "../role-collaboration/role-collaboration.service";
+import { TeamService } from '../team/team.service';
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { TimeOffDay } from './interfaces/time-off-day.interface';
+import { TimeService } from '../time/time.service';
 
 @Injectable()
 export class TimeOffDayService {
-
     constructor(
         private readonly teamService: TeamService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly httpRequestsService: HttpRequestsService,
-    ) { }
-    
+        private readonly timeService: TimeService
+    ) {}
+
     async createTimeOffDay(data: {
-        createdById: string,
+        createdById: string;
         timeOffType: string;
         teamId: string;
         isActive: boolean;
@@ -27,7 +29,7 @@ export class TimeOffDayService {
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
-        
+
         if (isAdmin) {
             const query = `mutation {
                 insert_time_off_day(
@@ -45,7 +47,7 @@ export class TimeOffDayService {
                         created_at
                         modified_at
                         team_id
-                        isActive
+                        is_active
                     }
                 }
             }`;
@@ -58,12 +60,102 @@ export class TimeOffDayService {
                             return resolve(returningRows);
                         } else {
                             return Promise.reject({
-                                message:
-                                    'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_REQUEST_TIMEOUT',
+                                message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_REQUEST_TIMEOUT',
                             });
                         }
                     },
-                    (insertResourceError: AxiosError) => reject(insertResourceError)
+                    (insertTimeOffDayError: AxiosError) => reject(insertTimeOffDayError)
+                );
+            });
+        } else {
+            return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
+        }
+    }
+
+    async getTimeOffDayById(id: string): Promise<TimeOffDay | AxiosError> {
+        const whereStatements = [`id: { _eq: "${id}" }`];
+
+        return new Promise((resolve, reject) => {
+            this.getTimeOffDayData(whereStatements.join(',')).then(
+                (res: TimeOffDay) => resolve(res),
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async getTimeOffDayData(whereStatement: string): Promise<any | null | AxiosError> {
+        const query = `{
+            time_off_day(where: {${whereStatement}}) {
+                id
+                time_off_type
+                team_id
+                is_active
+            }
+        }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    const resource = res.data.time_off_day.shift();
+                    return resolve(resource);
+                },
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+    async updateTimeOffDay(
+        timeOffId: string,
+        data: {
+            timeOffType: string;
+            teamId: string;
+            isActive: boolean;
+        },
+        updatedById: string
+    ): Promise<AxiosResponse | AxiosError> {
+        const { timeOffType, teamId, isActive } = data;
+        const currentTeamData: any = await this.teamService.getCurrentTeam(updatedById);
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        if (isAdmin) {
+            const query = `mutation {
+                update_time_off_day(
+                    where: {
+                        id: {_eq: "${timeOffId}"}
+                    },
+                    _set: {
+                        time_off_type: "${timeOffType}",
+                        modified_at: "${this.timeService.getISOTime()}",
+                        team_id: "${teamId}",
+                        is_active: ${isActive},
+                    }
+                ) {
+                    returning {
+                        id
+                        created_at
+                        time_off_type
+                        modified_at
+                        team_id
+                        is_active
+                    }
+                }
+            }`;
+
+            return new Promise(async (resolve, reject) => {
+                this.httpRequestsService.request(query).subscribe(
+                    async (insertTimeOffDayRes: AxiosResponse) => {
+                        const returningRows = insertTimeOffDayRes.data.update_time_off_day.returning[0];
+                        if (returningRows) {
+                            return resolve(returningRows);
+                        } else {
+                            return Promise.reject({
+                                message: 'ERROR.TIME_OFF_DAY.UPDATE_TIME_OFF_DAY_REQUEST_TIMEOUT',
+                            });
+                        }
+                    },
+                    (insertTimeOffDayError: AxiosError) => reject(insertTimeOffDayError)
                 );
             });
         } else {
