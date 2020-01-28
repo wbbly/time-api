@@ -103,7 +103,7 @@ export class TimeOffDayService {
             );
         });
     }
-    
+
     async updateTimeOffDay(
         timeOffId: string,
         data: {

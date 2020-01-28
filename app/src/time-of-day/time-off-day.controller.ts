@@ -43,6 +43,7 @@ export class TimeOffDayController {
                 .json({ message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_FAILED' });
         }
     }
+    
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updatePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
