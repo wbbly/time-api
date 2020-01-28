@@ -119,9 +119,7 @@ export class TimeOffDayController {
             const timeOffDayList = await this.timeOffDayService.getTimeOffDayList(userId);
             return res.status(HttpStatus.OK).json(timeOffDayList);
         } catch (error) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'ERROR.TIME_OFF_DAY.LIST_TIME_OFF_DAY_FAILED' });
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.LIST_TIME_OFF_DAY_FAILED' });
         }
     }
 }

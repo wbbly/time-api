@@ -103,6 +103,7 @@ export class TimeOffDayService {
             );
         });
     }
+    
     async updateTimeOffDay(
         timeOffId: string,
         data: {
@@ -198,7 +199,6 @@ export class TimeOffDayService {
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
-        console.log(currentTeamData.data.user_team[0].team.id);
 
         if (isAdmin) {
             const query = `{
