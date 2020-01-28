@@ -2,7 +2,6 @@ import {
     Controller,
     Response,
     HttpStatus,
-    Query,
     Post,
     Body,
     Patch,
@@ -38,12 +37,12 @@ export class TimeOffDayController {
             });
             return res.status(HttpStatus.OK).json(timeOffDay);
         } catch (error) {
-            console.log(error);
             return res
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .json({ message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_FAILED' });
         }
     }
+
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updatePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
@@ -91,6 +90,22 @@ export class TimeOffDayController {
             return res.status(HttpStatus.OK).json(timeOffDataUpdated);
         } catch (err) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.UPDATE_TIME_OFF_DAY_FAILED' });
+        }
+    }
+
+    @Delete()
+    @UseGuards(AuthGuard())
+    async deletePlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            const deletedTimeOffDayById = await this.timeOffDayService.deleteTimeOffDayById(body.timeOffDayId, userId);
+            return res.status(HttpStatus.OK).json(deletedTimeOffDayById);
+        } catch (error) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.DELETE_TIME_OFF_DAY_FAILED' });
         }
     }
 }

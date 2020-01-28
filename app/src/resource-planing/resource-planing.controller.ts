@@ -117,6 +117,7 @@ export class ResourcePlaningController {
                 .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
         }
     }
+
     @Delete()
     @UseGuards(AuthGuard())
     async deletePlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
