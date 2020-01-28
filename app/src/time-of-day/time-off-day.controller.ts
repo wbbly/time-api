@@ -10,6 +10,7 @@ import {
     Headers,
     UnauthorizedException,
     Delete,
+    Get,
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
@@ -32,7 +33,6 @@ export class TimeOffDayController {
             const timeOffDay = await this.timeOffDayService.createTimeOffDay({
                 createdById: createdById,
                 timeOffType: body.timeOffType,
-                teamId: body.teamId,
                 isActive: body.isActive,
             });
             return res.status(HttpStatus.OK).json(timeOffDay);
@@ -64,13 +64,11 @@ export class TimeOffDayController {
 
         const newTimeOffDayData: any = {
             timeOffType: body.timeOffType,
-            teamId: body.teamId,
             isActive: body.isActive,
         };
 
         timeOffDayData = {
             timeOffType: timeOffDayData.time_off_type,
-            teamId: timeOffDayData.team_id,
             isActive: timeOffDayData.is_active,
         };
 
@@ -106,6 +104,24 @@ export class TimeOffDayController {
             return res.status(HttpStatus.OK).json(deletedTimeOffDayById);
         } catch (error) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.DELETE_TIME_OFF_DAY_FAILED' });
+        }
+    }
+
+    @Get('list')
+    @UseGuards(AuthGuard())
+    async getTimeOffDayList(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            const timeOffDayList = await this.timeOffDayService.getTimeOffDayList(userId);
+            return res.status(HttpStatus.OK).json(timeOffDayList);
+        } catch (error) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'ERROR.TIME_OFF_DAY.LIST_TIME_OFF_DAY_FAILED' });
         }
     }
 }

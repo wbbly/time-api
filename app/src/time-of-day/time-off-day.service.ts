@@ -20,10 +20,9 @@ export class TimeOffDayService {
     async createTimeOffDay(data: {
         createdById: string;
         timeOffType: string;
-        teamId: string;
         isActive: boolean;
     }): Promise<AxiosResponse | AxiosError> {
-        const { teamId, createdById, timeOffType, isActive } = data;
+        const { createdById, timeOffType, isActive } = data;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(createdById);
         const isAdmin =
@@ -36,8 +35,8 @@ export class TimeOffDayService {
                     objects: [
                         {
                             time_off_type: "${timeOffType}",
-                            team_id: "${teamId}",
-                            isActive: ${isActive},
+                            team_id: "${currentTeamData.data.user_team[0].team.id}",
+                            is_active: ${isActive},
                         }
                     ]
                 ){
@@ -108,12 +107,11 @@ export class TimeOffDayService {
         timeOffId: string,
         data: {
             timeOffType: string;
-            teamId: string;
             isActive: boolean;
         },
         updatedById: string
     ): Promise<AxiosResponse | AxiosError> {
-        const { timeOffType, teamId, isActive } = data;
+        const { timeOffType, isActive } = data;
         const currentTeamData: any = await this.teamService.getCurrentTeam(updatedById);
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
@@ -128,7 +126,6 @@ export class TimeOffDayService {
                     _set: {
                         time_off_type: "${timeOffType}",
                         modified_at: "${this.timeService.getISOTime()}",
-                        team_id: "${teamId}",
                         is_active: ${isActive},
                     }
                 ) {
@@ -185,6 +182,48 @@ export class TimeOffDayService {
                         } else {
                             return Promise.reject({
                                 message: 'ERROR.TIME_OFF_DAY.DELETE_TIME_OFF_DAY_REQUEST_TIMEOUT',
+                            });
+                        }
+                    },
+                    (insertTimeOffDayError: AxiosError) => reject(insertTimeOffDayError)
+                );
+            });
+        } else {
+            return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
+        }
+    }
+
+    async getTimeOffDayList(userId: string): Promise<AxiosResponse | AxiosError> {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+        console.log(currentTeamData.data.user_team[0].team.id);
+
+        if (isAdmin) {
+            const query = `{
+                time_off_day(where: {team_id: {_eq: "${
+                    currentTeamData.data.user_team[0].team.id
+                }"}}, order_by: {created_at: asc}) {
+                        id
+                        created_at
+                        time_off_type
+                        modified_at
+                        team_id
+                        is_active
+                    }
+                }
+            `;
+
+            return new Promise(async (resolve, reject) => {
+                this.httpRequestsService.request(query).subscribe(
+                    async (insertTimeOffDayRes: AxiosResponse) => {
+                        const returningRows = insertTimeOffDayRes.data.time_off_day;
+                        if (returningRows) {
+                            return resolve(returningRows);
+                        } else {
+                            return Promise.reject({
+                                message: 'ERROR.TIME_OFF_DAY.LIST_TIME_OFF_DAY_REQUEST_TIMEOUT',
                             });
                         }
                     },

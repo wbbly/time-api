@@ -10,6 +10,7 @@ import {
     Headers,
     UnauthorizedException,
     Delete,
+    Get,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
