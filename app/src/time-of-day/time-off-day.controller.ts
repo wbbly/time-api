@@ -37,7 +37,6 @@ export class TimeOffDayController {
             const timeOffDay = await this.timeOffDayService.createTimeOffDay({
                 createdById: createdById,
                 timeOffType: body.timeOffType,
-                teamId: body.teamId,
                 isActive: body.isActive,
             });
             return res.status(HttpStatus.OK).json(timeOffDay);

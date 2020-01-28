@@ -8,33 +8,31 @@ import { RoleCollaborationService } from "../role-collaboration/role-collaborati
 
 @Injectable()
 export class TimeOffDayService {
-
     constructor(
         private readonly teamService: TeamService,
         private readonly roleCollaborationService: RoleCollaborationService,
-        private readonly httpRequestsService: HttpRequestsService,
-    ) { }
-    
+        private readonly httpRequestsService: HttpRequestsService
+    ) {}
+
     async createTimeOffDay(data: {
-        createdById: string,
+        createdById: string;
         timeOffType: string;
-        teamId: string;
         isActive: boolean;
     }): Promise<AxiosResponse | AxiosError> {
-        const { teamId, createdById, timeOffType, isActive } = data;
+        const { createdById, timeOffType, isActive } = data;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(createdById);
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
-        
+
         if (isAdmin) {
             const query = `mutation {
                 insert_time_off_day(
                     objects: [
                         {
                             time_off_type: "${timeOffType}",
-                            team_id: "${teamId}",
+                            team_id: "${currentTeamData.data.user_team[0].team.id}",
                             is_active: ${isActive},
                         }
                     ]
