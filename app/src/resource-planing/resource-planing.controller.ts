@@ -1,9 +1,7 @@
 import {
     Controller,
-    Get,
     Response,
     HttpStatus,
-    Query,
     Post,
     Body,
     Patch,
@@ -13,8 +11,8 @@ import {
     UnauthorizedException,
     Delete,
 } from '@nestjs/common';
-
 import { AuthGuard } from '@nestjs/passport';
+
 import { AuthService } from '../auth/auth.service';
 import { ResourcePlaningService } from './resource-planing.service';
 
@@ -22,18 +20,20 @@ import { ResourcePlaningService } from './resource-planing.service';
 export class ResourcePlaningController {
     constructor(
         private readonly authService: AuthService,
-        private readonly ResourcePlaningService: ResourcePlaningService
+        private readonly resourcePlaningService: ResourcePlaningService
     ) {}
+
     @Post('add')
     @UseGuards(AuthGuard())
-    async createPlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+    async currentUserResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
+
         let resource = null;
         try {
-            resource = await this.ResourcePlaningService.createPlanResource({
+            resource = await this.resourcePlaningService.createPlanResource({
                 userId: body.userId,
                 projectId: body.projectId,
                 teamId: body.teamId,
@@ -58,14 +58,14 @@ export class ResourcePlaningController {
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updatePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
-        const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId) {
+        const updatedById = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!updatedById) {
             throw new UnauthorizedException();
         }
 
         let resourceData = null;
         try {
-            resourceData = await this.ResourcePlaningService.getResourceById(param.id);
+            resourceData = await this.resourcePlaningService.getResourceById(param.id);
         } catch (err) {
             return res
                 .status(HttpStatus.FORBIDDEN)
@@ -86,7 +86,6 @@ export class ResourcePlaningController {
             startDate: body.startDate,
             endDate: body.endDate,
             userTimeOffId: body.userTimeOffId,
-            modifiedAt: body.modifiedAt,
         };
 
         resourceData = {
@@ -97,7 +96,6 @@ export class ResourcePlaningController {
             startDate: resourceData.start_date,
             endDate: resourceData.end_date,
             userTimeOffId: resourceData.user_time_off_id,
-            modifiedAt: body.modifiedAt,
         };
 
         Object.keys(resourceData).forEach(prop => {
@@ -106,21 +104,12 @@ export class ResourcePlaningController {
         });
 
         try {
-            await this.ResourcePlaningService.updateResource(param.id, resourceData);
+            const resourceUpdated = await this.resourcePlaningService.updateResource(
+                param.id,
+                resourceData,
+                updatedById
+            );
 
-            let resourceUpdated = null;
-
-            try {
-                resourceUpdated = await this.ResourcePlaningService.getResourceById(param.id);
-            } catch (err) {
-                console.log(err);
-            }
-
-            if (!resourceUpdated) {
-                return res
-                    .status(HttpStatus.FORBIDDEN)
-                    .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
-            }
             return res.status(HttpStatus.OK).json(resourceUpdated);
         } catch (err) {
             return res
@@ -128,83 +117,22 @@ export class ResourcePlaningController {
                 .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
         }
     }
-    @Delete(':id')
+    @Delete()
     @UseGuards(AuthGuard())
-    async deletePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
+    async deletePlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId || param.id !== userId) {
+        if (!userId) {
             throw new UnauthorizedException();
         }
 
         let deletedResourceById = null;
         try {
-            deletedResourceById = await this.ResourcePlaningService.deleteResourceById(body.id, userId);
+            deletedResourceById = await this.resourcePlaningService.deleteResourceById(body.resourceId, userId);
             return res.status(HttpStatus.OK).json(deletedResourceById);
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'ERROR.PLAN_RESOURCE.DELETE_PLAN_RESOURCE_FAILED' });
-        }
-    }
-
-    @Get('short-list')
-    async shortListOfPlanResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
-        const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId) {
-            throw new UnauthorizedException();
-        }
-
-        let resourceList = null;
-        try {
-            resourceList = await this.ResourcePlaningService.getShortResourceList(
-                body.userId,
-                body.startDate,
-                body.endDate
-            );
-
-            return res
-                .status(HttpStatus.OK)
-                .json(
-                    this.ResourcePlaningService.divideResourcesByWeeks(
-                        resourceList.data.plan_resource,
-                        body.startDate,
-                        body.endDate
-                    )
-                );
-        } catch (error) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
-        }
-    }
-
-    @Get('full-list')
-    async fullListOfPlanResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
-        const userId = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!userId) {
-            throw new UnauthorizedException();
-        }
-
-        let resourceList = null;
-        try {
-            resourceList = await this.ResourcePlaningService.getFullResourceList(
-                body.userId,
-                body.startDate,
-                body.endDate
-            );
-            return res
-                .status(HttpStatus.OK)
-                .json(
-                    this.ResourcePlaningService.divideResourcesByWeeksAndProject(
-                        resourceList.data.plan_resource,
-                        body.startDate,
-                        body.endDate
-                    )
-                );
-        } catch (error) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
         }
     }
 }
