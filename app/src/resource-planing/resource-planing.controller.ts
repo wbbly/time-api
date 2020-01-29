@@ -137,24 +137,14 @@ export class ResourcePlaningController {
             throw new UnauthorizedException();
         }
 
-        let resourceList = null;
         try {
-            resourceList = await this.resourcePlaningService.getShortResourceList(
-                body.userId,
-                body.startDate,
-                body.endDate
-            );
-
             return res
                 .status(HttpStatus.OK)
                 .json(
-                    this.resourcePlaningService.divideResourcesByWeeks(
-                        resourceList.data.plan_resource,
-                        body.startDate,
-                        body.endDate
-                    )
+                    await this.resourcePlaningService.getShortResourceList(body.userIds, body.startDate, body.endDate)
                 );
         } catch (error) {
+            console.log(error);
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
@@ -168,21 +158,11 @@ export class ResourcePlaningController {
             throw new UnauthorizedException();
         }
 
-        let resourceList = null;
         try {
-            resourceList = await this.resourcePlaningService.getFullResourceList(
-                body.userId,
-                body.startDate,
-                body.endDate
-            );
             return res
                 .status(HttpStatus.OK)
                 .json(
-                    this.resourcePlaningService.divideResourcesByWeeksAndProject(
-                        resourceList.data.plan_resource,
-                        body.startDate,
-                        body.endDate
-                    )
+                    await this.resourcePlaningService.getFullResourceList(body.userIds, body.startDate, body.endDate)
                 );
         } catch (error) {
             return res
