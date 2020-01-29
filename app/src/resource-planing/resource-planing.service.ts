@@ -201,29 +201,6 @@ export class ResourcePlaningService {
         }
     }
 
-    getWeekPeriodByDate(date: any) {
-        // moment.locale('en', {
-        //     week: {
-        //         dow: 1, // Monday is the first day of the week.
-        //         doy: 7, // Sunday is the last day of the week.
-        //     },
-        // });
-        const startOfWeek = moment(date)
-            .startOf('week')
-            .startOf('day')
-            .format('YYYY-MM-DDTHH:mm:ss');
-        const endOfWeek = moment(date)
-            .endOf('week')
-            .endOf('day')
-            .format('YYYY-MM-DDTHH:mm:ss');
-        const weekNumber = moment(date, 'YYYY-MM-DDTHH:mm:ss').week();
-        return {
-            start: startOfWeek,
-            end: endOfWeek,
-            weekNumber: weekNumber,
-        };
-    }
-
     splitPeriodToWeeks(start: string, end: string) {
         const weeks = [];
         const weeksNormalized = [];
@@ -253,10 +230,16 @@ export class ResourcePlaningService {
         };
     }
 
-    getResourceByWeek(startDate: string, endDate: string, userIds: any): Promise<AxiosResponse | AxiosError> {
+    getResourceByWeek(
+        startDate: string,
+        endDate: string,
+        userIds: any,
+        teamId: string
+    ): Promise<AxiosResponse | AxiosError> {
         const query = `query{
             plan_resource(
                 where: {
+                    team_id: {_eq: "${teamId}"} 
                     user_id: {_in: ${userIds}}, 
                     _or: [
                         {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
@@ -285,17 +268,16 @@ export class ResourcePlaningService {
         });
     }
 
-    async insertUserResources(weeks: any, userIds: any) {
+    async insertUserResources(weeks: any, userIds: any, teamId: string) {
         let result = {};
 
         userIds.forEach(id => {
-            result[id] = {};
-            result[id].data = [];
-            weeks.weeks.forEach((week, i) => {
+            result[id] = { data: [] };
+            weeks.weeks.forEach(week => {
                 result[id].data.push({
                     startDate: week.start,
                     endDate: week.end,
-                    weekNumber: weeks.weeksNormalized[i].weekNumber,
+                    weekNumber: week.weekNumber,
                     plan: [],
                 });
             });
@@ -309,7 +291,8 @@ export class ResourcePlaningService {
                 resourcesByWeek = await this.getResourceByWeek(
                     weeks.weeksNormalized[i].start,
                     weeks.weeksNormalized[i].end,
-                    userIdsForQuery
+                    userIdsForQuery,
+                    teamId
                 );
 
                 resourcesByWeek.data.plan_resource.forEach(resource => {
@@ -328,17 +311,35 @@ export class ResourcePlaningService {
         return result;
     }
 
-    async getShortResourceList(userIds: any, startDate: string, endDate: string) {
+    async getShortResourceList(userIds: any, startDate: string, endDate: string, userId: string) {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const weeks = this.splitPeriodToWeeks(startDate, endDate);
-        userIds = userIds.split(',');
 
-        return await this.insertUserResources(weeks, userIds);
+        return await this.insertUserResources(weeks, userIds, currentTeamData.data.user_team[0].team.id);
     }
 
-    async getFullResourceList(userIds: any, startDate: string, endDate: string) {
+    async getFullResourceList(userIds: any, startDate: string, endDate: string, userId: string) {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const weeks = this.splitPeriodToWeeks(startDate, endDate);
-        userIds = userIds.split(',');
+        
+        return await this.insertUserResources(weeks, userIds, currentTeamData.data.user_team[0].team.id);
+    }
 
-        return await this.insertUserResources(weeks, userIds);
+    private getWeekPeriodByDate(date: any) {
+        const startOfWeek = moment(date)
+            .startOf('week')
+            .startOf('day')
+            .format('YYYY-MM-DDTHH:mm:ss');
+        const endOfWeek = moment(date)
+            .endOf('week')
+            .endOf('day')
+            .format('YYYY-MM-DDTHH:mm:ss');
+        const weekNumber = moment(date, 'YYYY-MM-DDTHH:mm:ss').week();
+
+        return {
+            start: startOfWeek,
+            end: endOfWeek,
+            weekNumber: weekNumber,
+        };
     }
 }

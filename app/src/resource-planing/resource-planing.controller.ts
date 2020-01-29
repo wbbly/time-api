@@ -141,10 +141,14 @@ export class ResourcePlaningController {
             return res
                 .status(HttpStatus.OK)
                 .json(
-                    await this.resourcePlaningService.getShortResourceList(body.userIds, body.startDate, body.endDate)
+                    await this.resourcePlaningService.getShortResourceList(
+                        body.userIds,
+                        body.startDate,
+                        body.endDate,
+                        userId
+                    )
                 );
         } catch (error) {
-            console.log(error);
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
@@ -162,7 +166,12 @@ export class ResourcePlaningController {
             return res
                 .status(HttpStatus.OK)
                 .json(
-                    await this.resourcePlaningService.getFullResourceList(body.userIds, body.startDate, body.endDate)
+                    await this.resourcePlaningService.getFullResourceList(
+                        body.userIds,
+                        body.startDate,
+                        body.endDate,
+                        userId
+                    )
                 );
         } catch (error) {
             return res
