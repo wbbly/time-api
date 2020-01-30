@@ -10,6 +10,7 @@ import {
     Headers,
     UnauthorizedException,
     Delete,
+    Get,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -25,54 +26,60 @@ export class ResourcePlaningController {
 
     @Post('add')
     @UseGuards(AuthGuard())
-    async currentUserResources(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+    async addPlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
 
-        let resource = null;
+        if (
+            !(
+                body.userId &&
+                body.projectId &&
+                body.userTimeOffId &&
+                body.totalDuration &&
+                body.startDate &&
+                body.endDate
+            )
+        ) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
         try {
-            resource = await this.resourcePlaningService.createPlanResource({
-                userId: body.userId,
-                projectId: body.projectId,
-                teamId: body.teamId,
-                createdById: userId,
-                totalDuration: body.totalDuration,
-                startDate: body.startDate,
-                endDate: body.endDate,
-            });
+            return res.status(HttpStatus.OK).json(
+                await this.resourcePlaningService.createResource({
+                    userId: body.userId,
+                    projectId: body.projectId,
+                    userTimeOffId: body.userTimeOffId,
+                    totalDuration: body.totalDuration,
+                    startDate: body.startDate,
+                    endDate: body.endDate,
+                    createdById: userId,
+                })
+            );
         } catch (error) {
-            console.log(error);
+            return res
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .json({ message: 'ERROR.PLAN_RESOURCE.CREATE_PLAN_RESOURCE_FAILED' });
         }
-
-        if (resource) {
-            return res.status(HttpStatus.OK).json(resource);
-        }
-
-        return res
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .json({ message: 'ERROR.PLAN_RESOURCE.CREATE_PLAN_RESOURCE_FAILED' });
     }
 
     @Patch(':id')
     @UseGuards(AuthGuard())
     async updatePlanResource(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
-        const updatedById = await this.authService.getVerifiedUserId(headers.authorization);
-        if (!updatedById) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
             throw new UnauthorizedException();
         }
 
         let resourceData = null;
         try {
             resourceData = await this.resourcePlaningService.getResourceById(param.id);
-        } catch (err) {
-            return res
-                .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
-        }
 
-        if (!resourceData) {
+            if (!resourceData) {
+                throw new Error();
+            }
+        } catch (err) {
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
@@ -81,21 +88,19 @@ export class ResourcePlaningController {
         const newResourceData: any = {
             userId: body.userId,
             projectId: body.projectId,
-            teamId: body.teamId,
+            userTimeOffId: body.userTimeOffId,
             totalDuration: body.totalDuration,
             startDate: body.startDate,
             endDate: body.endDate,
-            userTimeOffId: body.userTimeOffId,
         };
 
         resourceData = {
             userId: resourceData.user_id,
             projectId: resourceData.project_id,
-            teamId: resourceData.team_id,
+            userTimeOffId: resourceData.user_time_off_id,
             totalDuration: resourceData.total_duration,
             startDate: resourceData.start_date,
             endDate: resourceData.end_date,
-            userTimeOffId: resourceData.user_time_off_id,
         };
 
         Object.keys(resourceData).forEach(prop => {
@@ -104,19 +109,39 @@ export class ResourcePlaningController {
         });
 
         try {
-            const resourceUpdated = await this.resourcePlaningService.updateResource(
-                param.id,
-                resourceData,
-                updatedById
-            );
-
-            return res.status(HttpStatus.OK).json(resourceUpdated);
+            return res
+                .status(HttpStatus.OK)
+                .json(await this.resourcePlaningService.updateResource(param.id, resourceData, userId));
         } catch (err) {
             return res
                 .status(HttpStatus.FORBIDDEN)
                 .json({ message: 'ERROR.PLAN_RESOURCE.UPDATE_PLAN_RESOURCE_FAILED' });
         }
     }
+
+    @Get('list')
+    @UseGuards(AuthGuard())
+    async getPlanResourcesList(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!(body.userIds && body.startDate && body.endDate)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        try {
+            return res
+                .status(HttpStatus.OK)
+                .json(await this.resourcePlaningService.getResourceList(body.userIds, body.startDate, body.endDate));
+        } catch (error) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
+        }
+    }
+
     @Delete()
     @UseGuards(AuthGuard())
     async deletePlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
@@ -125,10 +150,10 @@ export class ResourcePlaningController {
             throw new UnauthorizedException();
         }
 
-        let deletedResourceById = null;
         try {
-            deletedResourceById = await this.resourcePlaningService.deleteResourceById(body.resourceId, userId);
-            return res.status(HttpStatus.OK).json(deletedResourceById);
+            return res
+                .status(HttpStatus.OK)
+                .json(await this.resourcePlaningService.deleteResourceById(body.resourceId, userId));
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
