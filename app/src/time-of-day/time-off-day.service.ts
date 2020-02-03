@@ -49,10 +49,8 @@ export class TimeOffDayService {
 
             return new Promise((resolve, reject) => {
                 this.httpRequestsService.request(query).subscribe(
-                    async (insertTimeOffDayRes: AxiosResponse) => {
-                        return resolve(insertTimeOffDayRes);
-                    },
-                    (insertTimeOffDayError: AxiosError) => reject(insertTimeOffDayError)
+                    (res: AxiosResponse) => resolve(res),
+                    (err: AxiosError) => reject(err)
                 );
             });
         } else {
