@@ -44,6 +44,7 @@ export class TimeOffDayController {
                 .json({ message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_FAILED' });
         }
     }
+    
 
     @Delete()
     @UseGuards(AuthGuard())
@@ -59,7 +60,7 @@ export class TimeOffDayController {
 
         try {
             const deletedTimeOffDayById = await this.timeOffDayService.deleteTimeOffDayById(body.timeOffDayId, userId);
-            
+
             return res.status(HttpStatus.OK).json(deletedTimeOffDayById);
         } catch (error) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.DELETE_TIME_OFF_DAY_FAILED' });
