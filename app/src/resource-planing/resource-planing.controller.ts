@@ -160,4 +160,27 @@ export class ResourcePlaningController {
                 .json({ message: 'ERROR.PLAN_RESOURCE.DELETE_PLAN_RESOURCE_FAILED' });
         }
     }
+
+    @Get('full-list')
+    @UseGuards(AuthGuard())
+    async getPlanResourcesFullList(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!(body.userIds && body.startDate && body.endDate)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        try {
+            return res
+                .status(HttpStatus.OK)
+                .json(await this.resourcePlaningService.getFullResourceList(body.userIds, body.startDate, body.endDate));
+        } catch (error) {
+            return res
+                .status(HttpStatus.FORBIDDEN)
+                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
+        }
+    }
 }

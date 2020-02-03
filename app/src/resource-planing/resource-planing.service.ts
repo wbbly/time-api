@@ -8,6 +8,7 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { TimeService } from '../time/time.service';
+import { TimerService } from "../timer/timer.service";
 
 @Injectable()
 export class ResourcePlaningService {
@@ -207,7 +208,7 @@ export class ResourcePlaningService {
                 const res = (await this.getUsersResourcesByWeekPeriod(
                     weekNormalized.start,
                     weekNormalized.end,
-                    userIds.map((id: string) => `"${id}"`)
+                    userIds
                 )) as AxiosResponse;
 
                 const planResourceList = res.data.plan_resource;
@@ -227,6 +228,115 @@ export class ResourcePlaningService {
         return Promise.resolve(resourceListUsersData);
     }
 
+    async getFullResourceList(userIds: any, startDate: string, endDate: string): Promise<any> {
+        const weekPeriods = this.splitDateRangeToWeekPeriods(startDate, endDate);
+        const { weeks, weeksNormalized } = weekPeriods;
+        
+        const resourceListUserData = [];
+        weeks.forEach((week: any) => {
+            resourceListUserData.push({
+                startDate: week.start,
+                endDate: week.end,
+                weekNumber: week.weekNumber,
+                plan: [],
+                logged: []
+            });
+        });
+
+        const resourceListUsersData = {};
+        userIds.forEach((id: string) => (resourceListUsersData[id] = { data: resourceListUserData }));
+
+        for (const weekNormalized of weeksNormalized) {
+            try {
+                const res = (await this.getUsersResourcesByWeekPeriod(
+                    weekNormalized.start,
+                    weekNormalized.end,
+                    userIds
+                )) as AxiosResponse;
+
+                const loggedRes = (await this.getLoggedByUserId(
+                    weekNormalized.start,
+                    weekNormalized.end,
+                    userIds
+                )) as AxiosResponse
+
+                const planResourceList = res.data.plan_resource;
+                planResourceList.forEach((userPlanResource: any) => {
+                    const { start_date: startDate, user_id: userId } = userPlanResource;
+                    const weekNumber = moment(startDate, 'YYYY-MM-DDTHH:mm:ss').week();
+
+                    resourceListUsersData[userId].data.forEach((dataObj: any) => {
+                        dataObj.weekNumber === weekNumber ? dataObj.plan.push(userPlanResource) : null;
+                    });
+                });
+                const loggedResourceList = loggedRes.data.timer_v2;
+                loggedResourceList.forEach((userLoggedResource: any) => {
+                    const { start_datetime: startDate, end_datetime: endDate, user_id: userId, project: project } = userLoggedResource;
+                    const weekNumber = moment(startDate, 'YYYY-MM-DDTHH:mm:ss').week();
+                    let start = moment(startDate);
+                    let end = moment(endDate); 
+                    let loggedResource = {
+                        projectName: project.name,
+                        duration: userLoggedResource.duration = end.diff(start),
+                        projectId: userLoggedResource.project_id
+                    }
+                    
+                    resourceListUsersData[userId].data.forEach((dataObj: any) => {
+                        if (dataObj.weekNumber === weekNumber) {
+                            let wasFound = false
+                            if (dataObj.logged.length) {
+                                dataObj.logged.forEach((timerLog, i) => {
+                                    if (timerLog.projectId === loggedResource.projectId) {
+                                        loggedResource.duration = timerLog.duration + loggedResource.duration
+                                        wasFound = !wasFound
+                                    } else if (!wasFound && i === dataObj.logged.length - 1) {
+                                        dataObj.logged.push(loggedResource);
+                                    }
+                                })
+                            } else {
+                                dataObj.logged.push(loggedResource);
+                            }
+                        }
+                    });
+                });
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        return Promise.resolve(resourceListUsersData);
+    }
+
+    async getLoggedByUserId(startDate: string,
+        endDate: string,
+        userIds: any
+    ): Promise<AxiosResponse | AxiosError> {
+        const query = `{
+            timer_v2(where: {
+                    user_id: {_in: ${userIds.map((id: string) => `"${id}"`)}}, 
+                    _and: [
+                        {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+                        {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
+                    ]
+                }, order_by: {start_datetime: asc}) {
+                issue
+                start_datetime
+                end_datetime
+                project {
+                name
+                }
+                user_id
+                project_id
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
     private async getUsersResourcesByWeekPeriod(
         startDate: string,
         endDate: string,
@@ -239,7 +349,7 @@ export class ResourcePlaningService {
             plan_resource(
                 where: {
                     team_id: {_eq: "${currentTeamData.data.user_team[0].team.id}"} 
-                    user_id: {_in: ${userIds}}, 
+                    user_id: {_in: ${userIds.map((id: string) => `"${id}"`)}}, 
                     _and: [
                         {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
                         {end_date: {_gte: "${startDate}", _lte: "${endDate}"}},
