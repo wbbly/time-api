@@ -48,13 +48,13 @@ export class TimeOffDayController {
     @Delete()
     @UseGuards(AuthGuard())
     async deletePlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
-        if (!(body.timeOffDayId)) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
-        }
-
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
+        }
+
+        if (!(body.timeOffDayId)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {
