@@ -7,6 +7,7 @@ import {
     UseGuards,
     Headers,
     UnauthorizedException,
+    Delete
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
@@ -41,6 +42,27 @@ export class TimeOffDayController {
             return res
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .json({ message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_FAILED' });
+        }
+    }
+
+    @Delete()
+    @UseGuards(AuthGuard())
+    async deletePlanResource(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!(body.timeOffDayId)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        try {
+            const deletedTimeOffDayById = await this.timeOffDayService.deleteTimeOffDayById(body.timeOffDayId, userId);
+            
+            return res.status(HttpStatus.OK).json(deletedTimeOffDayById);
+        } catch (error) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.DELETE_TIME_OFF_DAY_FAILED' });
         }
     }
 }
