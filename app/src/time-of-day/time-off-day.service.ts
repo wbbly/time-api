@@ -5,19 +5,18 @@ import { AxiosResponse, AxiosError } from 'axios';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TeamService } from '../team/team.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { TimeService } from '../time/time.service';
 
 @Injectable()
 export class TimeOffDayService {
     constructor(
         private readonly teamService: TeamService,
         private readonly roleCollaborationService: RoleCollaborationService,
-        private readonly httpRequestsService: HttpRequestsService
+        private readonly httpRequestsService: HttpRequestsService,
+        private readonly timeService: TimeService
     ) {}
 
-    async createTimeOffDay(data: {
-        createdById: string;
-        timeOffType: string;
-    }): Promise<AxiosResponse | AxiosError> {
+    async createTimeOffDay(data: { createdById: string; timeOffType: string }): Promise<AxiosResponse | AxiosError> {
         const { createdById, timeOffType } = data;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(createdById);
@@ -48,28 +47,18 @@ export class TimeOffDayService {
             }`;
 
             return new Promise((resolve, reject) => {
-                this.httpRequestsService.request(query).subscribe(
-                    (res: AxiosResponse) => resolve(res),
-                    (err: AxiosError) => reject(err)
-                );
+                this.httpRequestsService
+                    .request(query)
+                    .subscribe((res: AxiosResponse) => resolve(res), (err: AxiosError) => reject(err));
             });
         } else {
             return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
         }
     }
 
-    async getTimeOffDayById(id: string): Promise<TimeOffDay | AxiosError> {
-        const whereStatements = [`id: { _eq: "${id}" }`];
+    async getTimeOffDayById(id: string): Promise<AxiosResponse | AxiosError> {
+        const whereStatement = [`id: { _eq: "${id}" }`];
 
-        return new Promise((resolve, reject) => {
-            this.getTimeOffDayData(whereStatements.join(',')).then(
-                (res: TimeOffDay) => resolve(res),
-                (error: AxiosError) => reject(error)
-            );
-        });
-    }
-
-    async getTimeOffDayData(whereStatement: string): Promise<any | null | AxiosError> {
         const query = `{
             time_off_day(where: {${whereStatement}}) {
                 id
@@ -91,38 +80,6 @@ export class TimeOffDayService {
         });
     }
 
-    async updateTimeOffDay(
-        timeOffDayId: string,
-        data: {
-            timeOffType: string;
-            isActive: boolean;
-        },
-        updatedById: string
-    ): Promise<AxiosResponse | AxiosError> {
-        const { timeOffType, isActive } = data;
-        const currentTeamData: any = await this.teamService.getCurrentTeam(updatedById);
-        const isAdmin =
-            currentTeamData.data.user_team[0].role_collaboration_id ===
-            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
-
-        if (isAdmin) {
-            const query = `mutation {
-                delete_time_off_day(where: {id: {_eq: "${timeOffDayId}"}}) {
-                    affected_rows
-                }
-            }`;
-
-            return new Promise(async (resolve, reject) => {
-                this.httpRequestsService.request(query).subscribe(
-                    async (res: AxiosResponse) =>  resolve(res),
-                    (res: AxiosError) => reject(res)
-                );
-            });
-        } else {
-            return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
-        }
-    }
-
     async deleteTimeOffDayById(timeOffDayId: string, userId: string): Promise<AxiosResponse | AxiosError> {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const isAdmin =
@@ -137,10 +94,56 @@ export class TimeOffDayService {
             }`;
 
             return new Promise(async (resolve, reject) => {
-                this.httpRequestsService.request(query).subscribe(
-                    async (res: AxiosResponse) => resolve(res),
-                    (res: AxiosError) => reject(res)
-                );
+                this.httpRequestsService
+                    .request(query)
+                    .subscribe(async (res: AxiosResponse) => resolve(res), (res: AxiosError) => reject(res));
+            });
+        } else {
+            return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
+        }
+    }
+
+    async updateTimeOffDay(
+        timeOffId: string,
+        data: {
+            timeOffType: string;
+            isActive: boolean;
+        },
+        updatedById: string
+    ): Promise<AxiosResponse | AxiosError> {
+        const { timeOffType, isActive } = data;
+        const currentTeamData: any = await this.teamService.getCurrentTeam(updatedById);
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        if (isAdmin) {
+            const query = `mutation {
+                update_time_off_day(
+                    where: {
+                        id: {_eq: "${timeOffId}"}
+                    },
+                    _set: {
+                        time_off_type: "${timeOffType}",
+                        modified_at: "${this.timeService.getISOTime()}",
+                        is_active: ${isActive},
+                    }
+                ) {
+                    returning {
+                        id
+                        created_at
+                        time_off_type
+                        modified_at
+                        team_id
+                        is_active
+                    }
+                }
+            }`;
+
+            return new Promise(async (resolve, reject) => {
+                this.httpRequestsService
+                    .request(query)
+                    .subscribe((res: AxiosResponse) => resolve(res), (err: AxiosError) => reject(err));
             });
         } else {
             return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
