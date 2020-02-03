@@ -5,8 +5,6 @@ import { AxiosResponse, AxiosError } from 'axios';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TeamService } from '../team/team.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
-import { TimeOffDay } from './interfaces/time-off-day.interface';
-import { TimeService } from '../time/time.service';
 
 @Injectable()
 export class TimeOffDayService {
