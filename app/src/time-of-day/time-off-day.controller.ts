@@ -25,11 +25,7 @@ export class TimeOffDayController {
             throw new UnauthorizedException();
         }
 
-        if (
-            !(
-                body.timeOffType
-            )
-        ) {
+        if (!(body.timeOffType)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
@@ -38,9 +34,10 @@ export class TimeOffDayController {
                 createdById: createdById,
                 timeOffType: body.timeOffType
             });
+
             return res.status(HttpStatus.OK).json(timeOffDay);
         } catch (error) {
-            console.log(error);
+            
             return res
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .json({ message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_FAILED' });
