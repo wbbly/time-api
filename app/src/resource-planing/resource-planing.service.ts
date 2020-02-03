@@ -8,7 +8,6 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { TimeService } from '../time/time.service';
-import { TimerService } from "../timer/timer.service";
 
 @Injectable()
 export class ResourcePlaningService {
@@ -262,13 +261,35 @@ export class ResourcePlaningService {
 
                 const planResourceList = res.data.plan_resource;
                 planResourceList.forEach((userPlanResource: any) => {
-                    const { start_date: startDate, user_id: userId } = userPlanResource;
+                    const { start_date: startDate, end_date: endDate, user_id: userId, project_v2: project} = userPlanResource;
                     const weekNumber = moment(startDate, 'YYYY-MM-DDTHH:mm:ss').week();
+                    let start = moment(startDate);
+                    let end = moment(endDate);
+                    let planResource = {
+                        projectName: project.name,
+                        duration: end.diff(start),
+                        projectId: project.id
+                    }
 
                     resourceListUsersData[userId].data.forEach((dataObj: any) => {
-                        dataObj.weekNumber === weekNumber ? dataObj.plan.push(userPlanResource) : null;
+                        if (dataObj.weekNumber === weekNumber) {
+                            let wasFound = false
+                            if (dataObj.plan.length) {
+                                dataObj.plan.forEach((resource, i) => {
+                                    if (resource.projectId === planResource.projectId) {
+                                        planResource.duration = resource.duration + planResource.duration
+                                        wasFound = !wasFound
+                                    } else if (!wasFound && i === dataObj.plan.length - 1) {
+                                        dataObj.plan.push(planResource);
+                                    }
+                                })
+                            } else {
+                                dataObj.plan.push(planResource);
+                            }
+                        }
                     });
                 });
+
                 const loggedResourceList = loggedRes.data.timer_v2;
                 loggedResourceList.forEach((userLoggedResource: any) => {
                     const { start_datetime: startDate, end_datetime: endDate, user_id: userId, project: project } = userLoggedResource;
@@ -277,8 +298,8 @@ export class ResourcePlaningService {
                     let end = moment(endDate); 
                     let loggedResource = {
                         projectName: project.name,
-                        duration: userLoggedResource.duration = end.diff(start),
-                        projectId: userLoggedResource.project_id
+                        duration: end.diff(start),
+                        projectId: project.id
                     }
                     
                     resourceListUsersData[userId].data.forEach((dataObj: any) => {
@@ -324,9 +345,9 @@ export class ResourcePlaningService {
                 end_datetime
                 project {
                 name
+                id
                 }
                 user_id
-                project_id
             }
         }`;
 
@@ -344,11 +365,11 @@ export class ResourcePlaningService {
     ): Promise<AxiosResponse | AxiosError> {
         // get the current team of the first user from list
         const currentTeamData: any = await this.teamService.getCurrentTeam(userIds[0]);
-
+        
         const query = `query{
             plan_resource(
                 where: {
-                    team_id: {_eq: "${currentTeamData.data.user_team[0].team.id}"} 
+                    team_id: { _eq: "${currentTeamData.data.user_team[0].team.id}" } 
                     user_id: {_in: ${userIds.map((id: string) => `"${id}"`)}}, 
                     _and: [
                         {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
@@ -368,6 +389,10 @@ export class ResourcePlaningService {
                 created_at
                 modified_at
                 created_by_id
+                project_v2 {
+                    name
+                    id
+                }
             }
         }`;
 
