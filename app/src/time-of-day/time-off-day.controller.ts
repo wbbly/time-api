@@ -1,17 +1,12 @@
 import {
     Controller,
-    Get,
     Response,
     HttpStatus,
-    Query,
     Post,
     Body,
-    Patch,
-    Param,
     UseGuards,
     Headers,
     UnauthorizedException,
-    Delete,
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
@@ -30,11 +25,18 @@ export class TimeOffDayController {
             throw new UnauthorizedException();
         }
 
+        if (
+            !(
+                body.timeOffType
+            )
+        ) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
         try {
             const timeOffDay = await this.timeOffDayService.createTimeOffDay({
                 createdById: createdById,
-                timeOffType: body.timeOffType,
-                isActive: body.isActive,
+                timeOffType: body.timeOffType
             });
             return res.status(HttpStatus.OK).json(timeOffDay);
         } catch (error) {

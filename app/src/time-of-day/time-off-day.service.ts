@@ -17,9 +17,8 @@ export class TimeOffDayService {
     async createTimeOffDay(data: {
         createdById: string;
         timeOffType: string;
-        isActive: boolean;
     }): Promise<AxiosResponse | AxiosError> {
-        const { createdById, timeOffType, isActive } = data;
+        const { createdById, timeOffType } = data;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(createdById);
         const isAdmin =
@@ -33,7 +32,7 @@ export class TimeOffDayService {
                         {
                             time_off_type: "${timeOffType}",
                             team_id: "${currentTeamData.data.user_team[0].team.id}",
-                            is_active: ${isActive},
+                            is_active: false,
                         }
                     ]
                 ){
@@ -53,7 +52,7 @@ export class TimeOffDayService {
                     async (insertTimeOffDayRes: AxiosResponse) => {
                         const returningRows = insertTimeOffDayRes.data.insert_time_off_day.returning[0];
                         if (returningRows) {
-                            return resolve(returningRows);
+                            return resolve(insertTimeOffDayRes);
                         } else {
                             return Promise.reject({
                                 message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_REQUEST_TIMEOUT',
