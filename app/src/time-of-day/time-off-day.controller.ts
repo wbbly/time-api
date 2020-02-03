@@ -10,6 +10,7 @@ import {
     Delete,
     Patch,
     Param,
+    Get
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
@@ -116,6 +117,22 @@ export class TimeOffDayController {
             return res.status(HttpStatus.OK).json(timeOffDataUpdated);
         } catch (err) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.UPDATE_TIME_OFF_DAY_FAILED' });
+        }
+    }
+
+    @Get('list')
+    @UseGuards(AuthGuard())
+    async getTimeOffDayList(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            const timeOffDayList = await this.timeOffDayService.getTimeOffDayList(userId);
+            return res.status(HttpStatus.OK).json(timeOffDayList);
+        } catch (error) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.LIST_TIME_OFF_DAY_FAILED' });
         }
     }
 }
