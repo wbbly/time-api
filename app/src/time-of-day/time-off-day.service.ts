@@ -148,4 +148,36 @@ export class TimeOffDayService {
             return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
         }
     }
+
+    async getTimeOffDayList(userId: string): Promise<AxiosResponse | AxiosError> {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const isAdmin =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        if (isAdmin) {
+            const query = `{
+                time_off_day(where: {team_id: {_eq: "${
+                    currentTeamData.data.user_team[0].team.id
+                }"}}, order_by: {created_at: asc}) {
+                        id
+                        created_at
+                        time_off_type
+                        modified_at
+                        team_id
+                        is_active
+                    }
+                }
+            `;
+
+            return new Promise(async (resolve, reject) => {
+                this.httpRequestsService.request(query).subscribe(
+                    async (res: AxiosResponse) => resolve(res),
+                    (err: AxiosError) => reject(err)
+                );
+            });
+        } else {
+            return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
+        }
+    }
 }
