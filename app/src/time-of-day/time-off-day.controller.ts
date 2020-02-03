@@ -82,11 +82,11 @@ export class TimeOffDayController {
         let timeOffDayData = null;
         try {
             timeOffDayData = await this.timeOffDayService.getTimeOffDayById(param.id);
-        } catch (err) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_FAILED' });
-        }
 
-        if (!timeOffDayData) {
+            if (!timeOffDayData) {
+                throw new Error();
+            }
+        } catch (err) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.TIME_OFF_DAY.CREATE_TIME_OFF_DAY_FAILED' });
         }
 

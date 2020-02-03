@@ -57,10 +57,8 @@ export class TimeOffDayService {
     }
 
     async getTimeOffDayById(id: string): Promise<AxiosResponse | AxiosError> {
-        const whereStatement = [`id: { _eq: "${id}" }`];
-
         const query = `{
-            time_off_day(where: {${whereStatement}}) {
+            time_off_day(where: {id: { _eq: "${id}" }}) {
                 id
                 time_off_type
                 team_id
@@ -73,6 +71,7 @@ export class TimeOffDayService {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     const resource = res.data.time_off_day.shift();
+                    
                     return resolve(resource);
                 },
                 (error: AxiosError) => reject(error)
