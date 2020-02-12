@@ -138,19 +138,26 @@ export class ResourcePlaningController {
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
+                .json({ message: 'ERROR.PLAN_RESOURCE.GET_PLAN_RESOURCE_LIST_FAILED' });
         }
     }
 
-    @Get('full-list')
+    @Get('list/:userId')
     @UseGuards(AuthGuard())
-    async getPlanResourcesFullList(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+    async getPlanResourcesFullList(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Param() param: any,
+        @Body() body: any
+    ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
 
-        if (!(body.userIds && body.startDate && body.endDate)) {
+        const requestedUserId = param.userId;
+
+        if (!(body.startDate && body.endDate)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
@@ -158,12 +165,16 @@ export class ResourcePlaningController {
             return res
                 .status(HttpStatus.OK)
                 .json(
-                    await this.resourcePlaningService.getFullResourceList(body.userIds, body.startDate, body.endDate)
+                    await this.resourcePlaningService.getResourceListByUserId(
+                        requestedUserId,
+                        body.startDate,
+                        body.endDate
+                    )
                 );
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)
-                .json({ message: 'ERROR.PLAN_RESOURCE.SHORT_PLAN_RESOURCE_LIST_FAILED' });
+                .json({ message: 'ERROR.PLAN_RESOURCE.GET_PLAN_RESOURCE_BY_USER_FAILED' });
         }
     }
 

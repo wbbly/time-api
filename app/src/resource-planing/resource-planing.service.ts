@@ -227,7 +227,7 @@ export class ResourcePlaningService {
         return Promise.resolve(resourceListUsersData);
     }
 
-    async getFullResourceList(userIds: any, startDate: string, endDate: string): Promise<any> {
+    async getResourceListByUserId(userIds: any, startDate: string, endDate: string): Promise<any> {
         const weekPeriods = this.splitDateRangeToWeekPeriods(startDate, endDate);
         const { weeks, weeksNormalized } = weekPeriods;
 
