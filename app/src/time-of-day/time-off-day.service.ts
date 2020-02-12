@@ -71,7 +71,7 @@ export class TimeOffDayService {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     const resource = res.data.time_off_day.shift();
-                    
+
                     return resolve(resource);
                 },
                 (error: AxiosError) => reject(error)
@@ -171,10 +171,9 @@ export class TimeOffDayService {
             `;
 
             return new Promise(async (resolve, reject) => {
-                this.httpRequestsService.request(query).subscribe(
-                    async (res: AxiosResponse) => resolve(res),
-                    (err: AxiosError) => reject(err)
-                );
+                this.httpRequestsService
+                    .request(query)
+                    .subscribe(async (res: AxiosResponse) => resolve(res), (err: AxiosError) => reject(err));
             });
         } else {
             return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });

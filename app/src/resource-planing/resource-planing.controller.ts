@@ -176,7 +176,9 @@ export class ResourcePlaningController {
         try {
             return res
                 .status(HttpStatus.OK)
-                .json(await this.resourcePlaningService.getFullResourceList(body.userIds, body.startDate, body.endDate));
+                .json(
+                    await this.resourcePlaningService.getFullResourceList(body.userIds, body.startDate, body.endDate)
+                );
         } catch (error) {
             return res
                 .status(HttpStatus.FORBIDDEN)

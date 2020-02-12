@@ -230,7 +230,7 @@ export class ResourcePlaningService {
     async getFullResourceList(userIds: any, startDate: string, endDate: string): Promise<any> {
         const weekPeriods = this.splitDateRangeToWeekPeriods(startDate, endDate);
         const { weeks, weeksNormalized } = weekPeriods;
-        
+
         const resourceListUserData = [];
         weeks.forEach((week: any) => {
             resourceListUserData.push({
@@ -238,7 +238,7 @@ export class ResourcePlaningService {
                 endDate: week.end,
                 weekNumber: week.weekNumber,
                 plan: [],
-                logged: []
+                logged: [],
             });
         });
 
@@ -257,32 +257,37 @@ export class ResourcePlaningService {
                     weekNormalized.start,
                     weekNormalized.end,
                     userIds
-                )) as AxiosResponse
+                )) as AxiosResponse;
 
                 const planResourceList = res.data.plan_resource;
                 planResourceList.forEach((userPlanResource: any) => {
-                    const { start_date: startDate, end_date: endDate, user_id: userId, project_v2: project} = userPlanResource;
+                    const {
+                        start_date: startDate,
+                        end_date: endDate,
+                        user_id: userId,
+                        project_v2: project,
+                    } = userPlanResource;
                     const weekNumber = moment(startDate, 'YYYY-MM-DDTHH:mm:ss').week();
                     let start = moment(startDate);
                     let end = moment(endDate);
                     let planResource = {
                         projectName: project.name,
                         duration: end.diff(start),
-                        projectId: project.id
-                    }
+                        projectId: project.id,
+                    };
 
                     resourceListUsersData[userId].data.forEach((dataObj: any) => {
                         if (dataObj.weekNumber === weekNumber) {
-                            let wasFound = false
+                            let wasFound = false;
                             if (dataObj.plan.length) {
                                 dataObj.plan.forEach((resource, i) => {
                                     if (resource.projectId === planResource.projectId) {
-                                        planResource.duration = resource.duration + planResource.duration
-                                        wasFound = !wasFound
+                                        planResource.duration = resource.duration + planResource.duration;
+                                        wasFound = !wasFound;
                                     } else if (!wasFound && i === dataObj.plan.length - 1) {
                                         dataObj.plan.push(planResource);
                                     }
-                                })
+                                });
                             } else {
                                 dataObj.plan.push(planResource);
                             }
@@ -292,28 +297,33 @@ export class ResourcePlaningService {
 
                 const loggedResourceList = loggedRes.data.timer_v2;
                 loggedResourceList.forEach((userLoggedResource: any) => {
-                    const { start_datetime: startDate, end_datetime: endDate, user_id: userId, project: project } = userLoggedResource;
+                    const {
+                        start_datetime: startDate,
+                        end_datetime: endDate,
+                        user_id: userId,
+                        project: project,
+                    } = userLoggedResource;
                     const weekNumber = moment(startDate, 'YYYY-MM-DDTHH:mm:ss').week();
                     let start = moment(startDate);
-                    let end = moment(endDate); 
+                    let end = moment(endDate);
                     let loggedResource = {
                         projectName: project.name,
                         duration: end.diff(start),
-                        projectId: project.id
-                    }
-                    
+                        projectId: project.id,
+                    };
+
                     resourceListUsersData[userId].data.forEach((dataObj: any) => {
                         if (dataObj.weekNumber === weekNumber) {
-                            let wasFound = false
+                            let wasFound = false;
                             if (dataObj.logged.length) {
                                 dataObj.logged.forEach((timerLog, i) => {
                                     if (timerLog.projectId === loggedResource.projectId) {
-                                        loggedResource.duration = timerLog.duration + loggedResource.duration
-                                        wasFound = !wasFound
+                                        loggedResource.duration = timerLog.duration + loggedResource.duration;
+                                        wasFound = !wasFound;
                                     } else if (!wasFound && i === dataObj.logged.length - 1) {
                                         dataObj.logged.push(loggedResource);
                                     }
-                                })
+                                });
                             } else {
                                 dataObj.logged.push(loggedResource);
                             }
@@ -328,10 +338,7 @@ export class ResourcePlaningService {
         return Promise.resolve(resourceListUsersData);
     }
 
-    async getLoggedByUserId(startDate: string,
-        endDate: string,
-        userIds: any
-    ): Promise<AxiosResponse | AxiosError> {
+    async getLoggedByUserId(startDate: string, endDate: string, userIds: any): Promise<AxiosResponse | AxiosError> {
         const query = `{
             timer_v2(where: {
                     user_id: {_in: ${userIds.map((id: string) => `"${id}"`)}}, 
@@ -365,7 +372,7 @@ export class ResourcePlaningService {
     ): Promise<AxiosResponse | AxiosError> {
         // get the current team of the first user from list
         const currentTeamData: any = await this.teamService.getCurrentTeam(userIds[0]);
-        
+
         const query = `query{
             plan_resource(
                 where: {

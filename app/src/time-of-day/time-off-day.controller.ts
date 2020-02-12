@@ -10,7 +10,7 @@ import {
     Delete,
     Patch,
     Param,
-    Get
+    Get,
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
