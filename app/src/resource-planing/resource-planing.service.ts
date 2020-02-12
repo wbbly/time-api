@@ -376,8 +376,8 @@ export class ResourcePlaningService {
         const query = `query{
             plan_resource(
                 where: {
-                    team_id: { _eq: "${currentTeamData.data.user_team[0].team.id}" } 
-                    user_id: {_in: ${userIds.map((id: string) => `"${id}"`)}}, 
+                    team_id: {_eq: "${currentTeamData.data.user_team[0].team.id}"}
+                    user_id: {_in: [${userIds.map((id: string) => `"${id}"`).join(',')}]}
                     _and: [
                         {start_date: {_gte: "${startDate}", _lte: "${endDate}"}},
                         {end_date: {_gte: "${startDate}", _lte: "${endDate}"}},
@@ -388,7 +388,16 @@ export class ResourcePlaningService {
                 id
                 user_id
                 project_id
+                project_v2 {
+                    name
+                    project_color {
+                        name
+                    }
+                }
                 user_time_off_id
+                time_off_day {
+                    time_off_type
+                }
                 team_id
                 total_duration
                 start_date
@@ -396,9 +405,9 @@ export class ResourcePlaningService {
                 created_at
                 modified_at
                 created_by_id
-                project_v2 {
-                    name
-                    id
+                created_by {
+                    username
+                    email
                 }
             }
         }`;
