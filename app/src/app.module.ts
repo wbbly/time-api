@@ -17,8 +17,8 @@ import { TeamModule } from './team/team.module';
 import { SyncModule } from './sync/sync.module';
 import { ClientModule } from './client/client.module';
 import { SocialModule } from './social/social.module';
-import { ResourcePlaningModule } from './resource-planing/resource-planing.module';
-import { TimeOfDayModule } from './time-of-day/time-off-day.module';
+import { TimerPlanningModule } from './timer-planning/timer-planning.module';
+import { TimerOffModule } from './timer-off/timer-off.module';
 
 @Module({
     imports: [
@@ -37,8 +37,8 @@ import { TimeOfDayModule } from './time-of-day/time-off-day.module';
         SyncModule,
         ClientModule,
         SocialModule,
-        ResourcePlaningModule,
-        TimeOfDayModule,
+        TimerPlanningModule,
+        TimerOffModule,
     ],
     controllers: [AppController],
     providers: [AppService],
