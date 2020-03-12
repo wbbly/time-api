@@ -164,46 +164,7 @@ export class TimerPlanningService {
     }
 
     async getTimerPlanningList(teamId: string, userIds: string[], startDate: string, endDate: string): Promise<any> {
-        const weekPeriods = this.splitDateRangeToWeekPeriods(startDate, endDate);
-        const { weeks, weeksNormalized } = weekPeriods;
-
-        const resourceListUserData = [];
-        weeks.forEach((week: any) => {
-            resourceListUserData.push({
-                startDate: week.start,
-                endDate: week.end,
-                weekNumber: week.weekNumber,
-                plan: [],
-            });
-        });
-
-        const resourceListUsersData = {};
-        userIds.forEach((id: string) => (resourceListUsersData[id] = { data: resourceListUserData }));
-
-        for (const weekNormalized of weeksNormalized) {
-            try {
-                const res = (await this.getUsersTimerPlanningsByWeekPeriod(
-                    weekNormalized.start,
-                    weekNormalized.end,
-                    userIds,
-                    teamId
-                )) as AxiosResponse;
-
-                const planTimerPlanningList = res.data.timer_planning;
-                planTimerPlanningList.forEach((userTimerPlanning: any) => {
-                    const { start_date: startDate, user_id: userId } = userTimerPlanning;
-                    const weekNumber = moment(startDate, 'YYYY-MM-DDTHH:mm:ss').week();
-
-                    resourceListUsersData[userId].data.forEach((dataObj: any) => {
-                        dataObj.weekNumber === weekNumber ? dataObj.plan.push(userTimerPlanning) : null;
-                    });
-                });
-            } catch (error) {
-                console.log(error);
-            }
-        }
-
-        return Promise.resolve(resourceListUsersData);
+        return await this.getUsersTimerPlanningsByPeriod(startDate, endDate, userIds, teamId);
     }
 
     async getTimerPlanningListByUserId(
@@ -212,47 +173,7 @@ export class TimerPlanningService {
         startDate: string,
         endDate: string
     ): Promise<any> {
-        const weekPeriods = this.splitDateRangeToWeekPeriods(startDate, endDate);
-        const { weeks, weeksNormalized } = weekPeriods;
-
-        const resourceListUserData = [];
-        weeks.forEach((week: any) => {
-            resourceListUserData.push({
-                startDate: week.start,
-                endDate: week.end,
-                weekNumber: week.weekNumber,
-                plan: [],
-                logged: [],
-            });
-        });
-
-        const resourceListUsersData = {};
-        [userId].forEach((id: string) => (resourceListUsersData[id] = { data: resourceListUserData }));
-
-        for (const weekNormalized of weeksNormalized) {
-            try {
-                const res = (await this.getUsersTimerPlanningsByWeekPeriod(
-                    weekNormalized.start,
-                    weekNormalized.end,
-                    [userId],
-                    teamId
-                )) as AxiosResponse;
-
-                const planTimerPlanningList = res.data.timer_planning;
-                planTimerPlanningList.forEach((userTimerPlanning: any) => {
-                    const { start_date: startDate, user_id: userId } = userTimerPlanning;
-                    const weekNumber = moment(startDate, 'YYYY-MM-DDTHH:mm:ss').week();
-
-                    resourceListUsersData[userId].data.forEach((dataObj: any) => {
-                        dataObj.weekNumber === weekNumber ? dataObj.plan.push(userTimerPlanning) : null;
-                    });
-                });
-            } catch (error) {
-                console.log(error);
-            }
-        }
-
-        return Promise.resolve(resourceListUsersData);
+        return await this.getUsersTimerPlanningsByPeriod(startDate, endDate, [userId], teamId);
     }
 
     private async getUserLoggedEntriesByWeekPeriod(
@@ -310,67 +231,65 @@ export class TimerPlanningService {
         });
     }
 
-    private async getUsersTimerPlanningsByWeekPeriod(
+    private async getUsersTimerPlanningsByPeriod(
         startDate: string,
         endDate: string,
         userIds: string[],
         teamId: string
     ): Promise<AxiosResponse | AxiosError> {
         const query = `query {
-            timer_planning (
+            user (
                 where: {
-                    team_id: {
-                        _eq: "${teamId}"
-                    },
-                    user_id: {
+                    timer_plannings: {
+                        team_id: {_eq: "${teamId}"},
+                        _and: [
+                            {
+                                start_date: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            },
+                            {
+                                end_date: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            }
+                        ]
+                    }, 
+                    id: {
                         _in: [${userIds.map((id: string) => `"${id}"`).join(',')}]
-                    },
-                    _and: [
-                        {
-                            start_date: {
-                                _gte: "${startDate}",
-                                _lte: "${endDate}"
-                            }
-                        },
-                        {
-                            end_date: {
-                                _gte: "${startDate}",
-                                _lte: "${endDate}"
-                            }
-                        },
-                    ]
+                    }
                 },
-                order_by: {
-                    start_date: asc
-                }
+                order_by: {username: asc}
             ) {
+              id
+              username
+              email
+              timer_plannings(order_by: {start_date: asc}) {
                 id
                 team_id
-                user_id
-                user {
-                    username
-                    email
-                }
                 project_id
                 project {
+                  name
+                  project_color {
                     name
-                    project_color {
-                        name
-                    }
+                  }
                 }
                 timer_off_id
                 timer_off {
-                    title
+                  title
                 }
                 duration
                 start_date
                 end_date
                 created_by_id
                 created_by {
-                    username
-                    email
+                  username
+                  email
                 }
                 created_at
+              }
             }
         }`;
 
