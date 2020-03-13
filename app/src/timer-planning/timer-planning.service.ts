@@ -240,7 +240,22 @@ export class TimerPlanningService {
         const query = `query {
             user (
                 where: {
-                    timer_plannings: {
+                    id: {
+                        _in: [${userIds.map((id: string) => `"${id}"`).join(',')}]
+                    }
+                },
+                order_by: {
+                    username: asc
+                }
+            ) {
+                id
+                username
+                email
+                timer_plannings (
+                    order_by: {
+                        start_date: asc
+                    },
+                    where: {
                         team_id: {_eq: "${teamId}"},
                         _and: [
                             {
@@ -256,40 +271,63 @@ export class TimerPlanningService {
                                 }
                             }
                         ]
-                    }, 
-                    id: {
-                        _in: [${userIds.map((id: string) => `"${id}"`).join(',')}]
                     }
-                },
-                order_by: {username: asc}
-            ) {
-              id
-              username
-              email
-              timer_plannings(order_by: {start_date: asc}) {
-                id
-                team_id
-                project_id
-                project {
-                  name
-                  project_color {
-                    name
-                  }
+                ) {
+                    id
+                    team_id
+                    project_id
+                    project {
+                        name
+                        project_color {
+                            name
+                        }
+                    }
+                    timer_off_id
+                    timer_off {
+                        title
+                    }
+                    duration
+                    start_date
+                    end_date
+                    created_by_id
+                    created_by {
+                        username
+                        email
+                    }
+                    created_at
                 }
-                timer_off_id
-                timer_off {
-                  title
+                logged: timer(
+                    order_by: {
+                        start_datetime: asc
+                    }, 
+                    where: {
+                        _and: [
+                            {
+                                start_datetime: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            },
+                            {
+                                end_datetime: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            }
+                        ]
+                    }
+                ) {
+                    project_id
+                    issue
+                    project {
+                        name
+                        project_color {
+                        name
+                        }
+                    }
+                    start_datetime
+                    end_datetime
                 }
-                duration
-                start_date
-                end_date
-                created_by_id
-                created_by {
-                  username
-                  email
-                }
-                created_at
-              }
             }
         }`;
 
