@@ -244,80 +244,90 @@ export class TimerPlanningService {
                         _in: [${userIds.map((id: string) => `"${id}"`).join(',')}]
                     }
                 },
-                order_by: {username: asc}
+                order_by: {
+                    username: asc
+                }
             ) {
-              id
-              username
-              email
-              timer_plannings(
-                order_by: {start_date: asc},
-                where: {
-                  team_id: {_eq: "${teamId}"},
-                  _and: [
-                      {
-                          start_date: {
-                            _gte: "${startDate}",
-                            _lte: "${endDate}"
-                          }
-                      },
-                      {
-                          end_date: {
-                            _gte: "${startDate}",
-                            _lte: "${endDate}"
-                          }
-                      }
-                  ]
-                }) {
                 id
-                team_id
-                project_id
-                project {
-                  name
-                  project_color {
-                    name
-                  }
-                }
-                timer_off_id
-                timer_off {
-                  title
-                }
-                duration
-                start_date
-                end_date
-                created_by_id
-                created_by {
-                  username
-                  email
-                }
-                created_at
-              }
-              logged: timer(order_by: {start_datetime: asc}, where: {
-                  _and: [
-                    {
-                        start_datetime: {
-                            _gte: "${startDate}",
-                            _lte: "${endDate}"
-                        }
+                username
+                email
+                timer_plannings (
+                    order_by: {
+                        start_date: asc
                     },
-                    {
-                        end_datetime: {
-                            _gte: "${startDate}",
-                            _lte: "${endDate}"
+                    where: {
+                        team_id: {_eq: "${teamId}"},
+                        _and: [
+                            {
+                                start_date: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            },
+                            {
+                                end_date: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            }
+                        ]
+                    }
+                ) {
+                    id
+                    team_id
+                    project_id
+                    project {
+                        name
+                        project_color {
+                            name
                         }
                     }
-                    ]
-              }) {
-                  project_id
-                  issue
-                  project {
-                    name
-                    project_color {
-                      name
+                    timer_off_id
+                    timer_off {
+                        title
                     }
-                  }
-                  start_datetime
-                  end_datetime
-              }
+                    duration
+                    start_date
+                    end_date
+                    created_by_id
+                    created_by {
+                        username
+                        email
+                    }
+                    created_at
+                }
+                logged: timer(
+                    order_by: {
+                        start_datetime: asc
+                    }, 
+                    where: {
+                        _and: [
+                            {
+                                start_datetime: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            },
+                            {
+                                end_datetime: {
+                                    _gte: "${startDate}",
+                                    _lte: "${endDate}"
+                                }
+                            }
+                        ]
+                    }
+                ) {
+                    project_id
+                    issue
+                    project {
+                        name
+                        project_color {
+                        name
+                        }
+                    }
+                    start_datetime
+                    end_datetime
+                }
             }
         }`;
 
