@@ -240,23 +240,6 @@ export class TimerPlanningService {
         const query = `query {
             user (
                 where: {
-                    timer_plannings: {
-                        team_id: {_eq: "${teamId}"},
-                        _and: [
-                            {
-                                start_date: {
-                                    _gte: "${startDate}",
-                                    _lte: "${endDate}"
-                                }
-                            },
-                            {
-                                end_date: {
-                                    _gte: "${startDate}",
-                                    _lte: "${endDate}"
-                                }
-                            }
-                        ]
-                    }, 
                     id: {
                         _in: [${userIds.map((id: string) => `"${id}"`).join(',')}]
                     }
@@ -266,7 +249,25 @@ export class TimerPlanningService {
               id
               username
               email
-              timer_plannings(order_by: {start_date: asc}) {
+              timer_plannings(
+                order_by: {start_date: asc},
+                where: {
+                  team_id: {_eq: "${teamId}"},
+                  _and: [
+                      {
+                          start_date: {
+                            _gte: "${startDate}",
+                            _lte: "${endDate}"
+                          }
+                      },
+                      {
+                          end_date: {
+                            _gte: "${startDate}",
+                            _lte: "${endDate}"
+                          }
+                      }
+                  ]
+                }) {
                 id
                 team_id
                 project_id
@@ -289,6 +290,33 @@ export class TimerPlanningService {
                   email
                 }
                 created_at
+              }
+              logged: timer(order_by: {start_datetime: asc}, where: {
+                  _and: [
+                    {
+                        start_datetime: {
+                            _gte: "${startDate}",
+                            _lte: "${endDate}"
+                        }
+                    },
+                    {
+                        end_datetime: {
+                            _gte: "${startDate}",
+                            _lte: "${endDate}"
+                        }
+                    }
+                    ]
+              }) {
+                  project_id
+                  issue
+                  project {
+                    name
+                    project_color {
+                      name
+                    }
+                  }
+                  start_datetime
+                  end_datetime
               }
             }
         }`;
