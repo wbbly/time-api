@@ -163,17 +163,24 @@ export class TimerPlanningService {
         });
     }
 
-    async getTimerPlanningList(teamId: string, userIds: string[], startDate: string, endDate: string): Promise<any> {
-        return await this.getUsersTimerPlanningsByPeriod(startDate, endDate, userIds, teamId);
+    async getTimerPlanningList(
+        teamId: string,
+        userIds: string[],
+        timerOffIds: string[],
+        startDate: string,
+        endDate: string
+    ): Promise<any> {
+        return await this.getUsersTimerPlanningsByPeriod(startDate, endDate, userIds, teamId, timerOffIds);
     }
 
     async getTimerPlanningListByUserId(
         teamId: string,
+        timerOffIds: string[],
         userId: string,
         startDate: string,
         endDate: string
     ): Promise<any> {
-        return await this.getUsersTimerPlanningsByPeriod(startDate, endDate, [userId], teamId);
+        return await this.getUsersTimerPlanningsByPeriod(startDate, endDate, [userId], teamId, timerOffIds);
     }
 
     private async getUserLoggedEntriesByWeekPeriod(
@@ -235,8 +242,17 @@ export class TimerPlanningService {
         startDate: string,
         endDate: string,
         userIds: string[],
-        teamId: string
+        teamId: string,
+        timerOffIds: string[]
     ): Promise<AxiosResponse | AxiosError> {
+        let timerOffIdsString = ``;
+        if (timerOffIds.length) {
+            timerOffIdsString = `
+                timer_off_id: {
+                    _in: [${timerOffIds.map((id: string) => `"${id}"`).join(',')}]
+                },
+            `;
+        }
         const query = `query {
             user (
                 where: {
@@ -257,6 +273,7 @@ export class TimerPlanningService {
                     },
                     where: {
                         team_id: {_eq: "${teamId}"},
+                        ${timerOffIdsString}
                         _and: [
                             {
                                 start_date: {
