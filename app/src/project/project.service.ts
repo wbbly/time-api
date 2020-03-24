@@ -19,7 +19,7 @@ export class ProjectService {
         private readonly roleCollaborationService: RoleCollaborationService
     ) {}
 
-    async getProjectList(userId: string, withTimerList: boolean) {
+    async getProjectList(userId: string, withTimerList: boolean, withTeamUsers: boolean) {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         const isAdmin =
@@ -50,6 +50,17 @@ export class ProjectService {
                             end_datetime
                         }`
                         : ``
+                }
+                ${
+                  withTeamUsers
+                    ? `team {
+                      team_users {
+                        user {
+                          id
+                        }
+                      }
+                    }`
+                    : ``
                 }
             }
         }`;
