@@ -57,6 +57,7 @@ export class ProjectService {
                       team_users {
                         user {
                           id
+                          username
                         }
                       }
                     }`
