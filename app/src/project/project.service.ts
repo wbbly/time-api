@@ -52,15 +52,15 @@ export class ProjectService {
                         : ``
                 }
                 ${
-                  withTeamUsers
-                    ? `team {
+                    withTeamUsers
+                        ? `team {
                       team_users {
                         user {
                           id
                         }
                       }
                     }`
-                    : ``
+                        : ``
                 }
             }
         }`;
