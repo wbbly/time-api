@@ -163,8 +163,8 @@ export class TimerPlanningController {
                     .json(
                         await this.timerPlanningService.getTimerPlanningList(
                             teamId,
-                            timerOffIds,
                             body.userIds,
+                            timerOffIds,
                             body.startDate,
                             body.endDate
                         )
