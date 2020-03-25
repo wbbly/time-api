@@ -245,14 +245,15 @@ export class TimerPlanningService {
         teamId: string,
         timerOffIds: string[]
     ): Promise<AxiosResponse | AxiosError> {
-        let timerOffIdsString = ``;
+        let timerOffIdsExpression = ``;
         if (timerOffIds.length) {
-            timerOffIdsString = `
+            timerOffIdsExpression = `
                 timer_off_id: {
                     _in: [${timerOffIds.map((id: string) => `"${id}"`).join(',')}]
                 },
             `;
         }
+
         const query = `query {
             user (
                 where: {
@@ -273,7 +274,7 @@ export class TimerPlanningService {
                     },
                     where: {
                         team_id: {_eq: "${teamId}"},
-                        ${timerOffIdsString}
+                        ${timerOffIdsExpression}
                         _and: [
                             {
                                 start_date: {

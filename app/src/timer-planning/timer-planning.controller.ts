@@ -147,11 +147,7 @@ export class TimerPlanningController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        let timerOffIds = body.timerOffIds;
-
-        if (!body.timerOffIds) {
-            timerOffIds = [];
-        }
+        const timerOffIds = body.timerOffIds || [];
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const isAdmin =
@@ -200,11 +196,7 @@ export class TimerPlanningController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        let timerOffIds = body.timerOffIds;
-
-        if (!body.timerOffIds) {
-            timerOffIds = [];
-        }
+        const timerOffIds = body.timerOffIds || [];
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const isAdmin =
