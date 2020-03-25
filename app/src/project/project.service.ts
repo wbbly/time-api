@@ -54,13 +54,13 @@ export class ProjectService {
                 ${
                     withTeamUsers
                         ? `team {
-                      team_users {
-                        user {
-                          id
-                          username
-                        }
-                      }
-                    }`
+                            team_users {
+                                user {
+                                    id
+                                    username
+                                }
+                            }
+                        }`
                         : ``
                 }
             }
