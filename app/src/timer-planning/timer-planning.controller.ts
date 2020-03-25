@@ -147,6 +147,8 @@ export class TimerPlanningController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
+        const timerOffIds = body.timerOffIds || [];
+
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
@@ -161,6 +163,7 @@ export class TimerPlanningController {
                     .json(
                         await this.timerPlanningService.getTimerPlanningList(
                             teamId,
+                            timerOffIds,
                             body.userIds,
                             body.startDate,
                             body.endDate
@@ -193,6 +196,8 @@ export class TimerPlanningController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
+        const timerOffIds = body.timerOffIds || [];
+
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
@@ -207,6 +212,7 @@ export class TimerPlanningController {
                     .json(
                         await this.timerPlanningService.getTimerPlanningListByUserId(
                             teamId,
+                            timerOffIds,
                             param.userId,
                             body.startDate,
                             body.endDate
