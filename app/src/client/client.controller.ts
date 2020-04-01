@@ -178,6 +178,7 @@ export class ClientController {
         }
 
         try {
+            const client: any = await this.clientService.getClientById(param.id);
             const clientRequest = {
                 userId,
                 clientId,
@@ -189,13 +190,11 @@ export class ClientController {
                 phone: body.phone,
                 email: body.email,
                 zip: body.zip,
-                avatar: (file && file.path) || null,
+                avatar: (file && file.path) || client.avatar,
             };
 
-            const client: any = await this.clientService.getClientById(param.id);
-
             await this.clientService.patchClient(clientRequest);
-            if (client.avatar) {
+            if (file && file.path && client.avatar) {
                 fs.unlinkSync(client.avatar);
             }
             const clientList = await this.clientService.getClientList(userId);
