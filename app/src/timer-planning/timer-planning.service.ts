@@ -268,6 +268,7 @@ export class TimerPlanningService {
                 id
                 username
                 email
+                avatar
                 timer_plannings (
                     order_by: {
                         start_date: asc
