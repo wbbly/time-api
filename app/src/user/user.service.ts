@@ -163,7 +163,7 @@ export class UserService {
                             socialId,
                             avatar,
                             onboardingMobile,
-                            userTechnologies: userTechnologies.map(el => el.technology),
+                            userTechnologies: userTechnologies,
                         };
                     }
 
@@ -445,9 +445,10 @@ export class UserService {
             email: string;
             isActive: boolean;
             roleName: string;
+            technologies?: [String];
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, isActive, roleName } = userData;
+        const { username, email, isActive, roleName, technologies } = userData;
 
         const roleId =
             roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
@@ -489,6 +490,40 @@ export class UserService {
             }
         }
         `;
+
+        const removeUserTechnologies = `mutation {
+            delete_user_technology(
+                where: {
+                    user_id: {_eq: "${userId}"}
+                },
+            ) {
+                returning {
+                    user_id
+                    technology_id
+                }
+            }
+        }`;
+
+        let userTechnologiesTemp = [];
+        if (technologies.length) {
+            userTechnologiesTemp = technologies.map(el => {
+                return `{
+                    user_id: "${userId}",
+                    technology_id: "${el}",
+                }`;
+            });
+        }
+
+        const insertUserTechnologies = `mutation {
+            insert_user_technology(
+                objects: [${userTechnologiesTemp}]
+            ) {
+                returning {
+                    user_id
+                    technology_id
+                }
+            }
+        }`;
 
         return new Promise(async (resolve, reject) => {
             let ownTeamList = [];
@@ -575,6 +610,19 @@ export class UserService {
                     );
                 },
                 (error: AxiosError) => reject(error)
+            );
+            this.httpRequestsService.request(removeUserTechnologies).subscribe(
+                (removeTechnologyRes: AxiosResponse) => {
+                    if (technologies.length) {
+                        this.httpRequestsService
+                            .request(insertUserTechnologies)
+                            .subscribe(
+                                (insertTechnologyRes: AxiosResponse) => resolve(insertTechnologyRes),
+                                (insertTechnologyError: AxiosError) => reject(insertTechnologyError)
+                            );
+                    }
+                },
+                (removeTechnologyError: AxiosError) => reject(removeTechnologyError)
             );
         });
     }

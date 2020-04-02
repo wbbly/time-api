@@ -530,7 +530,7 @@ export class UserController {
             loginJira: user.loginJira,
             phone: user.phone,
             onboardingMobile: user.onboardingMobile,
-            technologies: user.userTechnologies.length ? user.userTechnologies.map(el => el.id) : [],
+            technologies: user.userTechnologies.length ? user.userTechnologies.map(el => el.technology.id) : [],
         };
         Object.keys(userData).forEach(prop => {
             const newValue = newUserData[prop];
@@ -747,6 +747,7 @@ export class UserController {
             email: body.email,
             isActive: body.isActive,
             roleName: body.roleName,
+            technologies: body.technologies || [],
         };
 
         const userData = {
@@ -756,6 +757,7 @@ export class UserController {
             roleName: userIsAdmin
                 ? this.roleCollaborationService.ROLES.ROLE_ADMIN
                 : this.roleCollaborationService.ROLES.ROLE_MEMBER,
+            technologies: user.userTechnologies.length ? user.userTechnologies.map(el => el.technology.id) : [],
         };
         Object.keys(userData).forEach(prop => {
             const newValue = newUserData[prop];
