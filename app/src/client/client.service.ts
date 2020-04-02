@@ -32,6 +32,14 @@ export class ClientService {
                 ) {
                     id
                     name
+                    country
+                    language
+                    city
+                    state
+                    phone
+                    avatar
+                    email
+                    zip
                     project {
                         id
                         name
@@ -52,7 +60,7 @@ export class ClientService {
         }
     }
 
-    async addClient(userId: string, clientName: string) {
+    async addClient({ userId, name, language, country, city, state, phone, email, zip, avatar }) {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         const isAdmin =
@@ -63,8 +71,16 @@ export class ClientService {
             const query = `mutation {
                 insert_client(
                     objects: {
-                        name: "${clientName}", 
+                        name: "${name}"
                         team_id: "${currentTeamId}"
+                        language: "${language ? language : `en`}"
+                        avatar: ${avatar ? '"' + avatar + '"' : null}
+                        country: ${country ? '"' + country + '"' : null}
+                        city: ${city ? '"' + city + '"' : null}
+                        state: ${state ? '"' + state + '"' : null}
+                        phone: ${phone ? '"' + phone + '"' : null}
+                        email: ${email ? '"' + email + '"' : null}
+                        zip: ${zip ? '"' + zip + '"' : null}
                     }
                 ) {
                     returning {
@@ -105,7 +121,7 @@ export class ClientService {
     //     }
     // }
 
-    async patchClient(userId: string, clientId: string, clientName: string) {
+    async patchClient({ userId, clientId, name, language, country, city, state, phone, email, zip, avatar }) {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         const isAdmin =
@@ -124,7 +140,15 @@ export class ClientService {
                         }
                     },
                     _set: {
-                        name: "${clientName}"
+                        name: "${name}"
+                        language: "${language ? language : `en`}"
+                        avatar: ${avatar ? '"' + avatar + '"' : null}
+                        country: ${country ? '"' + country + '"' : null}
+                        city: ${city ? '"' + city + '"' : null}
+                        state: ${state ? '"' + state + '"' : null}
+                        phone: ${phone ? '"' + phone + '"' : null}
+                        email: ${email ? '"' + email + '"' : null}
+                        zip: ${zip ? '"' + zip + '"' : null}
                     }
                 ) {
                     returning {
@@ -141,5 +165,44 @@ export class ClientService {
         } else {
             return Promise.reject({ message: 'ERROR.USER.NOT.ADMIN' });
         }
+    }
+
+    async getClientById(clientId: string) {
+        const query = `{
+            client(
+                where: {
+                    id: {
+                        _eq: "${clientId}"
+                    }
+                }
+            ) {
+                id
+                name
+                avatar
+                country
+                language
+                city
+                state
+                zip
+                phone
+                email
+            }
+        }`;
+
+        let client: any = null;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    const data = res.data.client.shift();
+                    if (data) {
+                        client = data;
+                    }
+
+                    return resolve(client);
+                },
+                (error: AxiosError) => reject(error)
+            );
+        });
     }
 }
