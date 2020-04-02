@@ -107,6 +107,12 @@ export class UserService {
                 social_id
                 avatar
                 onboarding_mobile
+                user_technologies {
+                    technology {
+                        id
+                        title
+                    }
+                }
             }
         }
         `;
@@ -133,6 +139,7 @@ export class UserService {
                             social_id: socialId,
                             avatar,
                             onboarding_mobile: onboardingMobile,
+                            user_technologies: userTechnologies,
                         } = data;
 
                         let { social } = data;
@@ -156,6 +163,7 @@ export class UserService {
                             socialId,
                             avatar,
                             onboardingMobile,
+                            userTechnologies: userTechnologies.map(el => el.technology),
                         };
                     }
 
@@ -181,6 +189,7 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
+            userTechnologies,
         } = user;
 
         return {
@@ -197,6 +206,7 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
+            userTechnologies,
         };
     }
 
@@ -307,9 +317,21 @@ export class UserService {
             loginJira: string;
             phone: string;
             onboardingMobile: boolean;
+            technologies?: [String];
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, tokenJira, urlJira, typeJira, loginJira, phone, onboardingMobile } = data;
+        const {
+            username,
+            email,
+            language,
+            tokenJira,
+            urlJira,
+            typeJira,
+            loginJira,
+            phone,
+            onboardingMobile,
+            technologies,
+        } = data;
 
         const query = `mutation {
             update_user(
@@ -336,10 +358,58 @@ export class UserService {
             }
         }`;
 
+        const removeUserTechnologies = `mutation {
+            delete_user_technology(
+                where: {
+                    user_id: {_eq: "${userId}"}
+                },
+            ) {
+                returning {
+                    user_id
+                    technology_id
+                }
+            }
+        }`;
+
+        let userTechnologiesTemp = [];
+        if (technologies.length) {
+            userTechnologiesTemp = technologies.map(el => {
+                return `{
+                    user_id: "${userId}",
+                    technology_id: "${el}",
+                }`;
+            });
+        }
+
+        const insertUserTechnologies = `mutation {
+            insert_user_technology(
+                objects: [${userTechnologiesTemp}]
+            ) {
+                returning {
+                    user_id
+                    technology_id
+                }
+            }
+        }`;
+
         return new Promise(async (resolve, reject) => {
             this.httpRequestsService
                 .request(query)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService
+                .request(removeUserTechnologies)
+                .subscribe(
+                    (removeTechnologyRes: AxiosResponse) => resolve(removeTechnologyRes),
+                    (removeTechnologyError: AxiosError) => reject(removeTechnologyError)
+                );
+            if (technologies.length) {
+                this.httpRequestsService
+                    .request(insertUserTechnologies)
+                    .subscribe(
+                        (insertTechnologyRes: AxiosResponse) => resolve(insertTechnologyRes),
+                        (insertTechnologyError: AxiosError) => reject(insertTechnologyError)
+                    );
+            }
         });
     }
 

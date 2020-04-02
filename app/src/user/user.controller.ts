@@ -517,6 +517,7 @@ export class UserController {
             loginJira: body.loginJira,
             phone: body.phone,
             onboardingMobile: body.onboardingMobile,
+            technologies: body.technologies || [],
         };
 
         const userData = {
@@ -529,6 +530,7 @@ export class UserController {
             loginJira: user.loginJira,
             phone: user.phone,
             onboardingMobile: user.onboardingMobile,
+            technologies: user.userTechnologies.length ? user.userTechnologies.map(el => el.id) : [],
         };
         Object.keys(userData).forEach(prop => {
             const newValue = newUserData[prop];
