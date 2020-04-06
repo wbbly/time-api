@@ -556,7 +556,6 @@ export class UserController {
 
             return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
         } catch (err) {
-            console.log(err.response.data.errors);
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
     }
