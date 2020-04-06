@@ -4,15 +4,15 @@ import { InvoiceProject } from '../../invoice/interfaces/invoice_project.interfa
 
 export interface Invoice {
     id?: string;
-    invoice_number?: Number;
+    invoice_number?: number;
     vendor_id?: string;
     client_id?: string;
     user_id?: string;
     currency?: string;
     logo?: string;
-    total?: Number;
-    sub_total?: Number;
-    tax_total?: Number;
+    total?: number;
+    sub_total?: number;
+    tax_total?: number;
     comment?: string;
     invoice_date?: Date;
     due_date?: Date;
