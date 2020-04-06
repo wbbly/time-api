@@ -9,6 +9,7 @@ export interface User {
     email?: string;
     password?: string;
     isActive?: boolean;
+    firstVisited?: boolean;
     roleId?: string;
     createdAt?: string;
     timezoneOffset?: number;
