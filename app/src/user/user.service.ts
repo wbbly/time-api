@@ -371,19 +371,9 @@ export class UserService {
             }
         }`;
 
-        let userTechnologiesTemp = [];
-        if (technologies.length) {
-            userTechnologiesTemp = technologies.map(el => {
-                return `{
-                    user_id: "${userId}",
-                    technology_id: "${el}",
-                }`;
-            });
-        }
-
         const insertUserTechnologies = `mutation {
             insert_user_technology(
-                objects: [${userTechnologiesTemp}]
+                objects: [${technologies.map(el => `{ user_id: "${userId}", technology_id: "${el}" }`)}]
             ) {
                 returning {
                     user_id
@@ -393,23 +383,24 @@ export class UserService {
         }`;
 
         return new Promise(async (resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
-            this.httpRequestsService
-                .request(removeUserTechnologies)
-                .subscribe(
-                    (removeTechnologyRes: AxiosResponse) => resolve(removeTechnologyRes),
-                    (removeTechnologyError: AxiosError) => reject(removeTechnologyError)
-                );
-            if (technologies.length) {
-                this.httpRequestsService
-                    .request(insertUserTechnologies)
-                    .subscribe(
-                        (insertTechnologyRes: AxiosResponse) => resolve(insertTechnologyRes),
-                        (insertTechnologyError: AxiosError) => reject(insertTechnologyError)
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    this.httpRequestsService.request(removeUserTechnologies).subscribe(
+                        (removeTechnologyRes: AxiosResponse) => {
+                            if (technologies.length) {
+                                this.httpRequestsService
+                                    .request(insertUserTechnologies)
+                                    .subscribe(
+                                        (insertTechnologyRes: AxiosResponse) => resolve(insertTechnologyRes),
+                                        (insertTechnologyError: AxiosError) => reject(insertTechnologyError)
+                                    );
+                            }
+                        },
+                        (removeTechnologyError: AxiosError) => reject(removeTechnologyError)
                     );
-            }
+                },
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 
@@ -445,7 +436,7 @@ export class UserService {
             email: string;
             isActive: boolean;
             roleName: string;
-            technologies?: [String];
+            technologies?: string[];
         }
     ): Promise<AxiosResponse | AxiosError> {
         const { username, email, isActive, roleName, technologies } = userData;
@@ -504,19 +495,9 @@ export class UserService {
             }
         }`;
 
-        let userTechnologiesTemp = [];
-        if (technologies.length) {
-            userTechnologiesTemp = technologies.map(el => {
-                return `{
-                    user_id: "${userId}",
-                    technology_id: "${el}",
-                }`;
-            });
-        }
-
         const insertUserTechnologies = `mutation {
             insert_user_technology(
-                objects: [${userTechnologiesTemp}]
+                objects: [${technologies.map(el => `{ user_id: "${userId}", technology_id: "${el}" }`)}]
             ) {
                 returning {
                     user_id
@@ -560,69 +541,69 @@ export class UserService {
 
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
-                    this.httpRequestsService.request(updateTeamRoleQuery).subscribe(
-                        async (updateTeamRoleQueryRes: AxiosResponse) => {
-                            const returningRows = updateTeamRoleQueryRes.data.update_user_team.returning;
-                            if (returningRows.length) {
-                                const currentTeam = returningRows[0].current_team;
+                    this.httpRequestsService.request(removeUserTechnologies).subscribe(
+                        (removeTechnologyRes: AxiosResponse) => {
+                            if (technologies.length) {
+                                this.httpRequestsService.request(insertUserTechnologies).subscribe(
+                                    (insertTechnologyRes: AxiosResponse) => {
+                                        this.httpRequestsService.request(updateTeamRoleQuery).subscribe(
+                                            async (updateTeamRoleQueryRes: AxiosResponse) => {
+                                                const returningRows =
+                                                    updateTeamRoleQueryRes.data.update_user_team.returning;
+                                                if (returningRows.length) {
+                                                    const currentTeam = returningRows[0].current_team;
 
-                                if (currentTeam && !isActive) {
-                                    if (ownTeamList.length) {
-                                        const lastOwnerTeam = ownTeamList[0];
-                                        await this.teamService.switchTeam(userId, lastOwnerTeam.id);
+                                                    if (currentTeam && !isActive) {
+                                                        if (ownTeamList.length) {
+                                                            const lastOwnerTeam = ownTeamList[0];
+                                                            await this.teamService.switchTeam(userId, lastOwnerTeam.id);
 
-                                        return resolve(updateTeamRoleQueryRes);
-                                    } else {
-                                        const resetCurrentTeamQuery = `mutation{
-                                            update_user_team(
-                                                where: {
-                                                    user_id: { _eq: "${userId}"},
-                                                    team_id: { _eq: "${adminTeamId}"}
-                                                },
-                                                _set: {
-                                                    current_team: false
+                                                            return resolve(updateTeamRoleQueryRes);
+                                                        } else {
+                                                            const resetCurrentTeamQuery = `mutation{
+                                                                    update_user_team(
+                                                                        where: {
+                                                                            user_id: { _eq: "${userId}"},
+                                                                            team_id: { _eq: "${adminTeamId}"}
+                                                                        },
+                                                                        _set: {
+                                                                            current_team: false
+                                                                        }
+                                                                    ) {
+                                                                        returning {
+                                                                            id
+                                                                        }
+                                                                    }
+                                                                }
+                                                                `;
+
+                                                            this.httpRequestsService
+                                                                .request(resetCurrentTeamQuery)
+                                                                .subscribe(
+                                                                    (resetCurrentTeamQueryRes: AxiosResponse) =>
+                                                                        resolve(resetCurrentTeamQueryRes),
+                                                                    (resetCurrentTeamQueryError: AxiosError) =>
+                                                                        reject(resetCurrentTeamQueryError)
+                                                                );
+                                                        }
+                                                    } else {
+                                                        return resolve(updateTeamRoleQueryRes);
+                                                    }
+                                                } else {
+                                                    return resolve(updateTeamRoleQueryRes);
                                                 }
-                                            ) {
-                                                returning {
-                                                    id
-                                                }
-                                            }
-                                        }
-                                        `;
-
-                                        this.httpRequestsService
-                                            .request(resetCurrentTeamQuery)
-                                            .subscribe(
-                                                (resetCurrentTeamQueryRes: AxiosResponse) =>
-                                                    resolve(resetCurrentTeamQueryRes),
-                                                (resetCurrentTeamQueryError: AxiosError) =>
-                                                    reject(resetCurrentTeamQueryError)
-                                            );
-                                    }
-                                } else {
-                                    return resolve(updateTeamRoleQueryRes);
-                                }
-                            } else {
-                                return resolve(updateTeamRoleQueryRes);
+                                            },
+                                            (updateTeamRoleQueryError: AxiosError) => reject(updateTeamRoleQueryError)
+                                        );
+                                    },
+                                    (insertTechnologyError: AxiosError) => reject(insertTechnologyError)
+                                );
                             }
                         },
-                        (updateTeamRoleQueryError: AxiosError) => reject(updateTeamRoleQueryError)
+                        (removeTechnologyError: AxiosError) => reject(removeTechnologyError)
                     );
                 },
                 (error: AxiosError) => reject(error)
-            );
-            this.httpRequestsService.request(removeUserTechnologies).subscribe(
-                (removeTechnologyRes: AxiosResponse) => {
-                    if (technologies.length) {
-                        this.httpRequestsService
-                            .request(insertUserTechnologies)
-                            .subscribe(
-                                (insertTechnologyRes: AxiosResponse) => resolve(insertTechnologyRes),
-                                (insertTechnologyError: AxiosError) => reject(insertTechnologyError)
-                            );
-                    }
-                },
-                (removeTechnologyError: AxiosError) => reject(removeTechnologyError)
             );
         });
     }

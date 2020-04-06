@@ -530,7 +530,10 @@ export class UserController {
             loginJira: user.loginJira,
             phone: user.phone,
             onboardingMobile: user.onboardingMobile,
-            technologies: user.userTechnologies.length ? user.userTechnologies.map(el => el.technology.id) : [],
+            technologies:
+                user.userTechnologies && user.userTechnologies.length
+                    ? user.userTechnologies.map(el => el.technology.id)
+                    : [],
         };
         Object.keys(userData).forEach(prop => {
             const newValue = newUserData[prop];
@@ -553,6 +556,7 @@ export class UserController {
 
             return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
         } catch (err) {
+            console.log(err.response.data.errors);
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
     }

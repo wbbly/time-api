@@ -27,7 +27,7 @@ export class TechnologyService {
         });
     }
 
-    async getTechnology(title: string) {
+    async getTechnologiesByTitle(title: string) {
         const query = `{
             technology(
                 where: {

@@ -24,18 +24,21 @@ export class TechnologyController {
 
     @Post('add')
     @UseGuards(AuthGuard())
-    async createTimerPlanning(@Headers() headers: any, @Response() res: any, @Body() body: any) {
+    async createTechnology(@Headers() headers: any, @Response() res: any, @Body() body: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
 
-        if (!body.title) {
+        const { title } = body;
+        const technologyTitle = title.trim();
+
+        if (!technologyTitle) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {
-            return res.status(HttpStatus.OK).json(await this.technologyService.createTechnology(body.title.trim()));
+            return res.status(HttpStatus.OK).json(await this.technologyService.createTechnology(technologyTitle));
         } catch (error) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.TECHNOLOGY.CREATE_TECHNOLOGY_FAILED' });
         }
@@ -49,15 +52,15 @@ export class TechnologyController {
             throw new UnauthorizedException();
         }
         const { title } = query;
+        const technologyTitle = title.trim();
 
-        if (!title) {
+        if (!technologyTitle) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         try {
-            return res.status(HttpStatus.OK).json(await this.technologyService.getTechnology(title.trim()));
+            return res.status(HttpStatus.OK).json(await this.technologyService.getTechnologiesByTitle(technologyTitle));
         } catch (error) {
-            console.log(error);
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.TECHNOLOGY.GET_TECHNOLOGY_FAILED' });
         }
     }
