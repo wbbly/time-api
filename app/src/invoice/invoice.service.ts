@@ -356,7 +356,7 @@ export class InvoiceService {
                             message: 'ERROR.INVOICE.DELETE_FAILED',
                         });
                     }
-                    return resolve(resp);
+                    return resolve(resp.shift());
                 },
                 (error: AxiosError) => reject(error)
             );

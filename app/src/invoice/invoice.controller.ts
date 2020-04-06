@@ -24,10 +24,15 @@ import * as fs from 'fs';
 
 import { InvoiceService } from './invoice.service';
 import { AuthService } from '../auth/auth.service';
+import { MailService } from '../core/mail/mail.service';
 
 @Controller('invoice')
 export class InvoiceController {
-    constructor(private readonly invoiceService: InvoiceService, private readonly authService: AuthService) {}
+    constructor(
+        private readonly invoiceService: InvoiceService,
+        private readonly authService: AuthService,
+        private readonly mailService: MailService
+    ) {}
 
     @Post('add')
     @UseGuards(AuthGuard())
@@ -179,6 +184,8 @@ export class InvoiceController {
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
 
+        const { invoice: invoiceResp } = invoice.data;
+
         const newInvoiceData: any = {
             invoiceId: param.id,
             userId,
@@ -193,17 +200,18 @@ export class InvoiceController {
         };
 
         const invoiceData = {
-            invoiceId: invoice.data.invoice.id,
-            userId: invoice.data.invoice.user_id,
-            vendorId: invoice.data.invoice.from.id,
-            clientId: invoice.data.invoice.to.id,
-            currency: invoice.data.invoice.currency,
-            comment: invoice.data.invoice.comment,
-            invoiceDate: invoice.data.invoice.invoiceDate,
-            dueDate: invoice.data.invoice.dueDate,
-            invoiceProjects: invoice.data.invoice.projects,
-            logo: invoice.data.invoice.logo,
+            invoiceId: invoiceResp.id,
+            userId: invoiceResp.user_id,
+            vendorId: invoiceResp.from.id,
+            clientId: invoiceResp.to.id,
+            currency: invoiceResp.currency,
+            comment: invoiceResp.comment,
+            invoiceDate: invoiceResp.invoice_date,
+            dueDate: invoiceResp.due_date,
+            invoiceProjects: invoiceResp.projects,
+            logo: invoiceResp.logo,
         };
+
         Object.keys(invoiceData).forEach(prop => {
             const newValue = newInvoiceData[prop];
             invoiceData[prop] = typeof newValue === 'undefined' || newValue === null ? invoiceData[prop] : newValue;
@@ -276,7 +284,7 @@ export class InvoiceController {
 
         try {
             const delInvoice: any = await this.invoiceService.deleteInvoice(userId, param.id);
-            if (delInvoice[0].logo) fs.unlinkSync(delInvoice[0].logo);
+            if (delInvoice.logo) fs.unlinkSync(delInvoice.logo);
 
             const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '10' });
             return res.status(HttpStatus.OK).json(invoiceList);
@@ -286,7 +294,39 @@ export class InvoiceController {
         }
     }
 
-    @Post(':id/send')
+    @Post(':id/sendInvoice')
     @UseGuards(AuthGuard())
-    async sendInvoice() {}
+    async sendInvoice(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Param() param: { id: string },
+        @Body() body: { message: string }
+    ) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!body.message) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        let invoice = null;
+        try {
+            invoice = await this.invoiceService.getInvoice(userId, param.id);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+
+        const { invoice: invoiceResp } = invoice.data;
+
+        const subject = 'Invoice #' + invoiceResp.invoice_number + ' from - ' + invoiceResp.from.email;
+        const { message: html } = body;
+        const to = invoiceResp.to.email;
+
+        this.mailService.send(to, subject, html);
+
+        return res.status(HttpStatus.OK).json({ message: 'Email sent!' });
+    }
 }
