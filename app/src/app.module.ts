@@ -19,6 +19,7 @@ import { ClientModule } from './client/client.module';
 import { SocialModule } from './social/social.module';
 import { TimerPlanningModule } from './timer-planning/timer-planning.module';
 import { TimerOffModule } from './timer-off/timer-off.module';
+import { TechnologyModule } from './technology/technology.module';
 
 @Module({
     imports: [
@@ -39,6 +40,7 @@ import { TimerOffModule } from './timer-off/timer-off.module';
         SocialModule,
         TimerPlanningModule,
         TimerOffModule,
+        TechnologyModule,
     ],
     controllers: [AppController],
     providers: [AppService],
