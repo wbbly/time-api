@@ -71,7 +71,7 @@ export class InvoiceController {
             throw new UnauthorizedException();
         }
 
-        if (!(body.vendorId && body.clientId && body.invoiceDate && body.dueDate && body.invoiceProjects.length)) {
+        if (!(body.vendorId && body.clientId && body.invoiceDate && body.dueDate && body.invoiceProjects && body.invoiceProjects.length)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
