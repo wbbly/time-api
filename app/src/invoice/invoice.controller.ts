@@ -158,7 +158,16 @@ export class InvoiceController {
             throw new UnauthorizedException();
         }
 
-        if (!(body.vendorId && body.clientId && body.invoiceDate && body.dueDate && body.invoiceProjects && body.invoiceProjects.length)) {
+        if (
+            !(
+                body.vendorId &&
+                body.clientId &&
+                body.invoiceDate &&
+                body.dueDate &&
+                body.invoiceProjects &&
+                body.invoiceProjects.length
+            )
+        ) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
@@ -171,6 +180,8 @@ export class InvoiceController {
         }
 
         const newInvoiceData: any = {
+            invoiceId: param.id,
+            userId,
             vendorId: body.vendorId,
             clientId: body.clientId,
             currency: body.currency,
@@ -182,6 +193,8 @@ export class InvoiceController {
         };
 
         const invoiceData = {
+            invoiceId: invoice.data.invoice.id,
+            userId: invoice.data.invoice.user_id,
             vendorId: invoice.data.invoice.from.id,
             clientId: invoice.data.invoice.to.id,
             currency: invoice.data.invoice.currency,
@@ -196,8 +209,18 @@ export class InvoiceController {
             invoiceData[prop] = typeof newValue === 'undefined' || newValue === null ? invoiceData[prop] : newValue;
         });
 
-        console.log(invoiceData);
-        return;
+        try {
+            await this.invoiceService.updateInvoice(invoiceData);
+            if (file && file.path && invoice.data.invoice.logo) {
+                fs.unlinkSync(invoice.data.invoice.logo);
+            }
+            const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '10' });
+            return res.status(HttpStatus.OK).json(invoiceList);
+        } catch (err) {
+            if (file && file.path) fs.unlinkSync(file.path);
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
     }
 
     @Patch(':id/payment')
@@ -219,7 +242,7 @@ export class InvoiceController {
         try {
             const paymentStatus = body.paymentStatus || false;
             await this.invoiceService.updatePaymentStatusInvoice(userId, param.id, paymentStatus);
-            const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '1' });
+            const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '10' });
             return res.status(HttpStatus.OK).json(invoiceList);
         } catch (err) {
             const error: AxiosError = err;

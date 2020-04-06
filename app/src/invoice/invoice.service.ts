@@ -7,6 +7,36 @@ import { HttpRequestsService } from '../core/http-requests/http-requests.service
 export class InvoiceService {
     constructor(private readonly httpRequestsService: HttpRequestsService) {}
 
+    private getInvoiceProjectTotals(invoiceProjects, invoiceId?: string) {
+        let total = 0;
+        let sumSubTotal = 0;
+        let sumTaxTotal = 0;
+        const projects = invoiceProjects.map(el => {
+            let subTotal = el.hours * el.rate;
+            let tax = (subTotal * el.tax) / 100;
+            total = total + subTotal + tax;
+            sumSubTotal = sumSubTotal + subTotal;
+            sumTaxTotal = sumTaxTotal + tax;
+
+            let invoiceExpr = ``;
+
+            if (invoiceId) invoiceExpr = `invoice_id: "${invoiceId}",`;
+
+            return `
+                {
+                    ${invoiceExpr}
+                    project_name: "${el.projectName}",
+                    hours: ${el.hours},
+                    rate: ${el.rate},
+                    tax: ${el.tax},
+                    sub_total: ${subTotal}
+                }
+            `;
+        });
+
+        return { total, sumSubTotal, sumTaxTotal, projects };
+    }
+
     async createInvoice({
         userId,
         vendorId,
@@ -18,26 +48,7 @@ export class InvoiceService {
         invoiceProjects,
         logo,
     }) {
-        let total = 0;
-        let sumSubTotal = 0;
-        let sumTaxTotal = 0;
-        const projects = invoiceProjects.map(el => {
-            let subTotal = el.hours * el.rate;
-            let tax = (subTotal * el.tax) / 100;
-            total = total + subTotal + tax;
-            sumSubTotal = sumSubTotal + subTotal;
-            sumTaxTotal = sumTaxTotal + tax;
-
-            return `
-                {
-                    project_name: "${el.projectName}",
-                    hours: ${el.hours},
-                    rate: ${el.rate},
-                    tax: ${el.tax},
-                    sub_total: ${subTotal}
-                }
-            `;
-        });
+        const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects);
 
         const query = `mutation {
             insert_invoice(
@@ -181,6 +192,7 @@ export class InvoiceService {
                             message: 'ERROR.INVOICE.GET_FAILED',
                         });
                     }
+
                     return resolve(res);
                 },
                 (error: AxiosError) => reject(error)
@@ -220,6 +232,95 @@ export class InvoiceService {
                         });
                     }
                     return resolve(res);
+                },
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async updateInvoice({
+        invoiceId,
+        userId,
+        vendorId,
+        clientId,
+        currency,
+        comment,
+        invoiceDate,
+        dueDate,
+        invoiceProjects,
+        logo,
+    }) {
+        const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects, invoiceId);
+
+        const query = `mutation {
+            update_invoice(
+                where: {
+                    id: {
+                        _eq: "${invoiceId}"
+                    }, 
+                    user_id: {
+                        _eq: "${userId}"
+                    }
+                }, 
+                _set: {
+                    client_id: "${clientId}",
+                    comment: "${comment}",
+                    currency: "${currency ? currency : `USD`}",
+                    due_date: "${dueDate}",
+                    invoice_date: "${invoiceDate}",
+                    logo: ${logo ? '"' + logo + '"' : null},
+                    vendor_id: "${vendorId}",
+                    total: ${total},
+                    sub_total: ${sumSubTotal},
+                    tax_total: ${sumTaxTotal}
+                }
+            ) {
+              returning {
+                id
+              }
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.request(query).subscribe(
+                (res: AxiosResponse) => {
+                    const resp = res.data.update_invoice.returning;
+
+                    if (!resp.length) {
+                        return reject({
+                            message: 'ERROR.INVOICE.UPDATE_INVOICE_FAILED',
+                        });
+                    }
+
+                    const queryDeleteInvoiceProject = `mutation {
+                        delete_invoice_project(
+                            where: {
+                                invoice_id: {
+                                    _eq: "${invoiceId}"
+                                }
+                            }
+                        ) {
+                          returning {
+                            id
+                          }
+                        }
+                    }`;
+
+                    this.httpRequestsService.request(queryDeleteInvoiceProject).subscribe(
+                        (res: AxiosResponse) => {
+                            const queryInsertInvoiceProject = `mutation {
+                                insert_invoice_project(objects: [${projects}]) {
+                                    returning {
+                                        id
+                                    }
+                                }
+                            }`;
+                            this.httpRequestsService
+                                .request(queryInsertInvoiceProject)
+                                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+                        },
+                        (error: AxiosError) => reject(error)
+                    );
                 },
                 (error: AxiosError) => reject(error)
             );
