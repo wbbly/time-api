@@ -71,7 +71,16 @@ export class InvoiceController {
             throw new UnauthorizedException();
         }
 
-        if (!(body.vendorId && body.clientId && body.invoiceDate && body.dueDate && body.invoiceProjects && body.invoiceProjects.length)) {
+        if (
+            !(
+                body.vendorId &&
+                body.clientId &&
+                body.invoiceDate &&
+                body.dueDate &&
+                body.invoiceProjects &&
+                body.invoiceProjects.length
+            )
+        ) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
@@ -219,8 +228,8 @@ export class InvoiceController {
 
         try {
             await this.invoiceService.updateInvoice(invoiceData);
-            if (file && file.path && invoice.data.invoice.logo) {
-                fs.unlinkSync(invoice.data.invoice.logo);
+            if (file && file.path && invoiceResp.logo) {
+                fs.unlinkSync(invoiceResp.logo);
             }
             const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '10' });
             return res.status(HttpStatus.OK).json(invoiceList);
