@@ -107,6 +107,7 @@ export class UserService {
                 social_id
                 avatar
                 onboarding_mobile
+                onboarding_desktop
                 user_technologies {
                     technology {
                         id
@@ -139,6 +140,7 @@ export class UserService {
                             social_id: socialId,
                             avatar,
                             onboarding_mobile: onboardingMobile,
+                            onboarding_desktop: onboardingDesktop,
                             user_technologies: userTechnologies,
                         } = data;
 
@@ -163,6 +165,7 @@ export class UserService {
                             socialId,
                             avatar,
                             onboardingMobile,
+                            onboardingDesktop,
                             userTechnologies: userTechnologies,
                         };
                     }
@@ -189,6 +192,7 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
+            onboardingDesktop,
             userTechnologies,
         } = user;
 
@@ -206,6 +210,7 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
+            onboardingDesktop,
             userTechnologies,
         };
     }
@@ -317,6 +322,7 @@ export class UserService {
             loginJira: string;
             phone: string;
             onboardingMobile: boolean;
+            onboardingDesktop: boolean;
             technologies?: [String];
         }
     ): Promise<AxiosResponse | AxiosError> {
@@ -330,6 +336,7 @@ export class UserService {
             loginJira,
             phone,
             onboardingMobile,
+            onboardingDesktop,
             technologies,
         } = data;
 
@@ -350,6 +357,7 @@ export class UserService {
                     login_jira: ${loginJira ? '"' + loginJira + '"' : null}
                     phone: ${phone ? '"' + phone + '"' : null},
                     onboarding_mobile: ${onboardingMobile === true ? true : false},
+                    onboarding_desktop: ${onboardingDesktop === true ? true : false},
                 }
             ) {
                 returning {

@@ -21,6 +21,7 @@ export interface User {
     phone?: string;
     avatar?: string;
     onboardingMobile?: boolean;
+    onboardingDesktop?: boolean;
     social?: Social[];
     socialId?: string;
     currentTimer?: TimerCurrentV2[];
