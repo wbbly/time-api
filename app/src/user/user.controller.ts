@@ -517,7 +517,7 @@ export class UserController {
             loginJira: body.loginJira,
             phone: body.phone,
             onboardingMobile: body.onboardingMobile,
-            firstVisited: body.firstVisited,
+            onboardingDesktop: body.onboardingDesktop,
             technologies: body.technologies || [],
         };
 
@@ -531,7 +531,7 @@ export class UserController {
             loginJira: user.loginJira,
             phone: user.phone,
             onboardingMobile: user.onboardingMobile,
-            firstVisited: user.firstVisited,
+            onboardingDesktop: user.onboardingDesktop,
             technologies:
                 user.userTechnologies && user.userTechnologies.length
                     ? user.userTechnologies.map(el => el.technology.id)

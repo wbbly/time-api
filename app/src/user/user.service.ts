@@ -141,7 +141,7 @@ export class UserService {
                             avatar,
                             onboarding_mobile: onboardingMobile,
                             user_technologies: userTechnologies,
-                            first_visited: firstVisited,
+                            onboarding_desktop: onboardingDesktop,
                         } = data;
 
                         let { social } = data;
@@ -166,7 +166,7 @@ export class UserService {
                             avatar,
                             onboardingMobile,
                             userTechnologies: userTechnologies,
-                            firstVisited,
+                            onboardingDesktop,
                         };
                     }
 
@@ -193,7 +193,7 @@ export class UserService {
             avatar,
             onboardingMobile,
             userTechnologies,
-            firstVisited,
+            onboardingDesktop,
         } = user;
 
         return {
@@ -211,7 +211,7 @@ export class UserService {
             avatar,
             onboardingMobile,
             userTechnologies,
-            firstVisited,
+            onboardingDesktop,
         };
     }
 
@@ -322,7 +322,7 @@ export class UserService {
             loginJira: string;
             phone: string;
             onboardingMobile: boolean;
-            firstVisited: boolean;
+            onboardingDesktop: boolean;
             technologies?: [String];
         }
     ): Promise<AxiosResponse | AxiosError> {
@@ -336,7 +336,7 @@ export class UserService {
             loginJira,
             phone,
             onboardingMobile,
-            firstVisited,
+            onboardingDesktop,
             technologies,
         } = data;
 
@@ -357,7 +357,7 @@ export class UserService {
                     login_jira: ${loginJira ? '"' + loginJira + '"' : null}
                     phone: ${phone ? '"' + phone + '"' : null},
                     onboarding_mobile: ${onboardingMobile === true ? true : false},
-                    first_visited: ${firstVisited === true ? true : false},
+                    onboarding_desktop: ${onboardingDesktop === true ? true : false},
                 }
             ) {
                 returning {
