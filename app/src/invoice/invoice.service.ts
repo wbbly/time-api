@@ -109,6 +109,10 @@ export class InvoiceService {
                 id
                 username
                 email
+                country
+                city
+                state
+                zip
               }
               to: client {
                 id
@@ -156,6 +160,10 @@ export class InvoiceService {
                 id
                 username
                 email
+                country
+                city
+                state
+                zip
               }
               to: client {
                 id

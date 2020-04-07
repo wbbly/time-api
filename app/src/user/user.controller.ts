@@ -518,6 +518,10 @@ export class UserController {
             phone: body.phone,
             onboardingMobile: body.onboardingMobile,
             onboardingDesktop: body.onboardingDesktop,
+            country: body.country,
+            city: body.city,
+            state: body.state,
+            zip: body.zip,
             technologies: body.technologies || [],
         };
 
@@ -532,6 +536,10 @@ export class UserController {
             phone: user.phone,
             onboardingMobile: user.onboardingMobile,
             onboardingDesktop: user.onboardingDesktop,
+            country: user.country,
+            city: user.city,
+            state: user.state,
+            zip: user.zip,
             technologies:
                 user.userTechnologies && user.userTechnologies.length
                     ? user.userTechnologies.map(el => el.technology.id)

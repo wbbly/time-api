@@ -27,4 +27,8 @@ export interface User {
     currentTimer?: TimerCurrentV2[];
     timer?: Timer[];
     userTechnologies?: Technology[];
+    country?: string;
+    state?: string;
+    city?: string;
+    zip?: string;
 }
