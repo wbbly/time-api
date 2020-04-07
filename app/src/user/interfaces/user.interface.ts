@@ -9,7 +9,6 @@ export interface User {
     email?: string;
     password?: string;
     isActive?: boolean;
-    onboardingDesktop?: boolean;
     roleId?: string;
     createdAt?: string;
     timezoneOffset?: number;
@@ -22,6 +21,7 @@ export interface User {
     phone?: string;
     avatar?: string;
     onboardingMobile?: boolean;
+    onboardingDesktop?: boolean;
     social?: Social[];
     socialId?: string;
     currentTimer?: TimerCurrentV2[];

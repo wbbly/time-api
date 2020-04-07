@@ -105,9 +105,9 @@ export class UserService {
                     facebook_id
                 }
                 social_id
-                first_visited
                 avatar
                 onboarding_mobile
+                onboarding_desktop
                 user_technologies {
                     technology {
                         id
@@ -140,8 +140,8 @@ export class UserService {
                             social_id: socialId,
                             avatar,
                             onboarding_mobile: onboardingMobile,
-                            user_technologies: userTechnologies,
                             onboarding_desktop: onboardingDesktop,
+                            user_technologies: userTechnologies,
                         } = data;
 
                         let { social } = data;
@@ -165,8 +165,8 @@ export class UserService {
                             socialId,
                             avatar,
                             onboardingMobile,
-                            userTechnologies: userTechnologies,
                             onboardingDesktop,
+                            userTechnologies: userTechnologies,
                         };
                     }
 
@@ -192,8 +192,8 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
-            userTechnologies,
             onboardingDesktop,
+            userTechnologies,
         } = user;
 
         return {
@@ -210,8 +210,8 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
-            userTechnologies,
             onboardingDesktop,
+            userTechnologies,
         };
     }
 
