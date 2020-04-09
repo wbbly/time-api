@@ -248,8 +248,9 @@ export class TimerService {
 
     updateTimerById(userId: string, timerId: string, timer: Timer) {
         const { issue, projectId, startDatetime, endDatetime } = timer;
+        let issueDecode = decodeURI(issue).replace(/(\r\n|\n|\r)/gm, '');
 
-        const setParams = [`issue: "${issue || ''}"`, `project_id: "${projectId}"`];
+        const setParams = [`issue: "${issueDecode || ''}"`, `project_id: "${projectId}"`];
 
         if (startDatetime) {
             setParams.push(`start_datetime: "${startDatetime}"`);
