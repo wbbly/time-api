@@ -4,6 +4,7 @@ import { AxiosResponse, AxiosError } from 'axios';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { Timer } from './interfaces/timer.interface';
 import { TimeService } from '../time/time.service';
+import moment from 'moment';
 
 @Injectable()
 export class TimerService {
@@ -183,9 +184,74 @@ export class TimerService {
                         }
                     }`;
 
-                    this.httpRequestsService
-                        .request(query)
-                        .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+                    this.httpRequestsService.request(query).subscribe(
+                        (res: AxiosResponse) => {
+                            const resp = res.data.timer_v2;
+                            let firstDate,
+                                lastDate = null;
+
+                            let totalTimesForDay = {};
+
+                            if (resp.length) {
+                                lastDate = resp[0].start_datetime;
+                                firstDate = resp[resp.length - 1].start_datetime;
+                                firstDate = moment(firstDate)
+                                    .startOf('day')
+                                    .format();
+                                lastDate = moment(lastDate)
+                                    .endOf('day')
+                                    .format();
+                                const queryTimer = `{ timer_v2(
+                                    where: {
+                                        user_id: {_eq: "${userId}"},
+                                        project: {
+                                            team_id: {
+                                                _eq: "${teamId}"
+                                            }
+                                        },
+                                        start_datetime: {
+                                            _gte: "${firstDate}",
+                                            _lte: "${lastDate}"
+                                        }
+                                    },
+                                    order_by: {start_datetime: desc},
+                                ) {
+                                        start_datetime,
+                                        end_datetime,
+                                    }
+                                }`;
+
+                                this.httpRequestsService.request(queryTimer).subscribe(
+                                    (resTimer: AxiosResponse) => {
+                                        const resp = resTimer.data.timer_v2;
+                                        if (resp.length) {
+                                            resp.forEach(el => {
+                                                if (
+                                                    totalTimesForDay[moment(el.start_datetime).format('YYYY-MM-DD')] ===
+                                                    undefined
+                                                ) {
+                                                    totalTimesForDay[
+                                                        moment(el.start_datetime).format('YYYY-MM-DD')
+                                                    ] = 0;
+                                                }
+                                                let item =
+                                                    totalTimesForDay[moment(el.start_datetime).format('YYYY-MM-DD')];
+                                                let diff: any = moment(el.end_datetime).diff(moment(el.start_datetime));
+                                                totalTimesForDay[moment(el.start_datetime).format('YYYY-MM-DD')] =
+                                                    item + diff;
+                                            });
+                                            res.data.total_time = totalTimesForDay;
+                                            return resolve(res);
+                                        }
+                                    },
+                                    (error: AxiosError) => reject(error)
+                                );
+                            } else {
+                                return resolve(res);
+                            }
+                        },
+                        (error: AxiosError) => reject(error)
+                    );
                 },
                 (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
             );
