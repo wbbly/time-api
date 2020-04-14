@@ -108,6 +108,10 @@ export class UserService {
                 avatar
                 onboarding_mobile
                 onboarding_desktop
+                country
+                city
+                state
+                zip
                 user_technologies {
                     technology {
                         id
@@ -141,6 +145,10 @@ export class UserService {
                             avatar,
                             onboarding_mobile: onboardingMobile,
                             onboarding_desktop: onboardingDesktop,
+                            country,
+                            city,
+                            state,
+                            zip,
                             user_technologies: userTechnologies,
                         } = data;
 
@@ -166,6 +174,10 @@ export class UserService {
                             avatar,
                             onboardingMobile,
                             onboardingDesktop,
+                            country,
+                            city,
+                            state,
+                            zip,
                             userTechnologies: userTechnologies,
                         };
                     }
@@ -193,6 +205,10 @@ export class UserService {
             avatar,
             onboardingMobile,
             onboardingDesktop,
+            country,
+            city,
+            state,
+            zip,
             userTechnologies,
         } = user;
 
@@ -211,6 +227,10 @@ export class UserService {
             avatar,
             onboardingMobile,
             onboardingDesktop,
+            country,
+            city,
+            state,
+            zip,
             userTechnologies,
         };
     }
@@ -323,6 +343,10 @@ export class UserService {
             phone: string;
             onboardingMobile: boolean;
             onboardingDesktop: boolean;
+            country: string;
+            city: string;
+            state: string;
+            zip: string;
             technologies?: [String];
         }
     ): Promise<AxiosResponse | AxiosError> {
@@ -337,6 +361,10 @@ export class UserService {
             phone,
             onboardingMobile,
             onboardingDesktop,
+            country,
+            city,
+            state,
+            zip,
             technologies,
         } = data;
 
@@ -358,6 +386,10 @@ export class UserService {
                     phone: ${phone ? '"' + phone + '"' : null},
                     onboarding_mobile: ${onboardingMobile === true ? true : false},
                     onboarding_desktop: ${onboardingDesktop === true ? true : false},
+                    country: ${country ? '"' + country + '"' : null},
+                    city: ${city ? '"' + city + '"' : null},
+                    state: ${state ? '"' + state + '"' : null},
+                    zip: ${zip ? '"' + zip + '"' : null},
                 }
             ) {
                 returning {
