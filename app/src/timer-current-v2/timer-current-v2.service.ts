@@ -168,12 +168,13 @@ export class TimerCurrentV2Service {
 
     addTimerCurrent(data: { userId: string; issue: string; projectId: string }): Promise<TimerCurrentV2 | null> {
         const { userId, issue, projectId } = data;
+        let issueDecode = decodeURI(issue).replace(/(\r\n|\n|\r)/gm, '');
 
         const query = `mutation {
             insert_timer_current_v2(
                 objects: [
                     {
-                        issue: "${issue}",
+                        issue: "${encodeURI(issueDecode)}",
                         user_id: "${userId}"
                         project_id: "${projectId}"
                         start_datetime: "${this.timeService.getISOTimeWithZeroMilliseconds()}",
@@ -205,8 +206,9 @@ export class TimerCurrentV2Service {
 
     updateTimerCurrent(data: { userId: string; issue: string; projectId: string }): Promise<TimerCurrentV2 | null> {
         const { userId, issue, projectId } = data;
+        let issueDecode = decodeURI(issue).replace(/(\r\n|\n|\r)/gm, '');
 
-        const queryIssue = issue ? `issue: "${issue}"` : `issue: "Untitled issue"`;
+        const queryIssue = issueDecode ? `issue: "${encodeURI(issueDecode)}"` : `issue: "Untitled issue"`;
         const queryProjectId = projectId ? `project_id: "${projectId}"` : '';
 
         const query = `mutation {
