@@ -39,7 +39,7 @@ export class UserController {
         private readonly socialService: SocialService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly configService: ConfigService,
-        private readonly mailService: MailService
+        private readonly mailService: MailService,
     ) {}
 
     @Get('')
@@ -185,7 +185,7 @@ export class UserController {
     async changePassword(
         @Headers() headers: any,
         @Response() res: any,
-        @Body() body: { password: string; newPassword: string }
+        @Body() body: { password: string; newPassword: string },
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
@@ -346,7 +346,7 @@ export class UserController {
     async inviteByEmail(
         @Headers() headers: any,
         @Response() res: any,
-        @Body() body: { teamId: string; teamName: string; email: string }
+        @Body() body: { teamId: string; teamName: string; email: string },
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
@@ -421,7 +421,7 @@ export class UserController {
             invitedData = await this.teamService.inviteMemberToTeam(
                 userId,
                 teamId,
-                createdData.data.insert_user.returning[0].id
+                createdData.data.insert_user.returning[0].id,
             );
 
             const subject = `You've been invited to the "${teamName}" team!`;
@@ -482,7 +482,36 @@ export class UserController {
         }
 
         if (user) {
-            return res.status(HttpStatus.OK).json(user);
+            const token = await this.userService.signIn(user);
+
+            const to = body.email;
+            const subject = `Welcome on Wobbly board! Time in safe now!`;
+            const html = `
+                Howdy,
+                <br /><br />
+                I'll be short, Wobbly is free to use, rescue for your personal
+                or team effectiveness.
+                <br /><br />
+                Just note that you can not only Track your time, but
+                <ul>
+                    <li>one click sync task, time with Jira</li>
+                    <li>manage multiple teams, projects, clients</li>
+                    <li>make your plan clear with Resource Planning</li>
+                    <li>bill your client right from Wobbly Invoice</li>
+                </ul>
+                Stay tuned, that's just beginning ;)
+                <br /><br />
+                Ah, forget, Wobbly is opensource, feel free drop your idea on github.com/wbbly
+                <br /><br />
+                Alex Demchenko<br />
+                Wobbly Team Captain<br />
+                <a href="${this.configService.get('APP_URL')}">wobbly.me</a>
+                <br />
+                © 2020 All rights reserved.
+            `;
+            this.mailService.send(to, subject, html);
+
+            return res.status(HttpStatus.OK).json({ token });
         }
 
         return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'ERROR.USER.CREATE_USER_FAILED' });
@@ -585,14 +614,14 @@ export class UserController {
                     return cb(null, `${randomName}${extname(file.originalname)}`);
                 },
             }),
-        })
+        }),
     )
     async addUserAvatar(
         @Headers() headers: any,
         @Param() param: any,
         @Response() res: any,
         @Body() body: any,
-        @UploadedFile() file
+        @UploadedFile() file,
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId || param.id !== userId) {
