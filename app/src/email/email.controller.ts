@@ -24,7 +24,7 @@ export class EmailController {
             <br /><br />
             <a href="${this.configService.get('APP_URL')}">Wobbly</a>
             <br />
-            © 2019 All rights reserved.
+            © 2020 All rights reserved.
         `;
         this.mailService.send(to, subject, html);
 
@@ -44,7 +44,7 @@ export class EmailController {
             <br /><br />
             <a href="${this.configService.get('APP_URL')}">Wobbly</a>
             <br />
-            © 2019 All rights reserved.
+            © 2020 All rights reserved.
         `;
         this.mailService.send(to, subject, html);
 
