@@ -126,7 +126,7 @@ export class UserController {
                 <br /><br />
                 <a href="${this.configService.get('APP_URL')}">Wobbly</a>
                 <br />
-                © 2019 All rights reserved.
+                © 2020 All rights reserved.
             `;
                 this.mailService.send(to, subject, html);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.RESET_EMAIL_CHECK' });
@@ -170,7 +170,7 @@ export class UserController {
                 <br /><br />
                 <a href="${this.configService.get('APP_URL')}">Wobbly</a>
                 <br />
-                © 2019 All rights reserved.
+                © 2020 All rights reserved.
             `;
                 this.mailService.send(to, subject, html);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.RESET_PASSWORD' });
@@ -225,7 +225,7 @@ export class UserController {
                     <br /><br />
                     <a href="${this.configService.get('APP_URL')}">Wobbly</a>
                     <br />
-                    © 2019 All rights reserved.
+                    © 2020 All rights reserved.
                 `;
                     this.mailService.send(to, subject, html);
                     return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.PASSWORD_CHANGED' });
@@ -401,7 +401,7 @@ export class UserController {
             <br /><br />
             <a href="${this.configService.get('APP_URL')}">Wobbly</a>
             <br />
-            © 2019 All rights reserved.
+            © 2020 All rights reserved.
         `;
             this.mailService.send(to, subject, html);
         } else {
@@ -442,7 +442,7 @@ export class UserController {
             <br /><br />
             <a href="${this.configService.get('APP_URL')}">Wobbly</a>
             <br />
-            © 2019 All rights reserved.
+            © 2020 All rights reserved.
         `;
             this.mailService.send(body.email, subject, html);
         }
