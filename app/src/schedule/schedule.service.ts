@@ -43,7 +43,7 @@ export class ScheduleService extends NestSchedule {
                             <br /><br />
                             <a href="${this.configService.get('APP_URL')}">Wobbly</a>
                             <br />
-                            © 2019 All rights reserved.
+                            © 2020 All rights reserved.
                             `
                             )
                             .then(res => {
@@ -86,7 +86,7 @@ export class ScheduleService extends NestSchedule {
                             <br /><br />
                             <a href="${this.configService.get('APP_URL')}">Wobbly</a>
                             <br />
-                            © 2019 All rights reserved.
+                            © 2020 All rights reserved.
                             `
                         );
                     }
