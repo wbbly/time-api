@@ -281,17 +281,21 @@ export class TimerCurrentV2Service {
                     (res: TimerCurrentV2) => {
                         this.httpRequestsService.request(query).subscribe(
                             _ => {
-                                const { issue, startDatetime, user, project } = res;
-                                this.timerService
-                                    .addTimer({
-                                        issue,
-                                        startDatetime,
-                                        endDatetime: this.timeService.getISOTimeWithZeroMilliseconds(),
-                                        userId: user.id,
-                                        projectId: project.id,
-                                    })
-                                    .then((res: Timer) => resolve(res), _ => reject(null))
-                                    .catch(_ => reject(null));
+                                if (res) {
+                                    const { issue, startDatetime, user, project } = res;
+                                    this.timerService
+                                        .addTimer({
+                                            issue,
+                                            startDatetime,
+                                            endDatetime: this.timeService.getISOTimeWithZeroMilliseconds(),
+                                            userId: user.id,
+                                            projectId: project.id,
+                                        })
+                                        .then((res: Timer) => resolve(res), _ => reject(null))
+                                        .catch(_ => reject(null));
+                                } else {
+                                    reject(null);
+                                }
                             },
                             _ => reject(null)
                         );
