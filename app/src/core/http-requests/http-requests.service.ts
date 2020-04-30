@@ -3,21 +3,19 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AxiosResponse, AxiosError } from 'axios';
 
-import { ConfigService } from '../config/config.service';
-
 @Injectable()
 export class HttpRequestsService {
-    constructor(private readonly httpService: HttpService, private readonly configService: ConfigService) {}
+    constructor(private readonly httpService: HttpService) {}
 
     request(query: any): Observable<AxiosResponse | AxiosError> {
         return this.httpService
             .post(
-                this.configService.get('GRAPHQL_URL'),
+                process.env.GRAPHQL_URL,
                 { query },
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Hasura-Access-Key': this.configService.get('GRAPHQL_ACCESS_KEY'),
+                        'X-Hasura-Access-Key': process.env.GRAPHQL_ACCESS_KEY,
                     },
                 }
             )

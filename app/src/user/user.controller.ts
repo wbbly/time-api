@@ -27,7 +27,6 @@ import { TeamService } from '../team/team.service';
 import { SocialService } from '../social/social.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { MailService } from '../core/mail/mail.service';
-import { ConfigService } from '../core/config/config.service';
 import { User } from './interfaces/user.interface';
 
 @Controller('user')
@@ -38,7 +37,6 @@ export class UserController {
         private readonly teamService: TeamService,
         private readonly socialService: SocialService,
         private readonly roleCollaborationService: RoleCollaborationService,
-        private readonly configService: ConfigService,
         private readonly mailService: MailService
     ) {}
 
@@ -120,13 +118,13 @@ export class UserController {
                 const html = `
                 Follow the link below to reset the password:
                 <br /><br />
-                ${this.configService.get('APP_URL')}/reset-password?token=${
+                ${process.env.APP_URL}/reset-password?token=${
                     resetPasswordData.data.update_user.returning[0].reset_password_hash
                 }
                 <br /><br />
-                <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                <a href="${process.env.APP_URL}">Wobbly</a>
                 <br />
-                © 2019 All rights reserved.
+                © 2020 All rights reserved.
             `;
                 this.mailService.send(to, subject, html);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.RESET_EMAIL_CHECK' });
@@ -161,16 +159,16 @@ export class UserController {
                 const to = setPasswordData.data.update_user.returning[0].email;
                 const subject = `You've been successfully reset the password!`;
                 const html = `
-                Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+                Please use the credentials below to access the Wobbly ${process.env.APP_URL}
                 <br /><br />
 
                 <b>Email:</b> ${to}<br />
                 <b>Password:</b> ${body.password}
 
                 <br /><br />
-                <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                <a href="${process.env.APP_URL}">Wobbly</a>
                 <br />
-                © 2019 All rights reserved.
+                © 2020 All rights reserved.
             `;
                 this.mailService.send(to, subject, html);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.RESET_PASSWORD' });
@@ -216,16 +214,16 @@ export class UserController {
                     const to = changePasswordData.data.update_user.returning[0].email;
                     const subject = `You've been successfully changed the password!`;
                     const html = `
-                    Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+                    Please use the credentials below to access the Wobbly ${process.env.APP_URL}
                     <br /><br />
 
                     <b>Email:</b> ${to}<br />
                     <b>Password:</b> ${body.password}
 
                     <br /><br />
-                    <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                    <a href="${process.env.APP_URL}">Wobbly</a>
                     <br />
-                    © 2019 All rights reserved.
+                    © 2020 All rights reserved.
                 `;
                     this.mailService.send(to, subject, html);
                     return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.PASSWORD_CHANGED' });
@@ -395,13 +393,11 @@ export class UserController {
             const html = `
             Follow the link below to accept the invitation to the "${teamName}" team:
             <br /><br />
-            ${this.configService.get('APP_URL')}/team/${teamId}/invite/${
-                invitedData.data.insert_user_team.returning[0].invite_hash
-            }
+            ${process.env.APP_URL}/team/${teamId}/invite/${invitedData.data.insert_user_team.returning[0].invite_hash}
             <br /><br />
-            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <a href="${process.env.APP_URL}">Wobbly</a>
             <br />
-            © 2019 All rights reserved.
+            © 2020 All rights reserved.
         `;
             this.mailService.send(to, subject, html);
         } else {
@@ -428,21 +424,19 @@ export class UserController {
             const html = `
             Follow the link below to accept the invitation to the "${teamName}" team:
             <br /><br />
-            ${this.configService.get('APP_URL')}/team/${teamId}/invite/${
-                invitedData.data.insert_user_team.returning[0].invite_hash
-            }
+            ${process.env.APP_URL}/team/${teamId}/invite/${invitedData.data.insert_user_team.returning[0].invite_hash}
             <br /><br />
             <br /><br />
-            Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+            Please use the credentials below to access the Wobbly ${process.env.APP_URL}
             <br /><br />
 
             <b>Email:</b> ${body.email}<br />
             <b>Password:</b> ${userPassword}
 
             <br /><br />
-            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <a href="${process.env.APP_URL}">Wobbly</a>
             <br />
-            © 2019 All rights reserved.
+            © 2020 All rights reserved.
         `;
             this.mailService.send(body.email, subject, html);
         }
@@ -482,7 +476,36 @@ export class UserController {
         }
 
         if (user) {
-            return res.status(HttpStatus.OK).json(user);
+            const token = await this.userService.signIn((await this.userService.getUserByEmail(body.email)) as User);
+
+            const to = body.email;
+            const subject = `Welcome on Wobbly board! Time in safe now!`;
+            const html = `
+                Howdy,
+                <br /><br />
+                I'll be short, Wobbly is free to use, rescue for your personal
+                or team effectiveness.
+                <br /><br />
+                Just note that you can not only Track your time, but
+                <ul>
+                    <li>one click sync task, time with Jira</li>
+                    <li>manage multiple teams, projects, clients</li>
+                    <li>make your plan clear with Resource Planning</li>
+                    <li>bill your client right from Wobbly Invoice</li>
+                </ul>
+                Stay tuned, that's just beginning ;)
+                <br /><br />
+                Ah, forget, Wobbly is opensource, feel free drop your idea on github.com/wbbly
+                <br /><br />
+                Alex Demchenko<br />
+                Wobbly Team Captain<br />
+                <a href="${process.env.APP_URL}">wobbly.me</a>
+                <br />
+                © 2020 All rights reserved.
+            `;
+            this.mailService.send(to, subject, html);
+
+            return res.status(HttpStatus.OK).json({ token });
         }
 
         return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'ERROR.USER.CREATE_USER_FAILED' });

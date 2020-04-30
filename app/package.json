@@ -27,7 +27,7 @@
         }
     },
     "dependencies": {
-        "@nest-modules/mailer": "1.0.4",
+        "@nestjs-modules/mailer": "1.4.2",
         "@nestjs/common": "6.3.0",
         "@nestjs/core": "6.3.0",
         "@nestjs/jwt": "6.1.1",
@@ -48,6 +48,7 @@
         "multer": "1.4.2",
         "mysql2": "1.6.5",
         "nest-schedule": "0.4.6",
+        "nodemailer": "6.4.6",
         "passport": "0.4.0",
         "passport-http-bearer": "1.0.1",
         "path": "0.12.7",

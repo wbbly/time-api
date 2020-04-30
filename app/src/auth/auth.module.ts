@@ -3,7 +3,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { CoreModule } from '../core/core.module';
-import { ConfigService } from '../core/config/config.service';
 import { AuthService } from './auth.service';
 import { BearerStrategy } from './bearer.strategy';
 
@@ -13,17 +12,16 @@ import { BearerStrategy } from './bearer.strategy';
         PassportModule.register({ defaultStrategy: 'bearer' }),
         JwtModule.registerAsync({
             imports: [CoreModule],
-            useFactory: async (configService: ConfigService) => ({
-                secret: configService.get('JWT_SECRET_KEY'),
+            useFactory: async () => ({
+                secret: process.env.JWT_SECRET_KEY,
                 signOptions: {
-                    expiresIn: configService.get('JWT_TTL'),
+                    expiresIn: process.env.JWT_TTL,
                 },
                 verifyOptions: {
                     clockTolerance: 60,
-                    maxAge: configService.get('JWT_TTL'),
+                    maxAge: process.env.JWT_TTL,
                 },
             }),
-            inject: [ConfigService],
         }),
     ],
     providers: [AuthService, BearerStrategy],
