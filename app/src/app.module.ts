@@ -21,6 +21,7 @@ import { TimerPlanningModule } from './timer-planning/timer-planning.module';
 import { TimerOffModule } from './timer-off/timer-off.module';
 import { TechnologyModule } from './technology/technology.module';
 import { InvoiceModule } from './invoice/invoice.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { InvoiceModule } from './invoice/invoice.module';
         TimerOffModule,
         TechnologyModule,
         InvoiceModule,
+        PaymentModule,
     ],
     controllers: [AppController],
     providers: [AppService],
