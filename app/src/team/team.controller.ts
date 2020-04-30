@@ -16,16 +16,11 @@ import { AuthGuard } from '@nestjs/passport';
 import { AxiosError, AxiosResponse } from 'axios';
 
 import { TeamService } from '../team/team.service';
-import { ConfigService } from '../core/config/config.service';
 import { AuthService } from '../auth/auth.service';
 
 @Controller('team')
 export class TeamController {
-    constructor(
-        private readonly teamService: TeamService,
-        private readonly configService: ConfigService,
-        private readonly authService: AuthService
-    ) {}
+    constructor(private readonly teamService: TeamService, private readonly authService: AuthService) {}
 
     @Get('current')
     @UseGuards(AuthGuard())
@@ -95,7 +90,7 @@ export class TeamController {
             console.log(error.response ? error.response.data.errors : error);
         }
 
-        return res.status(HttpStatus.OK).redirect(`${this.configService.get('APP_URL')}/team`);
+        return res.status(HttpStatus.OK).redirect(`${process.env.APP_URL}/team`);
     }
 
     @Post('add')

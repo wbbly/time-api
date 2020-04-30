@@ -27,7 +27,6 @@ import { TeamService } from '../team/team.service';
 import { SocialService } from '../social/social.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { MailService } from '../core/mail/mail.service';
-import { ConfigService } from '../core/config/config.service';
 import { User } from './interfaces/user.interface';
 
 @Controller('user')
@@ -38,8 +37,7 @@ export class UserController {
         private readonly teamService: TeamService,
         private readonly socialService: SocialService,
         private readonly roleCollaborationService: RoleCollaborationService,
-        private readonly configService: ConfigService,
-        private readonly mailService: MailService,
+        private readonly mailService: MailService
     ) {}
 
     @Get('')
@@ -120,11 +118,11 @@ export class UserController {
                 const html = `
                 Follow the link below to reset the password:
                 <br /><br />
-                ${this.configService.get('APP_URL')}/reset-password?token=${
+                ${process.env.APP_URL}/reset-password?token=${
                     resetPasswordData.data.update_user.returning[0].reset_password_hash
                 }
                 <br /><br />
-                <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                <a href="${process.env.APP_URL}">Wobbly</a>
                 <br />
                 © 2020 All rights reserved.
             `;
@@ -161,14 +159,14 @@ export class UserController {
                 const to = setPasswordData.data.update_user.returning[0].email;
                 const subject = `You've been successfully reset the password!`;
                 const html = `
-                Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+                Please use the credentials below to access the Wobbly ${process.env.APP_URL}
                 <br /><br />
 
                 <b>Email:</b> ${to}<br />
                 <b>Password:</b> ${body.password}
 
                 <br /><br />
-                <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                <a href="${process.env.APP_URL}">Wobbly</a>
                 <br />
                 © 2020 All rights reserved.
             `;
@@ -185,7 +183,7 @@ export class UserController {
     async changePassword(
         @Headers() headers: any,
         @Response() res: any,
-        @Body() body: { password: string; newPassword: string },
+        @Body() body: { password: string; newPassword: string }
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
@@ -216,14 +214,14 @@ export class UserController {
                     const to = changePasswordData.data.update_user.returning[0].email;
                     const subject = `You've been successfully changed the password!`;
                     const html = `
-                    Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+                    Please use the credentials below to access the Wobbly ${process.env.APP_URL}
                     <br /><br />
 
                     <b>Email:</b> ${to}<br />
                     <b>Password:</b> ${body.password}
 
                     <br /><br />
-                    <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                    <a href="${process.env.APP_URL}">Wobbly</a>
                     <br />
                     © 2020 All rights reserved.
                 `;
@@ -346,7 +344,7 @@ export class UserController {
     async inviteByEmail(
         @Headers() headers: any,
         @Response() res: any,
-        @Body() body: { teamId: string; teamName: string; email: string },
+        @Body() body: { teamId: string; teamName: string; email: string }
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
@@ -395,11 +393,9 @@ export class UserController {
             const html = `
             Follow the link below to accept the invitation to the "${teamName}" team:
             <br /><br />
-            ${this.configService.get('APP_URL')}/team/${teamId}/invite/${
-                invitedData.data.insert_user_team.returning[0].invite_hash
-            }
+            ${process.env.APP_URL}/team/${teamId}/invite/${invitedData.data.insert_user_team.returning[0].invite_hash}
             <br /><br />
-            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <a href="${process.env.APP_URL}">Wobbly</a>
             <br />
             © 2020 All rights reserved.
         `;
@@ -421,26 +417,24 @@ export class UserController {
             invitedData = await this.teamService.inviteMemberToTeam(
                 userId,
                 teamId,
-                createdData.data.insert_user.returning[0].id,
+                createdData.data.insert_user.returning[0].id
             );
 
             const subject = `You've been invited to the "${teamName}" team!`;
             const html = `
             Follow the link below to accept the invitation to the "${teamName}" team:
             <br /><br />
-            ${this.configService.get('APP_URL')}/team/${teamId}/invite/${
-                invitedData.data.insert_user_team.returning[0].invite_hash
-            }
+            ${process.env.APP_URL}/team/${teamId}/invite/${invitedData.data.insert_user_team.returning[0].invite_hash}
             <br /><br />
             <br /><br />
-            Please use the credentials below to access the Wobbly ${this.configService.get('APP_URL')}
+            Please use the credentials below to access the Wobbly ${process.env.APP_URL}
             <br /><br />
 
             <b>Email:</b> ${body.email}<br />
             <b>Password:</b> ${userPassword}
 
             <br /><br />
-            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+            <a href="${process.env.APP_URL}">Wobbly</a>
             <br />
             © 2020 All rights reserved.
         `;
@@ -505,7 +499,7 @@ export class UserController {
                 <br /><br />
                 Alex Demchenko<br />
                 Wobbly Team Captain<br />
-                <a href="${this.configService.get('APP_URL')}">wobbly.me</a>
+                <a href="${process.env.APP_URL}">wobbly.me</a>
                 <br />
                 © 2020 All rights reserved.
             `;
@@ -599,14 +593,14 @@ export class UserController {
                     return cb(null, `${randomName}${extname(file.originalname)}`);
                 },
             }),
-        }),
+        })
     )
     async addUserAvatar(
         @Headers() headers: any,
         @Param() param: any,
         @Response() res: any,
         @Body() body: any,
-        @UploadedFile() file,
+        @UploadedFile() file
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId || param.id !== userId) {

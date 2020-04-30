@@ -4,7 +4,6 @@ import { Cron, NestSchedule } from 'nest-schedule';
 import { MailService } from '../core/mail/mail.service';
 import { TimerCurrentV2Service } from '../timer-current-v2/timer-current-v2.service';
 import { TimeService } from '../time/time.service';
-import { ConfigService } from '../core/config/config.service';
 import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.interface';
 
 @Injectable()
@@ -12,8 +11,7 @@ export class ScheduleService extends NestSchedule {
     constructor(
         private readonly mailService: MailService,
         private readonly timerCurrentV2Service: TimerCurrentV2Service,
-        private readonly timeService: TimeService,
-        private readonly configService: ConfigService
+        private readonly timeService: TimeService
     ) {
         super();
     }
@@ -41,7 +39,7 @@ export class ScheduleService extends NestSchedule {
                             <br /><br />
                             --
                             <br /><br />
-                            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                            <a href="${process.env.APP_URL}">Wobbly</a>
                             <br />
                             © 2020 All rights reserved.
                             `
@@ -84,7 +82,7 @@ export class ScheduleService extends NestSchedule {
                             <br /><br />
                             --
                             <br /><br />
-                            <a href="${this.configService.get('APP_URL')}">Wobbly</a>
+                            <a href="${process.env.APP_URL}">Wobbly</a>
                             <br />
                             © 2020 All rights reserved.
                             `
