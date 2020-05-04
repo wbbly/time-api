@@ -159,11 +159,10 @@ export class UserController {
                 const to = setPasswordData.data.update_user.returning[0].email;
                 const subject = `You've been successfully reset the password!`;
                 const html = `
-                Please use the credentials below to access the Wobbly ${process.env.APP_URL}
+                Please use the email below to access the Wobbly ${process.env.APP_URL}
                 <br /><br />
 
-                <b>Email:</b> ${to}<br />
-                <b>Password:</b> ${body.password}
+                <b>Email:</b> ${to}
 
                 <br /><br />
                 <a href="${process.env.APP_URL}">Wobbly</a>
@@ -214,11 +213,10 @@ export class UserController {
                     const to = changePasswordData.data.update_user.returning[0].email;
                     const subject = `You've been successfully changed the password!`;
                     const html = `
-                    Please use the credentials below to access the Wobbly ${process.env.APP_URL}
+                    Please use the email below to access the Wobbly ${process.env.APP_URL}
                     <br /><br />
 
-                    <b>Email:</b> ${to}<br />
-                    <b>Password:</b> ${body.password}
+                    <b>Email:</b> ${to}
 
                     <br /><br />
                     <a href="${process.env.APP_URL}">Wobbly</a>
@@ -427,11 +425,10 @@ export class UserController {
             ${process.env.APP_URL}/team/${teamId}/invite/${invitedData.data.insert_user_team.returning[0].invite_hash}
             <br /><br />
             <br /><br />
-            Please use the credentials below to access the Wobbly ${process.env.APP_URL}
+            Please use the email below to access the Wobbly ${process.env.APP_URL}
             <br /><br />
 
-            <b>Email:</b> ${body.email}<br />
-            <b>Password:</b> ${userPassword}
+            <b>Email:</b> ${body.email}
 
             <br /><br />
             <a href="${process.env.APP_URL}">Wobbly</a>
