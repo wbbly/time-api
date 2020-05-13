@@ -2,11 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
+import { JiraAuthService } from '../core/jira-auth/jira-auth.service';
 import { TimeService } from '../time/time.service';
 
 @Injectable()
 export class SyncService {
-    constructor(private readonly httpRequestsService: HttpRequestsService, private readonly timeService: TimeService) {}
+    constructor(
+        private readonly httpRequestsService: HttpRequestsService,
+        private readonly jiraAuthService: JiraAuthService,
+        private readonly timeService: TimeService
+    ) {}
 
     async checkJiraSync(urlJira: string, token: string): Promise<any> {
         return new Promise(async (resolve, reject) => {
@@ -76,8 +81,18 @@ export class SyncService {
                 timeSpentSeconds,
             };
 
+            const tokenJiraDecrypted = this.jiraAuthService.decrypt(user.tokenJira);
+            if (tokenJiraDecrypted && tokenJiraDecrypted === user.tokenJira) {
+                // Forcely encrypt user.tokenJira value in DB
+                await this.updateUserTokenJira(userId, tokenJiraDecrypted);
+            }
+
             this.httpRequestsService
-                .requestJiraPost(`${user.urlJira}/rest/api/2/issue/${jiraIssueNumber}/worklog`, query, user.tokenJira)
+                .requestJiraPost(
+                    `${user.urlJira}/rest/api/2/issue/${jiraIssueNumber}/worklog`,
+                    query,
+                    tokenJiraDecrypted
+                )
                 .subscribe(
                     async _ => {
                         try {
@@ -177,6 +192,32 @@ export class SyncService {
                 },
                 _ => reject()
             );
+        });
+    }
+
+    private updateUserTokenJira(userId: string, tokenJira: string): Promise<any> {
+        const tokenJiraEncrypted = this.jiraAuthService.encrypt(tokenJira);
+
+        const query = `mutation {
+            update_user(
+                where: {
+                    id: {_eq: "${userId}"}
+                },
+                _set: {
+                    token_jira: ${tokenJiraEncrypted ? '"' + tokenJiraEncrypted + '"' : null}
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }
+        `;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 }

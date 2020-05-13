@@ -4,6 +4,7 @@ import * as uuid from 'uuid';
 import * as bcrypt from 'bcrypt';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
+import { JiraAuthService } from '../core/jira-auth/jira-auth.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { TeamService } from '../team/team.service';
 import { SocialService } from '../social/social.service';
@@ -19,6 +20,7 @@ export class UserService {
 
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
+        private readonly jiraAuthService: JiraAuthService,
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly teamService: TeamService,
         private readonly socialService: SocialService,
@@ -311,6 +313,8 @@ export class UserService {
     ): Promise<AxiosResponse | AxiosError> {
         const { username, email, language, tokenJira, urlJira, typeJira, loginJira, phone, onboardingMobile } = data;
 
+        const tokenJiraEncrypted = this.jiraAuthService.encrypt(tokenJira);
+
         const query = `mutation {
             update_user(
                 where: {
@@ -320,7 +324,7 @@ export class UserService {
                     username: "${username}"
                     email: "${email}"
                     language: "${language}"
-                    token_jira: ${tokenJira ? '"' + tokenJira + '"' : null}
+                    token_jira: ${tokenJiraEncrypted ? '"' + tokenJiraEncrypted + '"' : null}
                     url_jira: ${tokenJira ? (urlJira ? '"' + urlJira.replace(/\/$/, '') + '"' : null) : null}
                     type_jira: ${
                         tokenJira ? (typeJira ? '"' + (typeJira === 'self' ? 'self' : 'cloud') + '"' : null) : null

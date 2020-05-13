@@ -3,6 +3,8 @@ import { MailerModule } from '@nestjs-modules/mailer';
 
 import { HttpRequestsService } from './http-requests/http-requests.service';
 import { MailService } from './mail/mail.service';
+import { EncryptionService } from './encryption/encryption.service';
+import { JiraAuthService } from './jira-auth/jira-auth.service';
 
 @Module({
     imports: [
@@ -14,7 +16,7 @@ import { MailService } from './mail/mail.service';
             },
         }),
     ],
-    providers: [HttpRequestsService, MailService],
-    exports: [HttpRequestsService, MailService],
+    providers: [HttpRequestsService, MailService, EncryptionService, JiraAuthService],
+    exports: [HttpRequestsService, MailService, EncryptionService, JiraAuthService],
 })
 export class CoreModule {}
