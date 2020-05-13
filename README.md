@@ -3,7 +3,7 @@
 ## CLONE REPO
 
 ```
-git clone git@github.com:lazy-ants/lazy-time-api.git
+git clone git@github.com:wbbly/time-api.git
 cd lazy-time-api
 ```
 
