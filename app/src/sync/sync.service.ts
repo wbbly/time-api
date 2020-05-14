@@ -16,7 +16,10 @@ export class SyncService {
     async checkJiraSync(urlJira: string, token: string): Promise<any> {
         return new Promise(async (resolve, reject) => {
             this.httpRequestsService
-                .requestJiraGet(`${urlJira.replace(/\/$/, '')}/rest/api/2/mypermissions`, token)
+                .requestJiraGet(
+                    `${urlJira.replace(/\/$/, '')}/rest/api/2/mypermissions?permissions=EDIT_OWN_WORKLOGS`,
+                    token
+                )
                 .subscribe(
                     _ =>
                         resolve({
