@@ -4,7 +4,7 @@
 
 ```
 git clone git@github.com:wbbly/time-api.git
-cd lazy-time-api
+cd time-api
 ```
 
 ## CREATE APP CONFIG FILES
