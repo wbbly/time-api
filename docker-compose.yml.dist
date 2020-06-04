@@ -1,17 +1,16 @@
 version: '3.0'
 
 services:
-    lt_nodejs:
+    nodejs:
         build: docker/nodejs
         restart: always
-        container_name: lt_nodejs
         volumes:
-            - ./app:/var/www/lazy-tile-api/app
+            - ./app:/var/www/app
         stdin_open: true
         tty: true
 
-    lt_nginx:
+    nginx:
         build: docker/nginx
         restart: always
         volumes:
-            - ./app:/var/www/lazy-tile-api/app
+            - ./app:/var/www/app

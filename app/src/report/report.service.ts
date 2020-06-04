@@ -99,7 +99,13 @@ export class ReportService {
             timerEntriesReport[uniqueTimeEntryKey] = {
                 'User name': username.replace(/,/g, ';'),
                 'Project name': projectName.replace(/,/g, ';'),
-                Issue: issue ? decodeURI(issue).replace(/,/g, ';') : '',
+                Issue: issue
+                    ? '"' +
+                      decodeURI(issue)
+                          .replace(/(\r\n|\n|\r)/g, '')
+                          .replace(/"/g, '""') +
+                      '"'
+                    : '',
                 Time: previousDuration + currentDuration,
                 'Start date': this.timeService.getTimestampByGivenValue(startDatetime),
                 'End date': timerEntriesReport[uniqueTimeEntryKey]

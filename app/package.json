@@ -1,8 +1,6 @@
 {
-    "name": "lazy-time-api",
+    "name": "wobbly-time-tracker-api",
     "version": "1.0.7",
-    "description": "Lazy Time API",
-    "author": "",
     "license": "MIT",
     "scripts": {
         "build": "tsc -p tsconfig.build.json",
@@ -12,8 +10,8 @@
         "start:debug": "nodemon --config nodemon-debug.json",
         "prestart:prod": "rimraf dist && npm run build",
         "start:prod": "npm run pm2:stop && npm run pm2:start",
-        "pm2:start": "pm2 start dist/main.js --name lazy-time-api --max-restarts 5",
-        "pm2:stop": "pm2 delete -s lazy-time-api || :",
+        "pm2:start": "pm2 start dist/main.js --name wobbly-time-tracker-api --max-restarts 5",
+        "pm2:stop": "pm2 delete -s wobbly-time-tracker-api || :",
         "lint": "tslint -p tsconfig.json -c tslint.json",
         "test": "jest",
         "test:watch": "jest --watch",

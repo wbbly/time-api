@@ -38,7 +38,7 @@ http {
             proxy_http_version 1.1;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header Host $host;
-            proxy_pass http://lt_nodejs:3000;
+            proxy_pass http://nodejs:3000;
         }
 
         location ^~ /public/ {
@@ -47,7 +47,7 @@ http {
             if_modified_since off;
             expires off;
             etag off;
-            root /var/www/lazy-tile-api/app/;
+            root /var/www/app/;
             access_log off;
         }
 
@@ -57,17 +57,7 @@ http {
             if_modified_since off;
             expires off;
             etag off;
-            root /var/www/lazy-tile-api/app/;
-            access_log off;
-        }
-
-        location ^~ /invoice_logo/ {
-            add_header 'Last-Modified' $date_gmt;
-            add_header 'Cache-Control' 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
-            if_modified_since off;
-            expires off;
-            etag off;
-            root /var/www/lazy-tile-api/app/;
+            root /var/www/app/;
             access_log off;
         }
 
@@ -76,8 +66,8 @@ http {
             return 200 "User-agent: *\nDisallow: /\n";
         }
 
-        error_log /var/log/nginx/lazy-time_error.log;
-        access_log /var/log/nginx/lazy-time_access.log;
+        error_log /var/log/nginx/app_error.log;
+        access_log /var/log/nginx/app_access.log;
     }
 
     open_file_cache max=100;

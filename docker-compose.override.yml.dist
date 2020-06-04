@@ -1,7 +1,7 @@
 version: '3.0'
 
 services:
-    lt_nodejs:
+    nodejs:
         environment:
             MAILER_USER: 'MAILER_USER'
             MAILER_PASSWORD: 'MAILER_PASSWORD'
@@ -18,8 +18,8 @@ services:
             ENCRYPTION_CRYPTO_KEY: 'ENCRYPTION_CRYPTO_KEY' # get it from here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
             ENCRYPTION_CRYPTO_IV: 'ENCRYPTION_CRYPTO_IV' # get it from here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
         ports:
-            - 3000:3000
+            - "127.0.0.1:3000:3000"
 
-    lt_nginx:
+    nginx:
         ports:
-            - 8080:80
+            - "127.0.0.1:8080:80"

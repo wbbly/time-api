@@ -97,11 +97,20 @@ export class SyncService {
                     tokenJiraDecrypted
                 )
                 .subscribe(
-                    async _ => {
+                    async (res: any) => {
+                        let issue = `${jiraIssueNumber} ${jiraIssueComment}`;
                         try {
-                            const res = await this.updateTimerDataAfterJiraSync(userId, taskId);
+                            const estimate = await this.getEstimate(user.urlJira, tokenJiraDecrypted, res.issueId);
 
-                            return resolve(res);
+                            if (estimate) {
+                                issue = encodeURI(`${estimate} | ${issue}`);
+                            }
+                        } catch (e) {
+                            console.log(e);
+                        }
+
+                        try {
+                            return resolve(await this.updateTimerDataAfterJiraSync(userId, taskId, issue));
                         } catch (e) {
                             console.log(e);
                         }
@@ -167,16 +176,26 @@ export class SyncService {
         });
     }
 
-    private updateTimerDataAfterJiraSync(userId: string, timerId: string): Promise<any> {
+    private getEstimate(urlJira: string, token: string, issueId): Promise<any> {
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .requestJiraGet(`${urlJira.replace(/\/$/, '')}/rest/api/2/issue/${issueId}`, token)
+                .subscribe((res: any) => resolve(res.fields.timetracking.originalEstimate), err => reject(err));
+        });
+    }
+
+    private updateTimerDataAfterJiraSync(userId: string, timerId: string, issue: string): Promise<any> {
         const query = `mutation {
             update_timer_v2(
                 where: { user_id: { _eq: "${userId}" }, id: {_eq: "${timerId}"} },
                 _set: {
+                    issue: "${issue}",
                     sync_jira_status: true
                 }
             ) {
                 returning {
                     id
+                    issue
                 }
             }
         }

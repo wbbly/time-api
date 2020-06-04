@@ -4,7 +4,7 @@
 
 ```
 git clone git@github.com:wbbly/time-api.git
-cd lazy-time-api
+cd time-api
 ```
 
 ## CREATE APP CONFIG FILES
@@ -13,7 +13,6 @@ cd lazy-time-api
 cp docker/nginx/nginx.conf.dist docker/nginx/nginx.conf
 cp docker-compose.override.yml.dist docker-compose.override.yml
 cp docker-compose.yml.dist docker-compose.yml
-cp app/.env.dist app/.env
 ```
 
 ## BUILD APPLICATION
@@ -22,14 +21,14 @@ cp app/.env.dist app/.env
 
 ```
 docker-compose up -d --build
-docker exec -ti lt_nodejs bash -c 'npm install'
-docker exec -ti lt_nodejs bash -c 'npm start'
+docker exec -ti <nodejs-docker-container> bash -c 'npm install'
+docker exec -ti <nodejs-docker-container> bash -c 'npm start'
 ```
 
 - in prod mode
 
 ```
 docker-compose up -d --build
-docker exec -ti lt_nodejs bash -c 'npm install'
-docker exec -ti lt_nodejs bash -c 'npm run start:prod'
+docker exec -ti <nodejs-docker-container> bash -c 'npm install'
+docker exec -ti <nodejs-docker-container> bash -c 'npm run start:prod'
 ```
