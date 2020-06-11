@@ -28,7 +28,7 @@ export class ScheduleService extends NestSchedule {
                     for (let index = 0; index < res.length; index++) {
                         const item = res[index];
                         const userId = item.user.id;
-                        const userEmail = item.user.email;
+                        const userEmail = this.mailService.emailStandardize(item.user.email);
                         this.mailService
                             .send(
                                 userEmail,
@@ -72,7 +72,7 @@ export class ScheduleService extends NestSchedule {
                     for (let index = 0; index < res.length; index++) {
                         const item = res[index];
                         const userId = item.user.id;
-                        const userEmail = item.user.email;
+                        const userEmail = this.mailService.emailStandardize(item.user.email);
 
                         this.timerCurrentV2Service._endTimerFlowSubject.next({ userId });
                         this.mailService.send(
