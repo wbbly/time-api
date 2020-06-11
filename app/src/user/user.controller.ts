@@ -93,13 +93,13 @@ export class UserController {
 
     @Post('reset-password')
     async resetPassword(@Response() res: any, @Body() body: { email: string }) {
-        if (!body.email) {
+        if (!this.mailService.emailStandardize(body.email)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let user = null;
         try {
-            user = await this.userService.getUserByEmail(body.email);
+            user = await this.userService.getUserByEmail(this.mailService.emailStandardize(body.email));
         } catch (error) {
             console.log(error);
         }
@@ -107,13 +107,13 @@ export class UserController {
         if (user) {
             let resetPasswordData = null;
             try {
-                resetPasswordData = await this.userService.resetPassword(body.email);
+                resetPasswordData = await this.userService.resetPassword(this.mailService.emailStandardize(body.email));
             } catch (error) {
                 console.log(error);
             }
 
             if (resetPasswordData) {
-                const to = body.email;
+                const to = this.mailService.emailStandardize(body.email);
                 const subject = `You've been requested the reset password!`;
                 const html = `
                 Follow the link below to reset the password:
@@ -156,7 +156,7 @@ export class UserController {
             }
 
             if (setPasswordData) {
-                const to = setPasswordData.data.update_user.returning[0].email;
+                const to = this.mailService.emailStandardize(setPasswordData.data.update_user.returning[0].email);
                 const subject = `You've been successfully reset the password!`;
                 const html = `
                 Please use the email below to access the Wobbly ${process.env.APP_URL}
@@ -210,7 +210,9 @@ export class UserController {
                 }
 
                 if (changePasswordData) {
-                    const to = changePasswordData.data.update_user.returning[0].email;
+                    const to = this.mailService.emailStandardize(
+                        changePasswordData.data.update_user.returning[0].email
+                    );
                     const subject = `You've been successfully changed the password!`;
                     const html = `
                     Please use the email below to access the Wobbly ${process.env.APP_URL}
@@ -236,13 +238,13 @@ export class UserController {
 
     @Post('login')
     async loginUser(@Response() res: any, @Body() body: User) {
-        if (!(body.email && body.password)) {
+        if (!(this.mailService.emailStandardize(body.email) && body.password)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let user = null;
         try {
-            user = await this.userService.getUserByEmail(body.email);
+            user = await this.userService.getUserByEmail(this.mailService.emailStandardize(body.email));
         } catch (error) {
             console.log(error);
         }
@@ -270,7 +272,7 @@ export class UserController {
         }
 
         const facebookId = body.id;
-        const userEmail = body.email || `fb${facebookId}@wobbly.me`;
+        const userEmail = this.mailService.emailStandardize(body.email) || `fb${facebookId}@wobbly.me`;
         const userName = body.username || userEmail;
 
         let userFb = null;
@@ -349,7 +351,7 @@ export class UserController {
             throw new UnauthorizedException();
         }
 
-        if (!body.email) {
+        if (!this.mailService.emailStandardize(body.email)) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
@@ -374,7 +376,9 @@ export class UserController {
 
         const usersData: any = await this.userService.getUserList();
         const users = usersData.data.user;
-        const userExists = users.filter(user => user.email === body.email);
+        const userExists = users.filter(
+            user => this.mailService.emailStandardize(user.email) === this.mailService.emailStandardize(body.email)
+        );
 
         let invitedData: any = null;
         if (userExists.length > 0) {
@@ -386,7 +390,7 @@ export class UserController {
                 return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
             }
 
-            const to = body.email;
+            const to = this.mailService.emailStandardize(body.email);
             const subject = `You've been invited to the "${teamName}" team!`;
             const html = `
             Follow the link below to accept the invitation to the "${teamName}" team:
@@ -406,8 +410,8 @@ export class UserController {
                 .toString(36)
                 .slice(-8);
             const createdData: any = await this.userService.createUser({
-                username: body.email,
-                email: body.email,
+                username: this.mailService.emailStandardize(body.email),
+                email: this.mailService.emailStandardize(body.email),
                 password: userPassword,
             });
 
@@ -428,14 +432,14 @@ export class UserController {
             Please use the email below to access the Wobbly ${process.env.APP_URL}
             <br /><br />
 
-            <b>Email:</b> ${body.email}
+            <b>Email:</b> ${this.mailService.emailStandardize(body.email)}
 
             <br /><br />
             <a href="${process.env.APP_URL}">Wobbly</a>
             <br />
             © 2020 All rights reserved.
         `;
-            this.mailService.send(body.email, subject, html);
+            this.mailService.send(this.mailService.emailStandardize(body.email), subject, html);
         }
 
         return res.status(HttpStatus.CREATED).json({
@@ -445,13 +449,15 @@ export class UserController {
 
     @Post('register')
     async registerUser(@Response() res: any, @Body() body: any) {
-        if (!(body.email && body.password)) {
+        if (!(this.mailService.emailStandardize(body.email) && body.password)) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let userExists = false;
         try {
-            userExists = await this.userService.checkUserExists({ email: body.email });
+            userExists = await this.userService.checkUserExists({
+                email: this.mailService.emailStandardize(body.email),
+            });
         } catch (error) {
             console.log(error);
         }
@@ -463,8 +469,8 @@ export class UserController {
         let user = null;
         try {
             user = await this.userService.createUser({
-                username: body.username || body.email,
-                email: body.email,
+                username: body.username || this.mailService.emailStandardize(body.email),
+                email: this.mailService.emailStandardize(body.email),
                 password: body.password,
                 language: body.language,
             });
@@ -473,9 +479,11 @@ export class UserController {
         }
 
         if (user) {
-            const token = await this.userService.signIn((await this.userService.getUserByEmail(body.email)) as User);
+            const token = await this.userService.signIn((await this.userService.getUserByEmail(
+                this.mailService.emailStandardize(body.email)
+            )) as User);
 
-            const to = body.email;
+            const to = this.mailService.emailStandardize(body.email);
             const subject = `Welcome on Wobbly board! Time in safe now!`;
             const html = `
                 Howdy,
@@ -529,7 +537,7 @@ export class UserController {
 
         const newUserData: any = {
             username: body.username,
-            email: body.email,
+            email: this.mailService.emailStandardize(body.email),
             language: body.language,
             tokenJira: body.tokenJira,
             urlJira: body.urlJira,
@@ -541,7 +549,7 @@ export class UserController {
 
         const userData = {
             username: user.username,
-            email: user.email,
+            email: this.mailService.emailStandardize(user.email),
             language: user.language,
             tokenJira: user.tokenJira,
             urlJira: user.urlJira,
@@ -762,14 +770,14 @@ export class UserController {
 
         const newUserData: any = {
             username: body.username,
-            email: body.email,
+            email: this.mailService.emailStandardize(body.email),
             isActive: body.isActive,
             roleName: body.roleName,
         };
 
         const userData = {
             username: user.username,
-            email: user.email,
+            email: this.mailService.emailStandardize(user.email),
             isActive: userIsActive,
             roleName: userIsAdmin
                 ? this.roleCollaborationService.ROLES.ROLE_ADMIN
