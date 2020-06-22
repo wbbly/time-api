@@ -14,6 +14,11 @@ import { User } from './interfaces/user.interface';
 const APP_VERSION = 'v1.0.7';
 const DEFAULT_LANGUAGE = 'en';
 
+export enum JIRA_TYPES {
+    SELF = 'self',
+    CLOUD = 'cloud',
+}
+
 @Injectable()
 export class UserService {
     private salt = 10;
@@ -327,7 +332,11 @@ export class UserService {
                     token_jira: ${tokenJiraEncrypted ? '"' + tokenJiraEncrypted + '"' : null}
                     url_jira: ${tokenJira ? (urlJira ? '"' + urlJira.replace(/\/$/, '') + '"' : null) : null}
                     type_jira: ${
-                        tokenJira ? (typeJira ? '"' + (typeJira === 'self' ? 'self' : 'cloud') + '"' : null) : null
+                        tokenJira
+                            ? typeJira
+                                ? '"' + (typeJira === JIRA_TYPES.SELF ? JIRA_TYPES.SELF : JIRA_TYPES.CLOUD) + '"'
+                                : null
+                            : null
                     }
                     login_jira: ${loginJira ? '"' + loginJira + '"' : null}
                     phone: ${phone ? '"' + phone + '"' : null},

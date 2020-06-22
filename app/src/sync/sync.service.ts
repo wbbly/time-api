@@ -1,16 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
+import moment from 'moment';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { JiraAuthService } from '../core/jira-auth/jira-auth.service';
 import { TimeService } from '../time/time.service';
+import { UserService, JIRA_TYPES } from '../user/user.service';
+import { JiraService } from '../core/sync/jira/jira.service';
+import { ProjectService } from '../project/project.service';
+import { TimerService } from '../timer/timer.service';
 
 @Injectable()
 export class SyncService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly jiraAuthService: JiraAuthService,
-        private readonly timeService: TimeService
+        private readonly timeService: TimeService,
+        private readonly userService: UserService,
+        private readonly jiraService: JiraService,
+        private readonly projectService: ProjectService,
+        private readonly timerService: TimerService
     ) {}
 
     async checkJiraSync(urlJira: string, token: string): Promise<any> {
@@ -23,13 +32,120 @@ export class SyncService {
                 .subscribe(
                     _ =>
                         resolve({
-                            message: 'ERROR.TIMER.JIRA_SYNC_SUCCESS',
+                            message: 'TIMER.JIRA_SYNC_SUCCESS',
                         }),
                     _ =>
                         reject({
                             message: 'ERROR.TIMER.JIRA_SYNC_FAILED',
                         })
                 );
+        });
+    }
+
+    private async getWorklogsByIssue(issue: any, params: any) {
+        const { worklogs }: any = await this.jiraService.getWorklogsByIssue(params.urlJira, params.tokenJira, issue.id);
+        let filterWorklogs = [];
+
+        if (params.typeJira == JIRA_TYPES.SELF) {
+            filterWorklogs = worklogs.filter(
+                (el: any) =>
+                    el.author.key == params.accountId && moment(el.started).format() >= params.dateFrom.format()
+            );
+        } else {
+            filterWorklogs = worklogs.filter(
+                (el: any) =>
+                    el.author.accountId == params.accountId && moment(el.started).format() >= params.dateFrom.format()
+            );
+        }
+
+        let { fields = {} } = issue;
+        let { project = {}, timetracking } = fields;
+        const { id: projectId, key: projectKey } = project;
+        const { key: issueKey } = issue;
+        if (filterWorklogs.length && projectId && projectKey && issueKey) {
+            return {
+                project: {
+                    id: projectId,
+                    key: projectKey,
+                    issue: issueKey,
+                },
+                worklog: filterWorklogs,
+                estimate: (timetracking || {}).originalEstimate || null,
+            };
+        }
+
+        return null;
+    }
+
+    private async handleWorklogList(issues: any[], params: any) {
+        const worklogList = [];
+        for (const issue of issues) {
+            const filterWorklog = await this.getWorklogsByIssue(issue, params);
+            if (filterWorklog) {
+                worklogList.push(filterWorklog);
+            }
+        }
+
+        return worklogList;
+    }
+
+    async addWorklogWobblyFromJira(userId: string, date: string): Promise<any> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const worklogsList = await this.getWorklogList(userId, date);
+                for (const item of worklogsList) {
+                    const findProjects: any = await this.projectService.getProjectForSyncWithJira(
+                        userId,
+                        item.project.id
+                    );
+
+                    if (findProjects.data.project_v2.length > 0) {
+                        const findProject = findProjects.data.project_v2.shift();
+                        for (const work of item.worklog) {
+                            const findTimer: any = await this.timerService.getTimer(userId, work.id);
+                            const issueDecode = this.appendIssueTitleWithEstimate(
+                                `${item.project.issue} ${work.comment}`,
+                                item.estimate
+                            );
+                            const startDatetime = moment(work.started).format('YYYY-MM-DDTHH:mm:ssZ');
+                            const endDatetime = moment(work.started)
+                                .add(work.timeSpentSeconds, 'seconds')
+                                .format('YYYY-MM-DDTHH:mm:ssZ');
+
+                            if (!findTimer) {
+                                const newTimer = {
+                                    issue: issueDecode,
+                                    startDatetime: startDatetime,
+                                    endDatetime: endDatetime,
+                                    userId: userId,
+                                    projectId: findProject.id,
+                                    jiraWorklogId: work.id,
+                                    syncJiraStatus: true,
+                                };
+
+                                await this.timerService.addTimer(newTimer);
+                            } else {
+                                const updateTimer = {
+                                    issue: issueDecode,
+                                    startDatetime: startDatetime,
+                                    endDatetime: endDatetime,
+                                    projectId: findProject.id,
+                                };
+
+                                await this.timerService.updateTimerById(userId, findTimer.id, updateTimer);
+                            }
+                        }
+                    }
+                }
+
+                return resolve({
+                    message: 'TIMER.JIRA_SYNC_SUCCESS',
+                });
+            } catch (e) {
+                return reject({
+                    message: 'ERROR.TIMER.JIRA_SYNC_FAILED',
+                });
+            }
         });
     }
 
@@ -101,16 +217,13 @@ export class SyncService {
                         let issue = `${jiraIssueNumber} ${jiraIssueComment}`;
                         try {
                             const estimate = await this.getEstimate(user.urlJira, tokenJiraDecrypted, res.issueId);
-
-                            if (estimate) {
-                                issue = encodeURI(`${estimate} | ${issue}`);
-                            }
+                            issue = this.appendIssueTitleWithEstimate(issue, estimate);
                         } catch (e) {
                             console.log(e);
                         }
 
                         try {
-                            return resolve(await this.updateTimerDataAfterJiraSync(userId, taskId, issue));
+                            return resolve(await this.updateTimerDataAfterJiraSync(userId, taskId, issue, res.id));
                         } catch (e) {
                             console.log(e);
                         }
@@ -176,7 +289,7 @@ export class SyncService {
         });
     }
 
-    private getEstimate(urlJira: string, token: string, issueId): Promise<any> {
+    private getEstimate(urlJira: string, token: string, issueId: string): Promise<any> {
         return new Promise(async (resolve, reject) => {
             this.httpRequestsService
                 .requestJiraGet(`${urlJira.replace(/\/$/, '')}/rest/api/2/issue/${issueId}`, token)
@@ -184,13 +297,23 @@ export class SyncService {
         });
     }
 
-    private updateTimerDataAfterJiraSync(userId: string, timerId: string, issue: string): Promise<any> {
+    private appendIssueTitleWithEstimate(issueTitle: string, estimate: string) {
+        return encodeURI(`${estimate ? estimate + ' | ' : ''}${issueTitle}`);
+    }
+
+    private updateTimerDataAfterJiraSync(
+        userId: string,
+        timerId: string,
+        issue: string,
+        jiraWorklogId: string
+    ): Promise<any> {
         const query = `mutation {
             update_timer_v2(
                 where: { user_id: { _eq: "${userId}" }, id: {_eq: "${timerId}"} },
                 _set: {
                     issue: "${issue}",
                     sync_jira_status: true
+                    jira_worklog_id: ${jiraWorklogId}
                 }
             ) {
                 returning {
@@ -240,6 +363,66 @@ export class SyncService {
             this.httpRequestsService
                 .request(query)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    private async getWorklogList(userId: string, date: string): Promise<any> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const user: any = await this.userService.getUserById(userId);
+                const { urlJira, tokenJira, typeJira } = user;
+                if (!urlJira || !tokenJira) {
+                    return reject({
+                        message: 'ERROR.SYNC.JIRA_FAILED',
+                    });
+                }
+
+                const nowDate = moment().endOf('day');
+                const dateFrom = moment(date).startOf('day');
+
+                if (dateFrom > nowDate) {
+                    return reject({
+                        message: 'ERROR.SYNC.JIRA_FAILED',
+                    });
+                }
+
+                const diffDay = nowDate.diff(dateFrom, 'days');
+
+                const perPageLimit = 100;
+                const params = {
+                    startAt: 0,
+                    maxResults: perPageLimit,
+                    fields: '%22key,timetracking,project,%22',
+                    jql: `worklogDate >= -${diffDay}d AND worklogAuthor = currentuser()`,
+                };
+
+                const userProfile: any = await this.jiraService.getCurrentUser(urlJira, tokenJira);
+                const worklogList = [];
+
+                const { total }: any = await this.jiraService.getIssues(urlJira, tokenJira, params);
+                const countPage = Math.ceil(total / perPageLimit);
+                for (let i = 0; i < countPage; i++) {
+                    params.startAt = i * perPageLimit;
+                    const { issues }: any = await this.jiraService.getIssues(urlJira, tokenJira, params);
+                    const handleWorklogList = await this.handleWorklogList(issues, {
+                        urlJira,
+                        tokenJira,
+                        typeJira,
+                        accountId: userProfile.key || userProfile.accountId,
+                        dateFrom,
+                    });
+
+                    if (handleWorklogList.length > 0) {
+                        worklogList.push(...handleWorklogList);
+                    }
+                }
+
+                return resolve(worklogList);
+            } catch (e) {
+                return reject({
+                    message: 'ERROR.TIMER.JIRA_SYNC_FAILED',
+                });
+            }
         });
     }
 }

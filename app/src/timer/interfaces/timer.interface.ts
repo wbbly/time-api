@@ -9,6 +9,7 @@ export interface Timer {
     startDatetime?: string;
     endDatetime?: string;
     syncJiraStatus?: boolean;
+    jiraWorklogId?: number;
     createdAt?: string;
     project?: Project;
     user?: User;

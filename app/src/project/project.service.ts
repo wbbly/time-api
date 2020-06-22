@@ -8,6 +8,12 @@ import { TimeService } from '../time/time.service';
 import { TeamService } from '../team/team.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { Project } from './interfaces/project.interface';
+import { JiraService } from '../core/sync/jira/jira.service';
+import { UserService } from '../user/user.service';
+
+export enum PROJECT_TYPES_TO_SYNC {
+    JIRA = 'jira',
+}
 
 @Injectable()
 export class ProjectService {
@@ -16,7 +22,9 @@ export class ProjectService {
         private readonly timerService: TimerService,
         private readonly timeService: TimeService,
         private readonly teamService: TeamService,
-        private readonly roleCollaborationService: RoleCollaborationService
+        private readonly roleCollaborationService: RoleCollaborationService,
+        private readonly jiraService: JiraService,
+        private readonly userService: UserService
     ) {}
 
     async getProjectList(userId: string, withTimerList: boolean) {
@@ -50,6 +58,34 @@ export class ProjectService {
                             end_datetime
                         }`
                         : ``
+                }
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async getProjectForSyncWithJira(userId: string, jiraProjectId: string) {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+
+        const query = `{
+            project_v2(
+                order_by: {name: asc}
+                where: {
+                    team_id: { _eq: "${currentTeamId}" }
+                    jira_project_id: { _eq: "${jiraProjectId}" }
+                }
+            ) {
+                id
+                name
+                is_active
+                project_color {
+                    name
                 }
             }
         }`;
@@ -188,7 +224,7 @@ export class ProjectService {
     async addProject(project: Project, userId: string) {
         let { name } = project;
         name = name.trim();
-        const { projectColorId, clientId } = project;
+        const { projectColorId, clientId, jiraProjectId = null } = project;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
@@ -216,6 +252,7 @@ export class ProjectService {
                         project_color_id: "${projectColorId}",
                         team_id: "${currentTeamId}"
                         ${clientQueryParam}
+                        jira_project_id: ${jiraProjectId}
                     }
                 ]
             ){
@@ -249,6 +286,7 @@ export class ProjectService {
                     id
                     name
                 }
+                jira_project_id
                 ${clientQueryParam}
             }
         }`;
@@ -263,7 +301,7 @@ export class ProjectService {
     async updateProjectById(id: string, project: Project, userId: string) {
         let { name } = project;
         name = name.trim();
-        const { projectColorId, clientId } = project;
+        const { projectColorId, clientId, jiraProjectId = null } = project;
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
@@ -292,6 +330,7 @@ export class ProjectService {
                     slug: "${slug}",
                     project_color_id: "${projectColorId}"
                     ${clientQueryParam}
+                    jira_project_id: ${jiraProjectId}
                 }
             ) {
                 returning {
@@ -378,6 +417,22 @@ export class ProjectService {
             }
 
             data[i].timer = projectV2ReportValues.reverse();
+        }
+    }
+
+    async getProjectsBySync(userId: string, typeSync: string) {
+        let user: any = await this.userService.getUserById(userId);
+        const { urlJira, tokenJira } = user;
+
+        if (!urlJira || !tokenJira) {
+            throw new Error('ERROR.PROJECTS.JIRA.GET_PROJECTS');
+        }
+
+        switch (typeSync) {
+            case PROJECT_TYPES_TO_SYNC.JIRA:
+                return await this.jiraService.getProjects(urlJira, tokenJira);
+            default:
+                return [];
         }
     }
 }
