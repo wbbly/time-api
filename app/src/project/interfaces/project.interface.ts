@@ -14,4 +14,5 @@ export interface Project {
     timer?: Timer[];
     team?: Team;
     clientId?: string;
+    jiraProjectId?: string;
 }

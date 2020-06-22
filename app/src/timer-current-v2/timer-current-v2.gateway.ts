@@ -157,6 +157,7 @@ export class TimerCurrentV2Gateway {
     @SubscribeMessage('stop-timer-v2')
     async endTimer(client: Socket, data: { token: string }): Promise<string> {
         const userId = await this.authService.getVerifiedUserId(data.token);
+
         if (!userId) {
             client.emit('user-unauthorized', {
                 statusCode: 401,

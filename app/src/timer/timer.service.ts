@@ -9,9 +9,25 @@ import { TimeService } from '../time/time.service';
 export class TimerService {
     constructor(private readonly httpRequestsService: HttpRequestsService, private readonly timeService: TimeService) {}
 
-    getTimer(userId: string): Promise<Timer | null> {
+    getTimer(userId: string, jiraWorklogId?: string): Promise<Timer | null> {
+        let jiraQuery = ``;
+        if (jiraWorklogId) {
+            jiraQuery = `jira_worklog_id: {
+                _eq: "${jiraWorklogId}"
+            }`;
+        }
+
         const query = `{
-            timer_v2(where: { user_id: { _eq: "${userId}" } }, order_by: {created_at: desc}, limit: 1) {
+            timer_v2(
+                where: { 
+                    user_id: { _eq: "${userId}" } 
+                    ${jiraQuery}
+                }, 
+                order_by: {
+                    created_at: desc
+                }, 
+                limit: 1
+            ) {
                 id
                 issue
                 start_datetime
@@ -38,6 +54,7 @@ export class TimerService {
             this.httpRequestsService.request(query).subscribe(
                 (res: AxiosResponse) => {
                     const data = res.data.timer_v2.shift();
+
                     if (data) {
                         const {
                             id,
@@ -47,6 +64,7 @@ export class TimerService {
                             project,
                             user,
                         } = data;
+
                         const { id: projectId, name: projectName, project_color: projectColor } = project;
                         const { id: projectColorId, name: projectColorName } = projectColor;
                         const { id: userId, email: userEmail } = user;
@@ -83,10 +101,13 @@ export class TimerService {
         endDatetime: string;
         userId: string;
         projectId: string;
+        jiraWorklogId?: number;
+        syncJiraStatus?: boolean;
     }): Promise<Timer | null> {
         let { issue } = data;
         issue = issue || 'Untitled issue';
-        const { startDatetime, endDatetime, userId, projectId } = data;
+
+        const { startDatetime, endDatetime, userId, projectId, jiraWorklogId = null, syncJiraStatus = false } = data;
 
         const query = `mutation {
             insert_timer_v2(
@@ -97,6 +118,8 @@ export class TimerService {
                         end_datetime: "${endDatetime}",
                         user_id: "${userId}"
                         project_id: "${projectId}"
+                        sync_jira_status: "${syncJiraStatus}"
+                        jira_worklog_id: ${jiraWorklogId ? '"' + jiraWorklogId + '"' : null}
                     }
                 ]
             ){

@@ -34,9 +34,11 @@ export class SyncController {
 
         try {
             const checkJiraSyncRes = await this.syncService.checkJiraSync(params.urlJira, params.token);
+
             return res.status(HttpStatus.OK).json(checkJiraSyncRes);
         } catch (err) {
             const error: AxiosError = err;
+
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
@@ -51,9 +53,34 @@ export class SyncController {
 
         try {
             const addJiraWorklogRes = await this.syncService.addJiraWorklog(userId, param.id);
+
             return res.status(HttpStatus.OK).json(addJiraWorklogRes);
         } catch (err) {
             const error: AxiosError = err;
+
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Post('jira/worklog')
+    @UseGuards(AuthGuard())
+    async addWorklogWobblyFromJira(@Headers() headers: any, @Query() params, @Response() res: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        if (!params.dateFrom) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        try {
+            const addJiraWorklogRes = await this.syncService.addWorklogWobblyFromJira(userId, params.dateFrom);
+
+            return res.status(HttpStatus.OK).json(addJiraWorklogRes);
+        } catch (err) {
+            const error: AxiosError = err;
+
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }

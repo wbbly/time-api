@@ -16,7 +16,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { AxiosError, AxiosResponse } from 'axios';
 
-import { ProjectService } from './project.service';
+import { ProjectService, PROJECT_TYPES_TO_SYNC } from './project.service';
 import { TeamService } from '../team/team.service';
 import { AuthService } from '../auth/auth.service';
 import { Project } from './interfaces/project.interface';
@@ -198,6 +198,26 @@ export class ProjectController {
         } catch (e) {
             const error: AxiosError = e;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Get(':slugSync/list')
+    @UseGuards(AuthGuard())
+    async getProjectsBySlugSync(@Headers() headers: any, @Param() param: any, @Response() res: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        const { slugSync } = param;
+        if (![PROJECT_TYPES_TO_SYNC.JIRA].includes(slugSync)) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        try {
+            return res.status(HttpStatus.OK).json(await this.projectService.getProjectsBySync(userId, slugSync));
+        } catch (e) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ error: e.message });
         }
     }
 }
