@@ -263,23 +263,12 @@ export class TeamService {
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(getCurrentTeamQuery).subscribe(
-                (getCurrentTeamRes: AxiosResponse) => {
-                    const { data } = getCurrentTeamRes;
-                    const { user_team: userTeam } = data;
-                    if (userTeam.length) {
-                        const currentTeam = userTeam[0];
-                        const { owner_id: ownerId } = currentTeam.team;
-
-                        if (ownerId !== userId) {
-                            delete currentTeam.team.owner_id;
-                        }
-                    }
-
-                    return resolve(getCurrentTeamRes);
-                },
-                (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
-            );
+            this.httpRequestsService
+                .request(getCurrentTeamQuery)
+                .subscribe(
+                    (getCurrentTeamRes: AxiosResponse) => resolve(getCurrentTeamRes),
+                    (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
+                );
         });
     }
 
