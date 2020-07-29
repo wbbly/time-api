@@ -383,7 +383,7 @@ export class ProjectService {
                 const { name: projectName } = project;
                 const { email: userEmail, username } = user;
 
-                const uniqueTimeEntryKey = `${issue}-${projectName}-${userEmail}`;
+                const uniqueTimeEntryKey = `${issue}-${projectName}-${userEmail}-${j}`;
                 const previousDuration = projectV2Report[uniqueTimeEntryKey]
                     ? projectV2Report[uniqueTimeEntryKey].durationTimestamp
                     : 0;
