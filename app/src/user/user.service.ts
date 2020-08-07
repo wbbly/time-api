@@ -114,6 +114,17 @@ export class UserService {
                 social_id
                 avatar
                 onboarding_mobile
+                user_technologies {
+                    technology {
+                        id
+                        title
+                    }
+                }
+                country
+                city
+                state
+                zip
+                company_name
             }
         }
         `;
@@ -140,6 +151,12 @@ export class UserService {
                             social_id: socialId,
                             avatar,
                             onboarding_mobile: onboardingMobile,
+                            user_technologies: userTechnologies,
+                            country,
+                            city,
+                            state,
+                            zip,
+                            company_name: companyName,
                         } = data;
 
                         let { social } = data;
@@ -163,6 +180,12 @@ export class UserService {
                             socialId,
                             avatar,
                             onboardingMobile,
+                            userTechnologies: userTechnologies,
+                            country,
+                            city,
+                            state,
+                            zip,
+                            companyName,
                         };
                     }
 
@@ -188,6 +211,12 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
+            userTechnologies,
+            country,
+            city,
+            state,
+            zip,
+            companyName,
         } = user;
 
         return {
@@ -204,6 +233,12 @@ export class UserService {
             social,
             avatar,
             onboardingMobile,
+            userTechnologies,
+            country,
+            city,
+            state,
+            zip,
+            companyName,
         };
     }
 
@@ -314,9 +349,31 @@ export class UserService {
             loginJira: string;
             phone: string;
             onboardingMobile: boolean;
+            technologies?: string[];
+            country: string;
+            city: string;
+            state: string;
+            zip: string;
+            companyName: string;
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, language, tokenJira, urlJira, typeJira, loginJira, phone, onboardingMobile } = data;
+        const {
+            username,
+            email,
+            language,
+            tokenJira,
+            urlJira,
+            typeJira,
+            loginJira,
+            phone,
+            onboardingMobile,
+            technologies,
+            country,
+            city,
+            state,
+            zip,
+            companyName,
+        } = data;
 
         const tokenJiraEncrypted = this.jiraAuthService.encrypt(tokenJira);
 
@@ -341,6 +398,11 @@ export class UserService {
                     login_jira: ${loginJira ? '"' + loginJira + '"' : null}
                     phone: ${phone ? '"' + phone + '"' : null},
                     onboarding_mobile: ${onboardingMobile === true ? true : false},
+                    country: ${country ? '"' + country + '"' : null},
+                    city: ${city ? '"' + city + '"' : null},
+                    state: ${state ? '"' + state + '"' : null},
+                    zip: ${zip ? '"' + zip + '"' : null},
+                    company_name: ${companyName ? '"' + companyName + '"' : null}
                 }
             ) {
                 returning {
@@ -350,9 +412,14 @@ export class UserService {
         }`;
 
         return new Promise(async (resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+            this.httpRequestsService.request(query).subscribe(
+                async (res: AxiosResponse) => {
+                    await this.updateUserTechnologies(userId, technologies);
+
+                    return resolve(res);
+                },
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 
@@ -388,9 +455,10 @@ export class UserService {
             email: string;
             isActive: boolean;
             roleName: string;
+            technologies?: string[];
         }
     ): Promise<AxiosResponse | AxiosError> {
-        const { username, email, isActive, roleName } = userData;
+        const { username, email, isActive, roleName, technologies } = userData;
 
         const roleId =
             roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
@@ -467,7 +535,9 @@ export class UserService {
             }
 
             this.httpRequestsService.request(query).subscribe(
-                (res: AxiosResponse) => {
+                async (res: AxiosResponse) => {
+                    await this.updateUserTechnologies(userId, technologies);
+
                     this.httpRequestsService.request(updateTeamRoleQuery).subscribe(
                         async (updateTeamRoleQueryRes: AxiosResponse) => {
                             const returningRows = updateTeamRoleQueryRes.data.update_user_team.returning;
@@ -518,6 +588,50 @@ export class UserService {
                     );
                 },
                 (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async updateUserTechnologies(userId: string, technologies: string[]): Promise<AxiosResponse | AxiosError> {
+        const removeUserTechnologies = `mutation {
+            delete_user_technology(
+                where: {
+                    user_id: {_eq: "${userId}"}
+                },
+            ) {
+                returning {
+                    user_id
+                    technology_id
+                }
+            }
+        }`;
+
+        const insertUserTechnologies = `mutation {
+            insert_user_technology(
+                objects: [${technologies.map(el => `{ user_id: "${userId}", technology_id: "${el}" }`)}]
+            ) {
+                returning {
+                    user_id
+                    technology_id
+                }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService.request(removeUserTechnologies).subscribe(
+                (removeTechnologyRes: AxiosResponse) => {
+                    if (!technologies.length) {
+                        return resolve(removeTechnologyRes);
+                    }
+
+                    this.httpRequestsService
+                        .request(insertUserTechnologies)
+                        .subscribe(
+                            (insertTechnologyRes: AxiosResponse) => resolve(insertTechnologyRes),
+                            (insertTechnologyError: AxiosError) => reject(insertTechnologyError)
+                        );
+                },
+                (removeTechnologyError: AxiosError) => reject(removeTechnologyError)
             );
         });
     }
