@@ -288,6 +288,12 @@ export class TeamService {
                         email
                         phone
                         avatar
+                        userTechnologies: user_technologies {
+                            technology {
+                                id
+                                title
+                            }
+                        }
                     }
                     role_collaboration{
                         title

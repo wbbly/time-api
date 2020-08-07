@@ -17,6 +17,7 @@ import { TeamModule } from './team/team.module';
 import { SyncModule } from './sync/sync.module';
 import { ClientModule } from './client/client.module';
 import { SocialModule } from './social/social.module';
+import { TechnologyModule } from './technology/technology.module';
 import { InvoiceModule } from './invoice/invoice.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { InvoiceModule } from './invoice/invoice.module';
         SyncModule,
         ClientModule,
         SocialModule,
+        TechnologyModule,
         InvoiceModule,
     ],
     controllers: [AppController],
