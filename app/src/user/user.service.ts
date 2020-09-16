@@ -125,6 +125,7 @@ export class UserService {
                 state
                 zip
                 company_name
+                last_invoice_number
             }
         }
         `;
@@ -157,6 +158,7 @@ export class UserService {
                             state,
                             zip,
                             company_name: companyName,
+                            last_invoice_number: lastInvoiceNumber,
                         } = data;
 
                         let { social } = data;
@@ -186,6 +188,7 @@ export class UserService {
                             state,
                             zip,
                             companyName,
+                            lastInvoiceNumber,
                         };
                     }
 
@@ -402,7 +405,7 @@ export class UserService {
                     city: ${city ? '"' + city + '"' : null},
                     state: ${state ? '"' + state + '"' : null},
                     zip: ${zip ? '"' + zip + '"' : null},
-                    company_name: ${companyName ? '"' + companyName + '"' : null}
+                    company_name: "${companyName}"
                 }
             ) {
                 returning {
