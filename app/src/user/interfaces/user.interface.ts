@@ -31,4 +31,5 @@ export interface User {
     city?: string;
     zip?: string;
     companyName?: string;
+    lastInvoiceNumber?: string;
 }

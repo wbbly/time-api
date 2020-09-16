@@ -51,6 +51,7 @@
         "passport": "0.4.0",
         "passport-http-bearer": "1.0.1",
         "path": "0.12.7",
+        "pdfmake": "^0.1.68",
         "reflect-metadata": "0.1.13",
         "rimraf": "2.6.3",
         "rxjs": "6.4.0",

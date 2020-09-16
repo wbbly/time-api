@@ -28,7 +28,7 @@ export class ClientService {
                             _eq: "${currentTeamId}"
                         }
                     }
-                    order_by: {name: asc}
+                    order_by: {created_at: asc}
                 ) {
                     id
                     name

@@ -5,13 +5,15 @@ import { MailService } from '../core/mail/mail.service';
 import { TimerCurrentV2Service } from '../timer-current-v2/timer-current-v2.service';
 import { TimeService } from '../time/time.service';
 import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.interface';
+import { InvoiceService } from '../invoice/invoice.service';
 
 @Injectable()
 export class ScheduleService extends NestSchedule {
     constructor(
         private readonly mailService: MailService,
         private readonly timerCurrentV2Service: TimerCurrentV2Service,
-        private readonly timeService: TimeService
+        private readonly timeService: TimeService,
+        private readonly invoiceService: InvoiceService
     ) {
         super();
     }
@@ -33,7 +35,7 @@ export class ScheduleService extends NestSchedule {
                             .send(
                                 userEmail,
                                 'Current task goes over the 6 hours',
-                                `Hi! You current task goes over the 6 hours!
+                                `Hi! Your current task goes over the 6 hours!
                             <br />
                             It will be stop automatically after the time goes out of 8 hours.
                             <br /><br />
@@ -78,7 +80,7 @@ export class ScheduleService extends NestSchedule {
                         this.mailService.send(
                             userEmail,
                             'Current task was stopped automatically after 8 hours!',
-                            `Hi! You current task was stopped automatically after 8 hours!
+                            `Hi! Your current task was stopped automatically after 8 hours!
                             <br /><br />
                             --
                             <br /><br />
@@ -92,5 +94,14 @@ export class ScheduleService extends NestSchedule {
                 _ => {}
             )
             .catch(_ => {});
+    }
+
+    @Cron('* 10 * * * *') // every hour, at the start of the 10th minute
+    async updateOverdueStatus(): Promise<void> {
+        try {
+            await this.invoiceService.updateAllInvoicesOverdueStatus();
+        } catch (err) {
+            console.log(err);
+        }
     }
 }

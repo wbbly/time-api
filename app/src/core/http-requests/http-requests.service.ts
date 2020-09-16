@@ -22,6 +22,21 @@ export class HttpRequestsService {
             .pipe(map(response => response.data));
     }
 
+    graphql(query: any, variables?: any): Observable<AxiosResponse | AxiosError> {
+        return this.httpService
+            .post(
+                process.env.GRAPHQL_URL,
+                { query, variables },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Hasura-Access-Key': process.env.GRAPHQL_ACCESS_KEY,
+                    },
+                }
+            )
+            .pipe(map(response => response.data));
+    }
+
     requestJiraPost(url: string, query: any, token: string): Observable<AxiosResponse | AxiosError> {
         return this.httpService
             .post(url, query, {
