@@ -33,13 +33,13 @@ export class TimerController {
     async userTimerList(
         @Headers() headers: any,
         @Response() res: any,
-        @Query() params: { page?: string; limit?: string }
+        @Query()
+        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string }
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
-
         if (Object.keys(params).length) {
             const { page, limit } = params;
             if (!Number.parseInt(page) || !Number.parseInt(limit) || +page <= 0 || +limit <= 0) {

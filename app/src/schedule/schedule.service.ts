@@ -6,6 +6,7 @@ import { TimerCurrentV2Service } from '../timer-current-v2/timer-current-v2.serv
 import { TimeService } from '../time/time.service';
 import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.interface';
 import { InvoiceService } from '../invoice/invoice.service';
+import { TimerService } from '../timer/timer.service';
 
 @Injectable()
 export class ScheduleService extends NestSchedule {
@@ -13,7 +14,8 @@ export class ScheduleService extends NestSchedule {
         private readonly mailService: MailService,
         private readonly timerCurrentV2Service: TimerCurrentV2Service,
         private readonly timeService: TimeService,
-        private readonly invoiceService: InvoiceService
+        private readonly invoiceService: InvoiceService,
+        private readonly timerService: TimerService
     ) {
         super();
     }
@@ -102,6 +104,18 @@ export class ScheduleService extends NestSchedule {
             await this.invoiceService.updateAllInvoicesOverdueStatus();
         } catch (err) {
             console.log(err);
+        }
+    }
+
+    @Cron('0 0 * * *') // check every day at midnight for empty title field in timer_v2 table and write decoded issue field to it
+    async checkForEmptyTimerTitle() {
+        try {
+            const timers = await this.timerService.getTimersWithoutTitle();
+            for (const timer of timers) {
+                await this.timerService.setTimerTitleFromIssue(timer.id, decodeURI(timer.issue));
+            }
+        } catch (error) {
+            console.log(error);
         }
     }
 }
