@@ -13,4 +13,5 @@ export interface Timer {
     createdAt?: string;
     project?: Project;
     user?: User;
+    title?: string;
 }

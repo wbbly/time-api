@@ -103,17 +103,27 @@ export class TimerService {
         projectId: string;
         jiraWorklogId?: number;
         syncJiraStatus?: boolean;
+        title?: string;
     }): Promise<Timer | null> {
         let { issue } = data;
         issue = issue || 'Untitled issue';
 
-        const { startDatetime, endDatetime, userId, projectId, jiraWorklogId = null, syncJiraStatus = false } = data;
+        const {
+            startDatetime,
+            endDatetime,
+            userId,
+            projectId,
+            jiraWorklogId = null,
+            syncJiraStatus = false,
+            title,
+        } = data;
 
         const query = `mutation {
             insert_timer_v2(
                 objects: [
                     {
                         issue: "${issue}",
+                        title: "${title.replace(/"/g, '\\"')}",
                         start_datetime: "${startDatetime}",
                         end_datetime: "${endDatetime}",
                         user_id: "${userId}"
@@ -146,7 +156,10 @@ export class TimerService {
         });
     }
 
-    getUserTimerList(userId: string, params: { page?: string; limit?: string }) {
+    getUserTimerList(
+        userId: string,
+        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string }
+    ) {
         const getCurrentTeamQuery = `{
             user_team(where: { 
                 user_id: { _eq: "${userId}" }, 
@@ -159,12 +172,25 @@ export class TimerService {
             }
         }`;
 
-        let { page, limit } = params;
+        let { page, limit, startDateTime, endDateTime, searchValue } = params;
         let amountQuery = '';
+        let dateRangeQuery = '';
+        let searchQuery = '';
 
         if (page && limit) {
             const offset = +page === 1 ? 0 : +limit * (+page - 1);
             amountQuery = `limit: ${limit}, offset: ${offset}`;
+        }
+
+        if (startDateTime && endDateTime) {
+            dateRangeQuery = `start_datetime: {_gte: "${startDateTime}", _lte: "${endDateTime}"}`;
+        }
+
+        if (searchValue) {
+            searchQuery = `title: {_ilike: "%${searchValue
+                .toLowerCase()
+                .trim()
+                .replace(/"/g, '\\"')}%"}`;
         }
 
         return new Promise((resolve, reject) => {
@@ -179,18 +205,36 @@ export class TimerService {
                         console.log(e);
                     }
 
-                    const query = `{ timer_v2(
+                    const variables: any = {
                         where: {
-                            user_id: {_eq: "${userId}"},
+                            user_id: {
+                                _eq: userId,
+                            },
                             project: {
                                 team_id: {
-                                    _eq: "${teamId}"
-                                }
+                                    _eq: teamId,
+                                },
                             },
                         },
-                        ${amountQuery}
-                        order_by: {start_datetime: desc},
-                    ) {
+                    };
+                    if (startDateTime && endDateTime) {
+                        variables.where.start_datetime = {
+                            _gte: startDateTime,
+                            _lte: endDateTime,
+                        };
+                    }
+                    if (searchValue) {
+                        variables.where.title = {
+                            _ilike: `%${searchValue
+                                .toLowerCase()
+                                .trim()
+                                .replace(/%/g, '\\%')}%`,
+                        };
+                    }
+
+                    const query = `query timer($where: timer_v2_bool_exp){ 
+                        timer_v2( where: $where, order_by: {start_datetime: desc}, ${amountQuery})
+                        {
                             id,
                             start_datetime,
                             end_datetime,
@@ -207,7 +251,7 @@ export class TimerService {
                     }`;
 
                     this.httpRequestsService
-                        .request(query)
+                        .graphql(query, variables)
                         .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
                 },
                 (getCurrentTeamError: AxiosError) => reject(getCurrentTeamError)
@@ -280,6 +324,9 @@ export class TimerService {
 
         if (endDatetime) {
             setParams.push(`end_datetime: "${endDatetime}"`);
+        }
+        if (issue) {
+            setParams.push(`title: "${decodeURI(issue).replace(/"/g, '\\"')}"`);
         }
 
         const getTimerQuery = `{
@@ -445,5 +492,55 @@ export class TimerService {
         this.limitTimeEntryByStartEndDates(timeEntry, startDate, endDate);
 
         return timeEntry;
+    }
+
+    async getTimersWithoutTitle(): Promise<Timer[] | null> {
+        const query = `{
+            timer_v2(where: {title: {_is_null: true}}) {
+                id
+                issue
+                title
+              }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res.data.timer_v2), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async setTimerTitleFromIssue(id: string, title: string): Promise<Timer | null> {
+        const variables = {
+            where: {
+                id: {
+                    _eq: id,
+                },
+            },
+            _set: {
+                title,
+            },
+        };
+        const mutation = `
+        mutation updateTimer($where: timer_v2_bool_exp!, $_set: timer_v2_set_input) {
+            update_timer_v2(_set: $_set, where: $where) {
+              returning {
+                id
+                issue
+                title
+              }
+            }
+          }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.graphql(mutation, variables).subscribe(
+                (res: AxiosResponse) => resolve(res.data.update_timer_v2.returning[0]),
+                (error: AxiosError) => {
+                    console.log(error.response.data);
+                    reject(error);
+                }
+            );
+        });
     }
 }

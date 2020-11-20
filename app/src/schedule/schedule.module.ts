@@ -5,9 +5,10 @@ import { TimerCurrentV2Module } from '../timer-current-v2/timer-current-v2.modul
 import { TimeModule } from '../time/time.module';
 import { ScheduleService } from './schedule.service';
 import { InvoiceModule } from '../invoice/invoice.module';
+import { TimerModule } from '../timer/timer.module';
 
 @Module({
-    imports: [CoreModule, TimerCurrentV2Module, TimeModule, InvoiceModule],
+    imports: [CoreModule, TimerCurrentV2Module, TimeModule, InvoiceModule, TimerModule],
     providers: [ScheduleService],
 })
 export class ScheduleModule {}
