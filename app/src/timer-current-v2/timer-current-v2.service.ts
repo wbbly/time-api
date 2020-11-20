@@ -290,6 +290,7 @@ export class TimerCurrentV2Service {
                                             endDatetime: this.timeService.getISOTimeWithZeroMilliseconds(),
                                             userId: user.id,
                                             projectId: project.id,
+                                            title: decodeURI(issue),
                                         })
                                         .then((res: Timer) => resolve(res), _ => reject(null))
                                         .catch(_ => reject(null));
