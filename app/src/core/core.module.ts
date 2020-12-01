@@ -6,6 +6,7 @@ import { MailService } from './mail/mail.service';
 import { EncryptionService } from './encryption/encryption.service';
 import { JiraAuthService } from './jira-auth/jira-auth.service';
 import { JiraService } from './sync/jira/jira.service';
+import { CurrencyService } from './currency/currency.service';
 
 @Module({
     imports: [
@@ -17,7 +18,7 @@ import { JiraService } from './sync/jira/jira.service';
             },
         }),
     ],
-    providers: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService],
-    exports: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService],
+    providers: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService, CurrencyService],
+    exports: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService, CurrencyService],
 })
 export class CoreModule {}
