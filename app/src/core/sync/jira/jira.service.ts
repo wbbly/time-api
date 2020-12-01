@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { AxiosResponse, AxiosError } from '@nestjs/common/node_modules/axios';
 
 import { Sync } from '../interfaces/sync.interface';
 import { JiraAuthService } from '../../jira-auth/jira-auth.service';
 import { HttpRequestsService } from '../../http-requests/http-requests.service';
+import { AxiosError, AxiosResponse } from 'axios';
 
 @Injectable()
 export class JiraService implements Sync {

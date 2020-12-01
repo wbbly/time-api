@@ -14,6 +14,7 @@ import {
     UploadedFile,
     Delete,
     Query,
+    BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AxiosError } from 'axios';
@@ -68,6 +69,7 @@ export class InvoiceController {
             timezoneOffset: number;
             originalLogo?: string;
             invoiceNumber?: string;
+            discount?: number;
         },
         @UploadedFile() file
     ) {
@@ -126,6 +128,7 @@ export class InvoiceController {
                 invoiceNumber: body.invoiceNumber,
                 timezoneOffset: body.timezoneOffset,
                 logo: file && file.path ? file.path : newFileLogo ? newFileLogo : null,
+                discount: body.discount,
             };
 
             await this.invoiceService.createInvoice(invoiceRequest);
@@ -225,6 +228,7 @@ export class InvoiceController {
             removeFile: boolean;
             invoiceNumber: string;
             timezoneOffset: number;
+            discount?: number;
         },
         @UploadedFile() file
     ) {
@@ -275,6 +279,7 @@ export class InvoiceController {
             invoiceNumber: body.invoiceNumber,
             timezoneOffset: body.timezoneOffset,
             logo: file && file.path ? file.path : body.removeFile ? '' : null,
+            discount: body.discount,
         };
 
         const invoiceData = {
@@ -291,6 +296,7 @@ export class InvoiceController {
             invoiceNumber: invoice.invoice_number,
             timezoneOffset: invoice.timezone_offset,
             logo: invoice.logo,
+            discount: invoice.discount,
         };
 
         Object.keys(invoiceData).forEach(prop => {
@@ -384,22 +390,20 @@ export class InvoiceController {
         @Param() param: { id: string },
         @Body() body: { message: string; sendingStatus: boolean }
     ) {
+        if (!body.message || !body.sendingStatus) {
+            throw new BadRequestException('ERROR.CHECK_REQUEST_PARAMS');
+        }
+
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
-        }
-
-        if (!body.message) {
-            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
         let invoice = null;
         try {
             invoice = await this.invoiceService.getInvoice(param.id, userId);
 
-            const sendingStatusForUpdate = body.sendingStatus || false;
-
-            await this.invoiceService.updateSendingStatusInvoice(param.id, sendingStatusForUpdate);
+            await this.invoiceService.updateSendingStatusInvoice(param.id, body.sendingStatus);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
@@ -409,7 +413,11 @@ export class InvoiceController {
         const { message: html } = body;
         const to = invoice.to.email;
 
-        this.mailService.send(to, subject, html);
+        try {
+            await this.mailService.send(to, subject, html);
+        } catch (e) {
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Mail did not send' });
+        }
 
         return res.status(HttpStatus.OK).json({ message: 'Email sent!' });
     }
