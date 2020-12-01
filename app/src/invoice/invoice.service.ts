@@ -7,114 +7,110 @@ import { UserService } from '../user/user.service';
 import PdfPrinter from 'pdfmake';
 import { Invoice } from './interfaces/invoice.interface';
 import moment, { Moment } from 'moment';
+import { CurrencyService } from '../core/currency/currency.service';
 
 @Injectable()
 export class InvoiceService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly teamService: TeamService,
-        private readonly userService: UserService
+        private readonly userService: UserService,
+        private readonly currencyService: CurrencyService
     ) {}
 
     async createPdfDocument(invoice: Invoice) {
         const user: any = await this.userService.getUserById(invoice.user_id);
-        let language;
-        user.language ? (language = user.language) : (language = 'en');
-        const languageVaribles = {
-            english: {
+        const defaultLanguage = 'en';
+        let language = user.language ? user.language : defaultLanguage;
+        const languageVariables = {
+            en: {
                 from: 'From',
                 to: 'To',
-                invoiceNumber: 'InvoiceNumber No',
+                invoiceNumber: 'Invoice No: ',
                 date: 'Invoice Date:',
                 dueDate: 'Due:',
                 project: 'Project',
-                hours: 'HRS/QNT',
-                rate: 'Rate',
+                hours: 'QTY',
                 tax: 'Tax',
+                rate: 'Rate',
+                discount: 'Discount',
                 subTotal: 'Subtotal',
                 summary: 'Invoice Summary',
                 summarySubtotal: 'Subtotal',
                 summaryTax: 'Tax',
-                summaryTotal: 'Total (USD)',
+                summaryTotal: `Total (${invoice.currency})`,
             },
-            russian: {
+            ru: {
                 from: 'От',
                 to: 'Кому',
-                invoiceNumber: 'Номер счета #',
+                invoiceNumber: 'Номер счета: ',
                 date: 'Дата счета:',
                 dueDate: 'Дата платежа:',
                 project: 'Проект',
-                hours: 'Ч/Кол-во',
-                rate: 'Ставка',
+                hours: 'Кол-во',
                 tax: 'Налог',
+                rate: 'Ставка',
+                discount: 'Скидка',
                 subTotal: 'Итог',
                 summary: 'Общий Счет',
                 summarySubtotal: 'Итог',
                 summaryTax: 'Налог',
-                summaryTotal: 'Всего (USD)',
+                summaryTotal: `Всего (${invoice.currency})`,
             },
-            ukrainian: {
+            uk: {
                 from: 'Від',
                 to: 'Кому',
-                invoiceNumber: 'Номер Рахунку: #',
+                invoiceNumber: 'Номер Рахунку: ',
                 date: 'Дата рахунку:',
                 dueDate: 'Дата платежу:',
                 project: 'Проект',
-                hours: 'Год/К-сть',
-                rate: 'Ставка',
+                hours: 'К-сть',
                 tax: 'Податок',
+                rate: 'Ставка',
+                discount: 'Знижка',
                 subTotal: 'Підсумок',
                 summary: 'Загальний рахунок',
                 summarySubtotal: 'Підсумок',
                 summaryTax: 'Податок',
-                summaryTotal: 'Всього (USD)',
+                summaryTotal: `Всього (${invoice.currency})`,
             },
-            italian: {
+            it: {
                 from: 'A partire dal',
                 to: 'Per',
-                invoiceNumber: 'Numero di fattura No',
+                invoiceNumber: 'Numero di fattura No: ',
                 date: 'Data Fattura:',
                 dueDate: 'Dovuto:',
                 project: 'Progetto',
-                hours: 'HRS/QTY',
-                rate: 'Vota',
+                hours: 'QTY',
                 tax: 'Imposta',
+                rate: 'Vota',
+                discount: 'Sconto',
                 subTotal: 'Totale parziale',
                 summary: 'Riepilogo Fattura',
                 summarySubtotal: 'Totale parziale',
                 summaryTax: 'Imposta',
-                summaryTotal: 'Totale (USD)',
+                summaryTotal: `Totale (${invoice.currency})`,
             },
-            german: {
+            de: {
                 from: 'Von',
                 to: 'Zu',
-                invoiceNumber: 'Rechnung Nr:',
+                invoiceNumber: 'Rechnung Nr: ',
                 date: 'Rechnungsdatum:',
                 dueDate: 'Fällig:',
                 project: 'Projekt',
-                hours: 'HRS/QTY',
-                rate: 'Bewertung',
+                hours: 'QTY',
                 tax: 'MwSt',
+                rate: 'Bewertung',
+                discount: 'Rabatt',
                 subTotal: 'Zwischensum',
                 summary: 'Rechnungszusammenfassung',
                 summarySubtotal: 'Zwischensum',
                 summaryTax: 'MwSt',
-                summaryTotal: 'Gesamt(USD)',
+                summaryTotal: `Gesamt(${invoice.currency})`,
             },
         };
 
-        let docDefinitionLanguage;
-        if (language === 'en') {
-            docDefinitionLanguage = languageVaribles.english;
-        } else if (language === 'ru') {
-            docDefinitionLanguage = languageVaribles.russian;
-        } else if (language === 'uk') {
-            docDefinitionLanguage = languageVaribles.ukrainian;
-        } else if (language === 'it') {
-            docDefinitionLanguage = languageVaribles.italian;
-        } else if (language === 'de') {
-            docDefinitionLanguage = languageVaribles.german;
-        }
+        let docDefinitionLanguage = languageVariables[language] || languageVariables[defaultLanguage];
 
         const imageObj: any = {
             image: `${invoice.logo}`,
@@ -189,7 +185,7 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.invoiceNumber} ${invoice.invoice_number}`,
                         },
                         {
-                            text: `${docDefinitionLanguage.dueDate} ${invoice.due_date}`,
+                            text: `${docDefinitionLanguage.dueDate} ${moment(invoice.due_date).format('MMM Do, YYYY')}`,
                         },
                     ],
                     margin: [0, 40, 0, 0],
@@ -198,7 +194,9 @@ export class InvoiceService {
                     style: 'dateHeaders',
                     columns: [
                         {
-                            text: `${docDefinitionLanguage.date} ${moment(invoice.invoice_date).format('DD-MM-YYYY')}`,
+                            text: `${docDefinitionLanguage.date} ${moment(invoice.invoice_date).format(
+                                'MMM Do, YYYY'
+                            )}`,
                         },
                     ],
                     margin: [0, 15, 0, 15],
@@ -238,7 +236,18 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.summarySubtotal}`,
                         },
                         {
-                            text: `USD ${invoice.sub_total}`,
+                            text: `${this.currencyService.getFormattedValue(invoice.sub_total, invoice.currency)}`,
+                        },
+                    ],
+                    margin: [300, 10, 0, 0],
+                },
+                {
+                    columns: [
+                        {
+                            text: `${docDefinitionLanguage.discount}`,
+                        },
+                        {
+                            text: `${invoice.discount} %`,
                         },
                     ],
                     margin: [300, 10, 0, 0],
@@ -249,7 +258,7 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.summaryTax}`,
                         },
                         {
-                            text: `${invoice.tax_total}`,
+                            text: `${this.currencyService.getFormattedValue(invoice.tax_total, invoice.currency)}`,
                         },
                     ],
                     margin: [300, 10, 0, 0],
@@ -260,7 +269,7 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.summaryTotal}`,
                         },
                         {
-                            text: `USD ${invoice.total}`,
+                            text: `${this.currencyService.getFormattedValue(invoice.total, invoice.currency)} `,
                         },
                     ],
                     margin: [300, 10, 0, 0],
@@ -316,9 +325,12 @@ export class InvoiceService {
                         [
                             `${invoice.projects[i].project_name}`,
                             `${invoice.projects[i].hours}`,
-                            `${invoice.projects[i].tax}`,
                             `${invoice.projects[i].rate}`,
-                            `${invoice.projects[i].sub_total}`,
+                            `+${invoice.projects[i].tax} %`,
+                            `${this.currencyService.getFormattedValue(
+                                invoice.projects[i].sub_total,
+                                invoice.currency
+                            )}`,
                         ],
                     ],
                 },
@@ -342,31 +354,35 @@ export class InvoiceService {
         return pdfDoc;
     }
 
-    private getInvoiceProjectTotals(invoiceProjects, invoiceId?: string) {
+    private getInvoiceProjectTotals(invoiceProjects, discount = 0, invoiceId?: string) {
         let total = 0;
         let sumSubTotal = 0;
         let sumTaxTotal = 0;
         const projects = invoiceProjects.map(el => {
             let subTotal = el.hours * el.rate;
             let tax = (subTotal * el.tax) / 100;
-            total = total + subTotal + tax;
+            total = total + subTotal;
             sumSubTotal = sumSubTotal + subTotal;
             sumTaxTotal = sumTaxTotal + tax;
             let invoiceExpr = ``;
 
-            if (invoiceId) invoiceExpr = `invoice_id: "${invoiceId}",`;
+            if (invoiceId) {
+                invoiceExpr = `invoice_id: "${invoiceId}",`;
+            }
 
             return `
                 {
                     ${invoiceExpr}
                     project_name: "${el.projectName}",
                     hours: ${el.hours},
-                    rate: ${el.rate},
                     tax: ${el.tax},
+                    rate: ${el.rate},
                     sub_total: ${subTotal}
                 }
             `;
         });
+        let subTotalDiscount = discount ? (total / 100) * (100 - discount) : total;
+        total = subTotalDiscount + sumTaxTotal;
 
         return { total, sumSubTotal, sumTaxTotal, projects };
     }
@@ -374,14 +390,17 @@ export class InvoiceService {
     async getInvoicesDateData(userId?: string): Promise<Invoice[]> {
         let query;
 
+        const variables: any = {
+            where: {
+                invoice_vendor_id: {
+                    _eq: userId,
+                },
+            },
+        };
+
         if (userId) {
-            query = `{
-            invoice_aggregate(
-                where: {
-                    invoice_vendor_id: {
-                        _eq: "${userId}"}
-                    }
-                    ) {
+            query = `query invoices($where: invoice_bool_exp){
+            invoices: invoice_aggregate(where: $where) {
               nodes {
                 due_date
                 overdue
@@ -393,6 +412,16 @@ export class InvoiceService {
               }
             }
           }`;
+
+            return new Promise((resolve, reject) => {
+                this.httpRequestsService.graphql(query, variables).subscribe(
+                    (res: AxiosResponse) => {
+                        const resp = res.data.invoice_aggregate.nodes;
+                        return resolve(resp);
+                    },
+                    (error: AxiosError) => reject(error)
+                );
+            });
         } else {
             query = `{
             invoice_aggregate {
@@ -407,23 +436,34 @@ export class InvoiceService {
               }
             }
           }`;
-        }
 
-        return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
-                (res: AxiosResponse) => {
-                    const resp = res.data.invoice_aggregate.nodes;
-                    return resolve(resp);
-                },
-                (error: AxiosError) => reject(error)
-            );
-        });
+            return new Promise((resolve, reject) => {
+                this.httpRequestsService.request(query).subscribe(
+                    (res: AxiosResponse) => {
+                        const resp = res.data.invoice_aggregate.nodes;
+                        return resolve(resp);
+                    },
+                    (error: AxiosError) => reject(error)
+                );
+            });
+        }
     }
 
     async updateLastInvoiceNumberOfUser(userId: string, value: string): Promise<AxiosResponse | AxiosError> {
-        const query = `mutation {
-            update_user(where: {id: {_eq: "${userId}"}},
-             _set: {last_invoice_number: "${value}"}
+        const variables = {
+            where: {
+                id: {
+                    _eq: userId,
+                },
+            },
+            set: {
+                last_invoice_number: value,
+            },
+        };
+
+        const query = `mutation user($where: user_bool_exp!, $set: user_set_input) {
+             user: update_user(where: $where,
+             _set: $set
              ) {
               returning {
                 last_invoice_number
@@ -433,7 +473,7 @@ export class InvoiceService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
-                .request(query)
+                .graphql(query, variables)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
@@ -451,8 +491,9 @@ export class InvoiceService {
         invoiceVendor,
         invoiceNumber,
         timezoneOffset,
+        discount,
     }): Promise<AxiosResponse | AxiosError> {
-        const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects);
+        const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects, discount);
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         let user: any = await this.userService.getUserById(userId);
@@ -472,9 +513,13 @@ export class InvoiceService {
 
         let value: number | string = Number(lastInvoiceNumber) + 1 + '';
         await this.updateLastInvoiceNumberOfUser(userId, value);
-        if (value.length === 1) value = '00' + value;
-        else if (value.length === 2) value = '0' + value;
-        else value = value + '';
+        if (value.length === 1) {
+            value = '00' + value;
+        } else if (value.length === 2) {
+            value = '0' + value;
+        } else {
+            value = value + '';
+        }
 
         const variables = {
             invoice_vendor: {
@@ -490,10 +535,11 @@ export class InvoiceService {
                     company_name: invoiceVendor.company_name,
                 },
             },
+            invoiceComment: comment ? comment : '',
         };
 
         const query = `mutation 
-        addVendorData($invoice_vendor: invoice_vendor_obj_rel_insert_input) {
+        addVendorData($invoice_vendor: invoice_vendor_obj_rel_insert_input, $invoiceComment: String) {
             insert_invoice(
                 objects: {
                     status: "${invoiceStatus}"
@@ -505,12 +551,13 @@ export class InvoiceService {
                     team_id: "${currentTeamId}"
                     client_id: "${clientId}"
                     currency: "${currency ? currency : `USD`}"
-                    comment: ${comment ? '"' + comment + '"' : null}
+                    comment: $invoiceComment
                     logo: ${logo ? '"' + logo + '"' : null}
                     invoice_date: "${invoiceDate}"
                     due_date: "${dueDate}"
                     invoice_projects: { data: [${projects}]}
                     total: ${total}
+                    discount: ${discount}
                     sub_total: ${sumSubTotal}
                     tax_total: ${sumTaxTotal}
                     invoice_vendor: $invoice_vendor}
@@ -533,27 +580,30 @@ export class InvoiceService {
         params: { page?: string; limit?: string }
     ): Promise<AxiosResponse | AxiosError> {
         let { page, limit } = params;
-        let amountQuery = '';
-        if (page && limit) {
-            const offset = +page === 1 ? 0 : +limit * (+page - 1);
-            amountQuery = `limit: ${limit}, offset: ${offset}`;
-        }
+        const pageSize = limit ? Number(limit) : 10;
+        const numberOfPage = page ? Number(page) : 1;
+
+        const offset = numberOfPage === 1 ? 0 : pageSize * (numberOfPage - 1);
 
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
 
-        const query = `{
-            invoices: invoice(
-              where: {
+        const variables: any = {
+            where: {
                 user_id: {
-                  _eq: "${userId}"
+                    _eq: userId,
                 },
                 team_id: {
-                    _eq: "${currentTeamId}"
-                }
-              },
-              ${amountQuery}
-              order_by: {invoice_date: desc, id: desc}
+                    _eq: currentTeamId,
+                },
+            },
+            limit: pageSize,
+            offset: offset,
+        };
+
+        const query = `query invoices ($where: invoice_bool_exp, $limit: Int, $offset: Int){
+            invoices: invoice(
+                where: $where, limit: $limit, offset: $offset, order_by: {invoice_date: desc, id: desc},
             ) {
               id
               timezone_offset
@@ -605,6 +655,7 @@ export class InvoiceService {
                 sub_total
               }
               sub_total
+              discount
               tax_total
               total
               comment
@@ -613,19 +664,44 @@ export class InvoiceService {
               status
               overdue
             }
+            invoicesAmount: invoice_aggregate( where: $where) {
+                aggregate {
+                    count
+                }
+            } 
             
         }`;
 
-        return new Promise((resolve, reject) => {
-            this.httpRequestsService
-                .request(query)
-                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
-        });
+        return this.httpRequestsService
+            .graphql(query, variables)
+            .toPromise()
+            .then(result => this.invoiceListMapper(result, numberOfPage, pageSize));
+    }
+
+    async invoiceListMapper(invoiceList, page, pageSize) {
+        const invoiceAmount: string = invoiceList.data.invoicesAmount.aggregate.count;
+
+        const result: any = {
+            data: {
+                invoices: invoiceList.data.invoices,
+                pagination: {
+                    page: page.toString(),
+                    pageSize: pageSize.toString(),
+                    pagesAmount: Math.ceil(Number(invoiceAmount) / pageSize).toString(),
+                },
+            },
+        };
+
+        return result;
     }
 
     async getInvoice(id: string, userId?: string): Promise<Invoice> {
-        const query = `{
-            invoice: invoice_by_pk(id: "${id}") {
+        const variables = {
+            id,
+        };
+
+        const query = `query invoice ($id: uuid!){
+            invoice: invoice_by_pk(id: $id) {
               id
               timezone_offset
               invoice_number
@@ -679,6 +755,7 @@ export class InvoiceService {
               }
               sub_total
               tax_total
+              discount
               total
               comment
               overdue
@@ -689,7 +766,7 @@ export class InvoiceService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     const resp = res.data.invoice;
                     if (userId) {
@@ -725,20 +802,25 @@ export class InvoiceService {
             }
         }
 
-        const query = `mutation {
-            update_invoice(
-                where: {
-                    id: {
-                        _eq: "${id}"
-                    },
-                    user_id: {
-                        _eq: "${userId}"
-                    }
+        const variables = {
+            where: {
+                id: {
+                    _eq: id,
                 },
-                _set: {
-                    payment_status: ${paymentStatus}
-                    status: "${invoiceStatus}"
-                }
+                user_id: {
+                    _eq: userId,
+                },
+            },
+            set: {
+                payment_status: paymentStatus,
+                status: invoiceStatus,
+            },
+        };
+
+        const query = `mutation invoice($where: invoice_bool_exp!, $set: invoice_set_input) {
+            update_invoice: update_invoice(
+                where: $where,
+                _set: $set
             ) {
               returning {
                 id
@@ -747,7 +829,7 @@ export class InvoiceService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     const resp = res.data.update_invoice.returning;
 
@@ -766,20 +848,26 @@ export class InvoiceService {
     async updateSendingStatusInvoice(id: string, sendingStatus: boolean): Promise<AxiosResponse | AxiosError> {
         const invoice: Invoice = await this.getInvoice(id);
         let invoiceStatus: string = invoice.status;
-        if (invoiceStatus === 'draft') invoiceStatus = 'awaiting';
+        if (invoiceStatus === 'draft') {
+            invoiceStatus = 'awaiting';
+        }
 
-        const query = `mutation {
-            update_invoice(
-                where: {
-                    id: {
-                        _eq: "${id}"
-                    },
-    
+        const variables = {
+            where: {
+                id: {
+                    _eq: id,
                 },
-                _set: {
-                    sending_status: ${sendingStatus}
-                    status : "${invoiceStatus}"
-                }
+            },
+            set: {
+                sending_status: sendingStatus,
+                status: invoiceStatus,
+            },
+        };
+
+        const query = `mutation invoice($where: invoice_bool_exp!, $set: invoice_set_input) {
+            update_invoice: update_invoice(
+                where: $where,
+                _set: $set
             ) {
               returning {
                 id
@@ -788,7 +876,7 @@ export class InvoiceService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     const resp = res.data.update_invoice.returning;
                     if (!resp.length) {
@@ -804,17 +892,24 @@ export class InvoiceService {
     }
 
     async updateInvoiceOverdueStatus(invoiceId: string, status: boolean): Promise<AxiosResponse | AxiosError> {
-        const query = `mutation MyMutation {
-            update_invoice(
-                where: {
+        const invoiceStatus = 'overdue';
+
+        const variables = {
+            where: {
                 id: {
-                    _eq: "${invoiceId}"
-                }
-            }, 
-                _set: {
-                    overdue: ${status},
-                    status: "overdue"
-                }
+                    _eq: invoiceId,
+                },
+            },
+            set: {
+                overdue: status,
+                status: invoiceStatus,
+            },
+        };
+
+        const query = `mutation invoice($where: invoice_bool_exp!, $set: invoice_set_input) {
+            update_invoice: update_invoice(
+                where: $where, 
+                _set: $set
                 ) {
               returning {
                 id
@@ -824,7 +919,7 @@ export class InvoiceService {
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
-                .request(query)
+                .graphql(query, variables)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
@@ -860,8 +955,13 @@ export class InvoiceService {
         logo,
         invoiceNumber,
         timezoneOffset,
+        discount,
     }): Promise<AxiosResponse | AxiosError> {
-        const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects, invoiceId);
+        const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(
+            invoiceProjects,
+            discount,
+            invoiceId
+        );
         const invoice: Invoice = await this.getInvoice(invoiceId, userId);
 
         const dueDateObj: Moment = moment(dueDate).add(1, 'day');
@@ -882,7 +982,12 @@ export class InvoiceService {
         }
 
         const previousInvoiceNumber: string = invoice.invoice_number;
-        const query = `mutation {
+
+        const variables = {
+            invoiceComment: comment,
+        };
+
+        const query = `mutation updateInvoice($invoiceComment: String){
             update_invoice(
                 where: {
                     id: {
@@ -897,13 +1002,14 @@ export class InvoiceService {
                     timezone_offset: ${timezoneOffset},
                     invoice_number: ${invoiceNumber ? '"' + invoiceNumber + '"' : '"' + previousInvoiceNumber + '"'},
                     client_id: "${clientId}",
-                    comment: "${comment}",
+                    comment: $invoiceComment,
                     currency: "${currency ? currency : `USD`}",
                     due_date: "${dueDate}",
                     invoice_date: "${invoiceDate}",
                     logo: ${logo ? '"' + logo + '"' : null},
                     vendor_id: "${vendorId}",
                     total: ${total},
+                    discount: ${discount},
                     sub_total: ${sumSubTotal},
                     tax_total: ${sumTaxTotal},
                     overdue : ${overdueStatus}
@@ -916,7 +1022,7 @@ export class InvoiceService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     const resp = res.data.update_invoice.returning;
 
@@ -1007,17 +1113,19 @@ export class InvoiceService {
     }
 
     async deleteInvoice(userId: string, id: string): Promise<void> {
-        const query = `mutation {
-            delete_invoice(
-                where: {
-                    id: {
-                        _eq: "${id}"
-                    },
-                    user_id: {
-                        _eq: "${userId}"
-                    }
-                }
-            ) {
+        const variables = {
+            where: {
+                id: {
+                    _eq: id,
+                },
+                user_id: {
+                    _eq: userId,
+                },
+            },
+        };
+
+        const query = `mutation invoice($where: invoice_bool_exp!) {
+            delete_invoice: delete_invoice(where: $where) {
               returning {
                 id
                 logo
@@ -1027,7 +1135,7 @@ export class InvoiceService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     const resp = res.data.delete_invoice.returning;
 
@@ -1037,20 +1145,23 @@ export class InvoiceService {
                         });
                     }
                     const invoiceVendorID = resp[0].invoice_vendor_id;
-                    const deleteInvoiceVendorQuery = `mutation MyMutation {
-                          delete_invoice_vendor(
-                              where: {
-                                  id: {
-                                      _eq: "${invoiceVendorID}"
-                                  }
-                              })
-                               {
+
+                    const variables = {
+                        where: {
+                            id: {
+                                _eq: invoiceVendorID,
+                            },
+                        },
+                    };
+
+                    const deleteInvoiceVendorQuery = `mutation invoice($where: invoice_vendor_bool_exp!) {
+                          delete_invoice_vendor: delete_invoice_vendor(where: $where) {
                             affected_rows
                           }
                         }`;
 
                     this.httpRequestsService
-                        .request(deleteInvoiceVendorQuery)
+                        .graphql(deleteInvoiceVendorQuery, variables)
                         .subscribe((res: AxiosResponse) => resolve(resp.shift()), (error: AxiosError) => reject(error));
                 },
                 (error: AxiosError) => reject(error)

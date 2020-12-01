@@ -17,6 +17,7 @@ export interface Invoice {
     total?: number;
     sub_total?: number;
     tax_total?: number;
+    discount?: number;
     comment?: string;
     invoice_date?: Date;
     due_date?: Date;
