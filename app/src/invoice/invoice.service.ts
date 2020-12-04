@@ -557,7 +557,7 @@ export class InvoiceService {
                     due_date: "${dueDate}"
                     invoice_projects: { data: [${projects}]}
                     total: ${total}
-                    discount: ${discount}
+                    discount: ${discount ? discount : 0}
                     sub_total: ${sumSubTotal}
                     tax_total: ${sumTaxTotal}
                     invoice_vendor: $invoice_vendor}
