@@ -891,8 +891,18 @@ export class InvoiceService {
         });
     }
 
-    async updateInvoiceOverdueStatus(invoiceId: string, status: boolean): Promise<AxiosResponse | AxiosError> {
-        const invoiceStatus = 'overdue';
+    async updateInvoiceOverdueStatus(
+        invoiceId: string,
+        status: boolean,
+        paymentStatus: boolean
+    ): Promise<AxiosResponse | AxiosError> {
+        let invoiceStatus = '';
+
+        if (paymentStatus) {
+            invoiceStatus = 'paid';
+        } else {
+            invoiceStatus = 'overdue';
+        }
 
         const variables = {
             where: {
@@ -929,6 +939,7 @@ export class InvoiceService {
 
         for (let el of invoiceList) {
             const invoiceId: string = el.id;
+            const paymentStatus: boolean = el.payment_status;
             const dueDateObj: Moment = moment(el.due_date)
                 .add(1, 'day')
                 .startOf('day');
@@ -936,7 +947,7 @@ export class InvoiceService {
             const currentDateObj: Moment = moment().subtract(el.timezone_offset, 'milliseconds');
 
             if (currentDateObj.isAfter(dueDateObj)) {
-                await this.updateInvoiceOverdueStatus(invoiceId, true);
+                await this.updateInvoiceOverdueStatus(invoiceId, true, paymentStatus);
             }
         }
     }
