@@ -19,13 +19,15 @@ import { TimerService } from './timer.service';
 import { TeamService } from '../team/team.service';
 import { AuthService } from '../auth/auth.service';
 import { Timer } from './interfaces/timer.interface';
+import { PaymentService } from '../payment/payment.service';
 
 @Controller('timer')
 export class TimerController {
     constructor(
         private readonly timerService: TimerService,
         private readonly teamService: TeamService,
-        private readonly authService: AuthService
+        private readonly authService: AuthService,
+        private readonly paymentService: PaymentService
     ) {}
 
     @Get('user-list')
@@ -37,9 +39,31 @@ export class TimerController {
         params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string }
     ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
+
         if (!userId) {
             throw new UnauthorizedException();
         }
+
+        let currentTeam;
+
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
+            currentTeam = (currentTeamRes as AxiosResponse).data.user_team[0];
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+
+        const lastTeamPayment = currentTeam.team.payments.length
+            ? currentTeam.team.payments[currentTeam.team.payments.length - 1]
+            : null;
+
+        let plan = '';
+
+        if (lastTeamPayment && lastTeamPayment.subscription) {
+            plan = lastTeamPayment.subscription.plan_name;
+        }
+
         if (Object.keys(params).length) {
             const { page, limit } = params;
             if (!Number.parseInt(page) || !Number.parseInt(limit) || +page <= 0 || +limit <= 0) {
@@ -48,7 +72,7 @@ export class TimerController {
         }
 
         try {
-            const userTimerListRes = await this.timerService.getUserTimerList(userId, params);
+            const userTimerListRes = await this.timerService.getUserTimerList(userId, params, plan);
             return res.status(HttpStatus.OK).json(userTimerListRes);
         } catch (err) {
             const error: AxiosError = err;
@@ -76,26 +100,38 @@ export class TimerController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        let teamId;
+        let currentTeam;
+
         try {
             const currentTeamRes = await this.teamService.getCurrentTeam(userId);
-            teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
+            currentTeam = (currentTeamRes as AxiosResponse).data.user_team[0];
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
 
-        if (!teamId) {
+        if (!currentTeam && !currentTeam.team && !currentTeam.team.id) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
+        }
+
+        const lastTeamPayment = currentTeam.team.payments.length
+            ? currentTeam.team.payments[currentTeam.team.payments.length - 1]
+            : null;
+
+        let plan = '';
+
+        if (lastTeamPayment && lastTeamPayment.subscription) {
+            plan = lastTeamPayment.subscription.plan_name;
         }
 
         try {
             const userTimerListRes = await this.timerService.getReportsTimerList(
-                teamId,
+                currentTeam.team.id,
                 params.userEmails || [],
                 params.projectNames || [],
                 params.startDate,
-                params.endDate
+                params.endDate,
+                plan
             );
             return res.status(HttpStatus.OK).json(userTimerListRes);
         } catch (err) {

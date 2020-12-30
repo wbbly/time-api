@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as humanizeDuration from 'humanize-duration';
+import moment from 'moment';
 
 @Injectable()
 export class TimeService {
@@ -107,5 +108,13 @@ export class TimeService {
         }
 
         return datesList;
+    }
+
+    getDonutDateLimited() {
+        const donutLimitedDate = moment()
+            .set('date', -40)
+            .toISOString();
+
+        return donutLimitedDate;
     }
 }

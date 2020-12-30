@@ -114,8 +114,8 @@ export class InvoiceService {
 
         const imageObj: any = {
             image: `${invoice.logo}`,
-            width: 150,
-            height: 150,
+            height: 65,
+            width: 75,
         };
 
         const docDefinition = {
@@ -124,16 +124,17 @@ export class InvoiceService {
                     style: 'fromTo',
                     columns: [
                         {
-                            text: `${docDefinitionLanguage.from}`,
+                            text: `${docDefinitionLanguage.from.toUpperCase()}`,
                         },
                         {
-                            text: `${docDefinitionLanguage.to}`,
+                            text: `${docDefinitionLanguage.to.toUpperCase()}`,
                         },
                     ],
-                    margin: [0, 50, 0, 15],
+                    margin: [0, 10, 0, 8],
                 },
 
                 {
+                    style: 'text',
                     columns: [
                         {
                             text: `${invoice.invoice_vendor.username ? invoice.invoice_vendor.username : ' '}`,
@@ -142,9 +143,10 @@ export class InvoiceService {
                             text: `${invoice.to.name ? invoice.to.name : ' '}`,
                         },
                     ],
-                    margin: [0, 10, 0, 10],
+                    margin: [0, 6, 0, 6],
                 },
                 {
+                    style: 'text',
                     columns: [
                         {
                             text: `${invoice.invoice_vendor.city ? invoice.invoice_vendor.city : ' '}`,
@@ -153,10 +155,11 @@ export class InvoiceService {
                             text: `${invoice.to.city ? invoice.to.city : ' '}`,
                         },
                     ],
-                    margin: [0, 10, 0, 10],
+                    margin: [0, 6, 0, 6],
                 },
 
                 {
+                    style: 'text',
                     columns: [
                         {
                             text: `${invoice.invoice_vendor.email ? invoice.invoice_vendor.email : ' '}`,
@@ -165,9 +168,10 @@ export class InvoiceService {
                             text: `${invoice.to.email ? invoice.to.email : ' '}`,
                         },
                     ],
-                    margin: [0, 10, 0, 0],
+                    margin: [0, 6, 0, 0],
                 },
                 {
+                    style: 'text',
                     columns: [
                         {
                             text: `${invoice.invoice_vendor.phone ? invoice.invoice_vendor.phone : ' '}`,
@@ -176,7 +180,7 @@ export class InvoiceService {
                             text: `${invoice.to.phone ? invoice.to.phone : ' '}`,
                         },
                     ],
-                    margin: [0, 10, 0, 0],
+                    margin: [0, 6, 0, 0],
                 },
                 {
                     style: 'dateHeaders',
@@ -188,7 +192,7 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.dueDate} ${moment(invoice.due_date).format('MMM Do, YYYY')}`,
                         },
                     ],
-                    margin: [0, 40, 0, 0],
+                    margin: [0, 25, 0, 0],
                 },
                 {
                     style: 'dateHeaders',
@@ -199,16 +203,17 @@ export class InvoiceService {
                             )}`,
                         },
                     ],
-                    margin: [0, 15, 0, 15],
+                    margin: [0, 10, 0, 10],
                 },
                 {
                     style: 'tableMain',
-                    fillColor: '#dddddd',
+                    fillColor: '#e9e9e9',
                     layout: 'noBorders',
                     table: {
-                        widths: [180, 80, 80, 80, 80],
+                        widths: [6, 174, 75, 75, 75, 80],
                         body: [
                             [
+                                ``,
                                 `${docDefinitionLanguage.project}`,
                                 `${docDefinitionLanguage.hours}`,
                                 `${docDefinitionLanguage.rate}`,
@@ -220,13 +225,13 @@ export class InvoiceService {
                 },
                 {
                     style: 'tableExample',
-                    margin: [280, 30, 0, 10],
-                    fillColor: '#dddddd',
+                    margin: [280, 30, 10, 10],
+                    fillColor: '#e9e9e9',
                     bold: true,
                     layout: 'noBorders',
                     alignment: 'center',
                     table: {
-                        widths: [250],
+                        widths: [245],
                         body: [[`${docDefinitionLanguage.summary}`]],
                     },
                 },
@@ -276,34 +281,46 @@ export class InvoiceService {
                 },
                 {
                     style: 'fromTo',
-                    fontSize: 10,
+                    fontSize: 9,
                     columns: [
                         {
                             text: 'Generated by Wobbly.me',
                         },
                     ],
-                    margin: [210, 80, 0, 0],
+                    margin: [200, 80, 0, 0],
                 },
             ],
             styles: {
+                text: {
+                    color: '#323232',
+                },
                 fromTo: {
                     alignment: 'left',
-                    fontSize: 16,
                     color: '#9c9898',
                 },
                 dateHeaders: {
                     bold: true,
+                    color: '#323232',
+                    fontSize: 10,
                 },
                 tableProject: {
                     margin: [0, 5, 0, 0],
                 },
                 tableMain: {
                     bold: true,
-                    margin: [0, 5, 0, 0],
+                    margin: [0, 5, 5, 0],
+                    fontSize: 10,
+                    color: '#323232',
+                },
+                tableExample: {
+                    bold: true,
+                    fontSize: 10,
+                    color: '#323232',
                 },
             },
             defaultStyle: {
                 font: 'Roboto',
+                fontSize: 9,
             },
         };
 
@@ -315,18 +332,26 @@ export class InvoiceService {
         }
 
         for (let i = 0; i < invoice.projects.length; i++) {
+            let tax = '';
+            if (invoice.projects[i].tax > 0) {
+                tax = `+${invoice.projects[i].tax} %`;
+            } else {
+                tax = '-';
+            }
+
             let projectOnIteration = {
                 style: 'tableProject',
                 fillColor: '#ffffff',
                 layout: 'noBorders',
                 table: {
-                    widths: [180, 80, 80, 80, 80],
+                    widths: [6, 174, 75, 75, 75, 80],
                     body: [
                         [
+                            ``,
                             `${invoice.projects[i].project_name}`,
                             `${invoice.projects[i].hours}`,
                             `${invoice.projects[i].rate}`,
-                            `+${invoice.projects[i].tax} %`,
+                            `${tax}`,
                             `${this.currencyService.getFormattedValue(
                                 invoice.projects[i].sub_total,
                                 invoice.currency
@@ -492,7 +517,7 @@ export class InvoiceService {
         invoiceNumber,
         timezoneOffset,
         discount,
-    }): Promise<AxiosResponse | AxiosError> {
+    }): Promise<AxiosResponse> {
         const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects, discount);
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
@@ -500,15 +525,15 @@ export class InvoiceService {
 
         let invoiceStatus: string = 'draft';
         let overdueStatus: boolean = false;
-        const dueDateObj: Moment = moment(dueDate)
-            .add(1, 'day')
-            .startOf('day');
+        const dueDateObj: Moment = moment(dueDate).utc();
 
-        const currentDateObj: Moment = moment().subtract(timezoneOffset, 'milliseconds');
+        const currentDateObj: Moment = moment().utc();
+
         if (currentDateObj.isAfter(dueDateObj)) {
             invoiceStatus = 'overdue';
             overdueStatus = true;
         }
+
         let lastInvoiceNumber = user.lastInvoiceNumber;
 
         let value: number | string = Number(lastInvoiceNumber) + 1 + '';
@@ -577,9 +602,9 @@ export class InvoiceService {
 
     async getInvoiceList(
         userId: string,
-        params: { page?: string; limit?: string }
+        params: { page?: string; limit?: string; search?: string }
     ): Promise<AxiosResponse | AxiosError> {
-        let { page, limit } = params;
+        let { page, limit, search } = params;
         const pageSize = limit ? Number(limit) : 10;
         const numberOfPage = page ? Number(page) : 1;
 
@@ -588,7 +613,7 @@ export class InvoiceService {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
 
-        const variables: any = {
+        const variables = {
             where: {
                 user_id: {
                     _eq: userId,
@@ -600,6 +625,23 @@ export class InvoiceService {
             limit: pageSize,
             offset: offset,
         };
+
+        if (search) {
+            variables.where['_or'] = [
+                {
+                    invoice_number: {
+                        _ilike: `%${search}%`,
+                    },
+                },
+                {
+                    client: {
+                        company_name: {
+                            _ilike: `%${search}%`,
+                        },
+                    },
+                },
+            ];
+        }
 
         const query = `query invoices ($where: invoice_bool_exp, $limit: Int, $offset: Int){
             invoices: invoice(
@@ -644,6 +686,8 @@ export class InvoiceService {
                 language
                 country  
                 city
+                state
+                zip
                 phone
               }
               projects: invoice_projects {
@@ -695,6 +739,67 @@ export class InvoiceService {
         return result;
     }
 
+    async getGrandTotal(userId: string, search?): Promise<AxiosResponse | AxiosError> {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+
+        const variables = {
+            where: {
+                user_id: {
+                    _eq: userId,
+                },
+                team_id: {
+                    _eq: currentTeamId,
+                },
+            },
+        };
+
+        if (search) {
+            variables.where['_or'] = [
+                {
+                    invoice_number: {
+                        _ilike: `%${search}%`,
+                    },
+                },
+                {
+                    client: {
+                        company_name: {
+                            _ilike: `%${search}%`,
+                        },
+                    },
+                },
+            ];
+        }
+
+        const query = `query invoices ($where: invoice_bool_exp){
+            invoices: invoice(
+                where: $where
+            ) {
+              currency
+              total
+            }
+        }`;
+
+        return this.httpRequestsService
+            .graphql(query, variables)
+            .toPromise()
+            .then(result => this.invoiceTotalMapper(result));
+    }
+
+    async invoiceTotalMapper(invoiceList) {
+        return invoiceList.data.invoices.reduce((acc, invoice) => {
+            const currencyCode = invoice.currency.toLowerCase();
+
+            if (acc[currencyCode] === undefined) {
+                acc[currencyCode] = 0;
+            }
+
+            acc[currencyCode] += invoice.total;
+
+            return acc;
+        }, {});
+    }
+
     async getInvoice(id: string, userId?: string): Promise<Invoice> {
         const variables = {
             id,
@@ -743,6 +848,8 @@ export class InvoiceService {
                 language
                 country  
                 city
+                state
+                zip
                 phone
               }
               projects: invoice_projects {
@@ -941,10 +1048,10 @@ export class InvoiceService {
             const invoiceId: string = el.id;
             const paymentStatus: boolean = el.payment_status;
             const dueDateObj: Moment = moment(el.due_date)
-                .add(1, 'day')
-                .startOf('day');
+                .utc()
+                .endOf('day');
 
-            const currentDateObj: Moment = moment().subtract(el.timezone_offset, 'milliseconds');
+            const currentDateObj: Moment = moment().utc();
 
             if (currentDateObj.isAfter(dueDateObj)) {
                 await this.updateInvoiceOverdueStatus(invoiceId, true, paymentStatus);
@@ -967,7 +1074,7 @@ export class InvoiceService {
         invoiceNumber,
         timezoneOffset,
         discount,
-    }): Promise<AxiosResponse | AxiosError> {
+    }): Promise<AxiosResponse> {
         const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(
             invoiceProjects,
             discount,
@@ -975,8 +1082,10 @@ export class InvoiceService {
         );
         const invoice: Invoice = await this.getInvoice(invoiceId, userId);
 
-        const dueDateObj: Moment = moment(dueDate).add(1, 'day');
-        const currentDateObj: Moment = moment().subtract(timezoneOffset, 'milliseconds');
+        const dueDateObj: Moment = moment(dueDate).utc();
+
+        const currentDateObj: Moment = moment().utc();
+
         let overdueStatus;
         currentDateObj.isAfter(dueDateObj) ? (overdueStatus = true) : (overdueStatus = false);
         let invoiceStatus = 'draft';
@@ -1014,7 +1123,7 @@ export class InvoiceService {
                     invoice_number: ${invoiceNumber ? '"' + invoiceNumber + '"' : '"' + previousInvoiceNumber + '"'},
                     client_id: "${clientId}",
                     comment: $invoiceComment,
-                    currency: "${currency ? currency : `USD`}",
+                    currency: "${currency ? currency : `usd`}",
                     due_date: "${dueDate}",
                     invoice_date: "${invoiceDate}",
                     logo: ${logo ? '"' + logo + '"' : null},
@@ -1176,6 +1285,54 @@ export class InvoiceService {
                         .subscribe((res: AxiosResponse) => resolve(resp.shift()), (error: AxiosError) => reject(error));
                 },
                 (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async getInvoicesDueDate(): Promise<Invoice[] | null> {
+        const query = `query invoices {
+            invoices: invoice {
+              id
+              timezone_offset
+              due_date
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .graphql(query)
+                .subscribe((res: AxiosResponse) => resolve(res.data.invoices), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async setInvoicesDueDate(id, due_date): Promise<Invoice | null> {
+        const variables = {
+            where: {
+                id: {
+                    _eq: id,
+                },
+            },
+            _set: {
+                due_date,
+            },
+        };
+        const mutation = `
+        mutation updateInvoice($where: invoice_bool_exp!, $_set: invoice_set_input) {
+            update_invoice(_set: $_set, where: $where) {
+              returning {
+                id
+              }
+            }
+          }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.graphql(mutation, variables).subscribe(
+                (res: AxiosResponse) => resolve(res.data.update_invoice.returning[0]),
+                (error: AxiosError) => {
+                    console.log(error.response.data);
+                    reject(error);
+                }
             );
         });
     }

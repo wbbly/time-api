@@ -252,6 +252,17 @@ export class TeamService {
                     name
                     slug
                     owner_id
+                    payments {
+                        id
+                        status
+                        from
+                        to
+                        subscription {
+                            id
+                            plan_id
+                            plan_name
+                        }
+                    }
                 }
                 is_active
                 role_collaboration_id
@@ -281,6 +292,19 @@ export class TeamService {
             ){
                 id
                 name
+                payments {
+                    id
+                    status
+                    from
+                    to
+                    contract_id
+                    subscription {
+                        id
+                        plan_id
+                        plan_name
+                        term
+                    }
+                }
                 team_users{
                     user{
                         id

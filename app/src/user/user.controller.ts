@@ -823,7 +823,7 @@ export class UserController {
                 return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
             }
 
-            return res.status(HttpStatus.OK).json({ mesage: 'SUCCESS.USER.UPDATE_USER' });
+            return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.UPDATE_USER' });
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
@@ -855,6 +855,86 @@ export class UserController {
             }
         } else {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+    }
+
+    @Post(':id/team/remove-from-team')
+    @UseGuards(AuthGuard())
+    async deleteUserInTeam(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
+        // The user id to update
+        const userId = param.id;
+
+        // The admin id who want to update the user
+        const adminId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!adminId) {
+            throw new UnauthorizedException();
+        }
+
+        // An array of current teams information
+        let currentUserTeamData = null;
+        try {
+            const currentTeamRes = await this.teamService.getCurrentTeam(adminId);
+            currentUserTeamData = (currentTeamRes.data.user_team || [])[0] || null;
+        } catch (err) {
+            console.log(err);
+        }
+
+        if (currentUserTeamData === null) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.DELETE_USER_FROM_TEAM_FAILED' });
+        }
+
+        // The id of the current admin's team
+        const adminTeamId = (currentUserTeamData.team || {}).id;
+
+        if (!adminTeamId) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.DELETE_USER_FROM_TEAM_FAILED' });
+        }
+
+        // Check the user who what to update is ADMIN and ACTIVE
+        const checkAdminIsAdmin =
+            (currentUserTeamData.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
+        const checkAdminIsActive = currentUserTeamData.is_active || false;
+        const checkAdminIsOwner =
+            (currentUserTeamData.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_OWNER;
+
+        if (!checkAdminIsAdmin || !checkAdminIsActive) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.DELETE_USER_FROM_TEAM_FAILED' });
+        }
+
+        // Retrieve all the team information of the user who will be deleted
+        let userTeam = null;
+        try {
+            const userDataByTeamData = await this.userService.getUserDataByTeam(userId, adminTeamId);
+            userTeam = ((userDataByTeamData.data.user[0] || {}).user_teams || [])[0] || null;
+        } catch (err) {
+            console.log(err);
+        }
+
+        if (userTeam === null) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.DELETE_USER_FROM_TEAM_FAILED' });
+        }
+
+        const userIsAdmin =
+            (userTeam.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
+        const userIsActive = userTeam.is_active || false;
+        const userIsOwner =
+            (userTeam.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_OWNER;
+
+        try {
+            //If admin is OWNER and ACTIVE, he can delete ADMIN and MEMBER, but not himself
+            if (checkAdminIsOwner && !userIsOwner) {
+                await this.userService.deleteUserFromTeam(adminTeamId, userId);
+                return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.DELETE_USER_FROM_TEAM_SUCCEED' });
+            }
+
+            //If admin is ADMIN and ACTIVE, he can delete only MEMBER, but can`t delete another ADMIN and OWNER
+            if (checkAdminIsAdmin && !userIsOwner && !userIsAdmin) {
+                await this.userService.deleteUserFromTeam(adminTeamId, userId);
+                return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.DELETE_USER_FROM_TEAM_SUCCEED' });
+            }
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }
 }

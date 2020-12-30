@@ -17,6 +17,9 @@ services:
             ENCRYPTION_CRYPTO_ALGORITHM: 'ENCRYPTION_CRYPTO_ALGORITHM' # use 'aes-256-cbc'
             ENCRYPTION_CRYPTO_KEY: 'ENCRYPTION_CRYPTO_KEY' # get it from here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
             ENCRYPTION_CRYPTO_IV: 'ENCRYPTION_CRYPTO_IV' # get it from here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
+            CLIENT_ID: 'CLIENT_ID'
+            CLIENT_SECRET: 'CLIENT_SECRET'
+            BILLWERK_HOST: 'BILLWERK_HOST'
         ports:
             - "127.0.0.1:3000:3000"
 

@@ -158,7 +158,8 @@ export class TimerService {
 
     getUserTimerList(
         userId: string,
-        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string }
+        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string },
+        plan?: string
     ) {
         const getCurrentTeamQuery = `{
             user_team(where: { 
@@ -193,6 +194,9 @@ export class TimerService {
                 .replace(/"/g, '\\"')}%"}`;
         }
 
+        // TODO: Expand with Free and Pro limited
+        const datelimit = plan ? this.timeService.getDonutDateLimited() : '';
+
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(getCurrentTeamQuery).subscribe(
                 (getCurrentTeamRes: AxiosResponse) => {
@@ -217,18 +221,26 @@ export class TimerService {
                             },
                         },
                     };
+
                     if (startDateTime && endDateTime) {
                         variables.where.start_datetime = {
                             _gte: startDateTime,
                             _lte: endDateTime,
                         };
                     }
+
                     if (searchValue) {
                         variables.where.title = {
                             _ilike: `%${searchValue
                                 .toLowerCase()
                                 .trim()
                                 .replace(/%/g, '\\%')}%`,
+                        };
+                    }
+
+                    if (datelimit) {
+                        variables.where.start_datetime = {
+                            _gte: datelimit,
                         };
                     }
 
@@ -264,7 +276,8 @@ export class TimerService {
         userEmails: string[],
         projectNames: string[],
         startDate: string,
-        endDate: string
+        endDate: string,
+        plan?: string
     ) {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -291,8 +304,19 @@ export class TimerService {
 
         timerStatementArray.push(projectWhereStatement);
 
+        // TODO: Expand with Free and Pro limited
+        const datelimit = plan ? this.timeService.getDonutDateLimited() : '';
+
+        let where = `where: {${timerStatementArray.join(',')}}`;
+
+        if (datelimit) {
+            where = `where: {${timerStatementArray.join(',')}, 
+            start_datetime: {_gte: "${datelimit}"},
+        }`;
+        }
+
         const query = `{
-            timer_v2(where: {${timerStatementArray.join(',')}}, order_by: {start_datetime: asc}) {
+            timer_v2(${where}, order_by: {start_datetime: asc}) {
                 start_datetime
                 end_datetime
             }
