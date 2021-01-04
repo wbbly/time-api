@@ -19,6 +19,8 @@ import { ClientModule } from './client/client.module';
 import { SocialModule } from './social/social.module';
 import { TechnologyModule } from './technology/technology.module';
 import { InvoiceModule } from './invoice/invoice.module';
+import { PaymentModule } from './payment/payment.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
     imports: [
@@ -39,6 +41,8 @@ import { InvoiceModule } from './invoice/invoice.module';
         SocialModule,
         TechnologyModule,
         InvoiceModule,
+        PaymentModule,
+        SubscriptionModule,
     ],
     controllers: [AppController],
     providers: [AppService],

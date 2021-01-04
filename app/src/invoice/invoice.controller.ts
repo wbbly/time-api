@@ -131,9 +131,8 @@ export class InvoiceController {
                 discount: body.discount,
             };
 
-            await this.invoiceService.createInvoice(invoiceRequest);
-            const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '20' });
-            return res.status(HttpStatus.OK).json(invoiceList);
+            const invoice = await this.invoiceService.createInvoice(invoiceRequest);
+            return res.status(HttpStatus.OK).json(invoice.data.insert_invoice.returning[0]);
         } catch (e) {
             if (file && file.path) fs.unlinkSync(file.path);
             if (newFileLogo) fs.unlinkSync(newFileLogo);
@@ -147,7 +146,7 @@ export class InvoiceController {
     async getInvoices(
         @Headers() headers: any,
         @Response() res: any,
-        @Query() query: { page?: string; limit?: string }
+        @Query() query: { page?: string; limit?: string; search?: string }
     ) {
         const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
@@ -163,6 +162,26 @@ export class InvoiceController {
 
         try {
             const invoiceList = await this.invoiceService.getInvoiceList(userId, query);
+            return res.status(HttpStatus.OK).json(invoiceList);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Get('total')
+    @UseGuards(AuthGuard())
+    async getTotal(@Headers() headers: any, @Response() res: any, @Query() query: { search?: string }) {
+        let { search } = query;
+        const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
+
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            const invoiceList = await this.invoiceService.getGrandTotal(userId, search);
+
             return res.status(HttpStatus.OK).json(invoiceList);
         } catch (err) {
             const error: AxiosError = err;
@@ -305,14 +324,12 @@ export class InvoiceController {
         });
 
         try {
-            await this.invoiceService.updateInvoice(invoiceData);
+            const invoiceId = await this.invoiceService.updateInvoice(invoiceData);
             if (file && file.path && invoice.logo && fs.existsSync(invoice.logo)) {
                 fs.unlinkSync(invoice.logo);
             }
 
-            const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '20' });
-
-            return res.status(HttpStatus.OK).json(invoiceList);
+            return res.status(HttpStatus.OK).json(invoiceId.data.update_invoice_vendor.returning[0]);
         } catch (err) {
             if (file && file.path) fs.unlinkSync(file.path);
             const error: AxiosError = err;
@@ -338,9 +355,9 @@ export class InvoiceController {
 
         try {
             const paymentStatus: boolean = body.paymentStatus || false;
-            await this.invoiceService.updatePaymentStatusInvoice(userId, param.id, paymentStatus);
-            const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '10' });
-            return res.status(HttpStatus.OK).json(invoiceList);
+
+            const invoiceId = await this.invoiceService.updatePaymentStatusInvoice(userId, param.id, paymentStatus);
+            return res.status(HttpStatus.OK).json(invoiceId);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
@@ -374,8 +391,8 @@ export class InvoiceController {
             const delInvoice: any = await this.invoiceService.deleteInvoice(userId, param.id);
             if (delInvoice.logo && fs.existsSync(delInvoice.logo)) fs.unlinkSync(delInvoice.logo);
 
-            const invoiceList = await this.invoiceService.getInvoiceList(userId, { page: '1', limit: '10' });
-            return res.status(HttpStatus.OK).json(invoiceList);
+            const { invoice_vendor_id, logo, ...invoiceId } = delInvoice;
+            return res.status(HttpStatus.OK).json(invoiceId);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
