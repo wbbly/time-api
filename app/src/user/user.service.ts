@@ -449,6 +449,33 @@ export class UserService {
         });
     }
 
+    async deleteUserFromTeam(adminTeamId: string, userId: string): Promise<AxiosResponse | AxiosError> {
+        const variables = {
+            where: {
+                team_id: {
+                    _eq: adminTeamId,
+                },
+                user_id: {
+                    _eq: userId,
+                },
+            },
+        };
+
+        const query = `mutation delete_user_team($where: user_team_bool_exp!) {
+            delete_user_team: delete_user_team(where: $where) {
+              returning {
+                id
+              }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .graphql(query, variables)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
     async updateUserInTeam(
         adminId: string,
         adminTeamId: string,

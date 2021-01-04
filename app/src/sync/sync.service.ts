@@ -60,6 +60,9 @@ export class SyncService {
 
         let { fields = {} } = issue;
         let { project = {}, timetracking } = fields;
+
+        const { originalEstimateSeconds, originalEstimate } = timetracking;
+
         const { id: projectId, key: projectKey } = project;
         const { key: issueKey } = issue;
         if (filterWorklogs.length && projectId && projectKey && issueKey) {
@@ -70,7 +73,7 @@ export class SyncService {
                     issue: issueKey,
                 },
                 worklog: filterWorklogs,
-                estimate: (timetracking || {}).originalEstimate || null,
+                estimate: originalEstimateSeconds && originalEstimateSeconds > 0 ? originalEstimate : null,
             };
         }
 
@@ -121,6 +124,7 @@ export class SyncService {
                                     projectId: findProject.id,
                                     jiraWorklogId: work.id,
                                     syncJiraStatus: true,
+                                    title: decodeURI(issueDecode),
                                 };
 
                                 await this.timerService.addTimer(newTimer);

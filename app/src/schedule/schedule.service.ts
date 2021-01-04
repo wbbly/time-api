@@ -7,6 +7,7 @@ import { TimeService } from '../time/time.service';
 import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.interface';
 import { InvoiceService } from '../invoice/invoice.service';
 import { TimerService } from '../timer/timer.service';
+import moment from 'moment';
 
 @Injectable()
 export class ScheduleService extends NestSchedule {
@@ -118,4 +119,22 @@ export class ScheduleService extends NestSchedule {
             console.log(error);
         }
     }
+
+    // @Cron('00 00 * * *') // update invoice due_date, based on timezone_offset
+    // async updateInvoiceDueDate() {
+    //     try {
+    //         const invoices = await this.invoiceService.getInvoicesDueDate();
+    //         for (let i = 0; i < invoices.length; i++) {
+    //             console.log('UPDATE INVOICE DUE DATE CRON', 'INVOICES AMOUNT', invoices.length, 'INVOICE INDEX', i, 'INVOICE ID', invoices[i].id);
+    //             const due_date = moment(invoices[i].due_date)
+    //                 .utc()
+    //                 .add(invoices[i].timezone_offset, 'milliseconds')
+    //                 .add({hours:23,minutes:59,seconds:59})
+    //                 .toISOString();
+    //             await this.invoiceService.setInvoicesDueDate(invoices[i].id, due_date);
+    //         }
+    //     } catch (error) {
+    //         console.log(error);
+    //     }
+    // }
 }
