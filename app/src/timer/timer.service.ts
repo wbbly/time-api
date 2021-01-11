@@ -158,8 +158,7 @@ export class TimerService {
 
     getUserTimerList(
         userId: string,
-        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string },
-        plan?: string
+        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string }
     ) {
         const getCurrentTeamQuery = `{
             user_team(where: { 
@@ -193,9 +192,6 @@ export class TimerService {
                 .trim()
                 .replace(/"/g, '\\"')}%"}`;
         }
-
-        // TODO: Expand with Free and Pro limited
-        const datelimit = plan ? this.timeService.getDonutDateLimited() : '';
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(getCurrentTeamQuery).subscribe(
@@ -238,12 +234,6 @@ export class TimerService {
                         };
                     }
 
-                    if (datelimit) {
-                        variables.where.start_datetime = {
-                            _gte: datelimit,
-                        };
-                    }
-
                     const query = `query timer($where: timer_v2_bool_exp){ 
                         timer_v2( where: $where, order_by: {start_datetime: desc}, ${amountQuery})
                         {
@@ -276,8 +266,7 @@ export class TimerService {
         userEmails: string[],
         projectNames: string[],
         startDate: string,
-        endDate: string,
-        plan?: string
+        endDate: string
     ) {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -304,16 +293,7 @@ export class TimerService {
 
         timerStatementArray.push(projectWhereStatement);
 
-        // TODO: Expand with Free and Pro limited
-        const datelimit = plan ? this.timeService.getDonutDateLimited() : '';
-
         let where = `where: {${timerStatementArray.join(',')}}`;
-
-        if (datelimit) {
-            where = `where: {${timerStatementArray.join(',')}, 
-            start_datetime: {_gte: "${datelimit}"},
-        }`;
-        }
 
         const query = `{
             timer_v2(${where}, order_by: {start_datetime: asc}) {
