@@ -8,8 +8,8 @@ import BillwerkAPI from 'billwerk/dist';
 @Injectable()
 export class PaymentService {
     apiService: any = new BillwerkAPI(
-        process.env.CLIENT_ID,
-        process.env.CLIENT_SECRET,
+        process.env.BILLWERK_CLIENT_ID,
+        process.env.BILLWERK_CLIENT_SECRET,
         process.env.BILLWERK_HOST,
         '/api/v1',
         true

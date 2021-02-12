@@ -13,16 +13,16 @@ services:
             GRAPHQL_ACCESS_KEY: 'GRAPHQL_ACCESS_KEY'
             APP_URL: 'APP_URL'
             JWT_SECRET_KEY: 'JWT_SECRET_KEY'
-            JWT_TTL: 'JWT_TTL'
-            ENCRYPTION_CRYPTO_ALGORITHM: 'ENCRYPTION_CRYPTO_ALGORITHM' # use 'aes-256-cbc'
-            ENCRYPTION_CRYPTO_KEY: 'ENCRYPTION_CRYPTO_KEY' # get it from here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
-            ENCRYPTION_CRYPTO_IV: 'ENCRYPTION_CRYPTO_IV' # get it from here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
-            CLIENT_ID: 'CLIENT_ID'
-            CLIENT_SECRET: 'CLIENT_SECRET'
+            JWT_TTL: '1h'
+            ENCRYPTION_CRYPTO_ALGORITHM: 'aes-256-cbc'
+            ENCRYPTION_CRYPTO_KEY: 'ENCRYPTION_CRYPTO_KEY' # follow the instructions here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
+            ENCRYPTION_CRYPTO_IV: 'ENCRYPTION_CRYPTO_IV' # follow the instructions here https://github.com/nodejs/node/issues/16746#issuecomment-348027003
+            BILLWERK_CLIENT_ID: 'BILLWERK_CLIENT_ID'
+            BILLWERK_CLIENT_SECRET: 'BILLWERK_CLIENT_SECRET'
             BILLWERK_HOST: 'BILLWERK_HOST'
         ports:
-            - "127.0.0.1:3000:3000"
+            - 3000:3000
 
     nginx:
         ports:
-            - "127.0.0.1:8080:80"
+            - 8081:80

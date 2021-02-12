@@ -29,7 +29,7 @@ http {
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
     server_names_hash_bucket_size 64;
     server {
-        server_name api.wobbly.me;
+        server_name 127.0.0.1;
         expires 0;
 
         location / {
