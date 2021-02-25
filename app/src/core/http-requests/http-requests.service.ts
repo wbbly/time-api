@@ -57,4 +57,16 @@ export class HttpRequestsService {
             })
             .pipe(map(response => response.data));
     }
+    requestCrmPost(url: string, data: any, cookies: string = ``): Observable<AxiosResponse | AxiosError> {
+        return this.httpService
+            .post(url, data, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Cookie: cookies,
+                },
+            })
+            .pipe(response => {
+                return response;
+            });
+    }
 }

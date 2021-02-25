@@ -117,4 +117,22 @@ export class TimeService {
 
         return donutLimitedDate;
     }
+
+    getEndOfDayByGivenTimezoneOffset(value: string, timezoneOffset: number): string {
+        const timezoneOffsetToHours = timezoneOffset / (1000 * 60 * 60);
+        return moment(value)
+            .add(-timezoneOffsetToHours, 'h')
+            .endOf('day')
+            .add(timezoneOffsetToHours, 'h')
+            .format();
+    }
+
+    getStartOfDayByGivenTimezoneOffset(value: string, timezoneOffset: number): string {
+        const timezoneOffsetToHours = timezoneOffset / (1000 * 60 * 60);
+        return moment(value)
+            .add(-timezoneOffsetToHours, 'h')
+            .startOf('day')
+            .add(timezoneOffsetToHours, 'h')
+            .format();
+    }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import { AxiosResponse, AxiosError } from 'axios';
+import moment from 'moment';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TimerService } from '../timer/timer.service';
@@ -122,6 +123,7 @@ export class TimerCurrentV2Service {
                 user {
                     id
                     email
+                    timezone_offset
                 }
             }
         }
@@ -138,7 +140,7 @@ export class TimerCurrentV2Service {
                         const { id, issue, start_datetime: startDatetime, project, user } = data;
                         const { id: projectId, name: projectName, project_color: projectColor } = project;
                         const { id: projectColorId, name: projectColorName } = projectColor;
-                        const { id: userId, email: userEmail } = user;
+                        const { id: userId, email: userEmail, timezone_offset: timezoneOffset } = user;
                         startedTimer = {
                             id,
                             issue,
@@ -154,6 +156,7 @@ export class TimerCurrentV2Service {
                             user: {
                                 id: userId,
                                 email: userEmail,
+                                timezoneOffset,
                             },
                             time,
                         };
@@ -265,45 +268,101 @@ export class TimerCurrentV2Service {
         });
     }
 
-    deleteTimerCurrent(userId: string): Promise<Timer | null> {
-        const query = `mutation {
-            delete_timer_current_v2(
-                where: { user_id: { _eq: "${userId}" } }
-            ) {
-                affected_rows
-            }
+    async deleteTimerCurrent(userId: string): Promise<{ data: Timer[] } | null> {
+        const variables = {
+            where: {
+                user_id: {
+                    _eq: userId,
+                },
+            },
+        };
+
+        const query = `mutation delete_timer_current_v2(
+                                $where:timer_current_v2_bool_exp!
+                                ){
+                                    delete_timer_current_v2:delete_timer_current_v2(
+                                        where:$where
+                                    ) {
+                                        affected_rows
+                                    }
+                                }`;
+
+        let timerCurrent: TimerCurrentV2 = null;
+        try {
+            timerCurrent = await this.getTimerCurrent(userId);
+        } catch (error) {
+            console.log(error);
         }
-        `;
+        if (!timerCurrent) {
+            return Promise.reject(null);
+        }
 
         return new Promise((resolve, reject) => {
-            this.getTimerCurrent(userId)
-                .then(
-                    (res: TimerCurrentV2) => {
-                        this.httpRequestsService.request(query).subscribe(
-                            _ => {
-                                if (res) {
-                                    const { issue, startDatetime, user, project } = res;
-                                    this.timerService
-                                        .addTimer({
-                                            issue,
-                                            startDatetime,
-                                            endDatetime: this.timeService.getISOTimeWithZeroMilliseconds(),
-                                            userId: user.id,
-                                            projectId: project.id,
-                                            title: decodeURI(issue),
-                                        })
-                                        .then((res: Timer) => resolve(res), _ => reject(null))
-                                        .catch(_ => reject(null));
-                                } else {
-                                    reject(null);
-                                }
-                            },
-                            _ => reject(null)
-                        );
-                    },
-                    _ => reject(null)
-                )
-                .catch(_ => reject(null));
+            this.httpRequestsService.graphql(query, variables).subscribe(
+                async () => {
+                    const { issue, startDatetime, user, project } = timerCurrent;
+                    const timers = [];
+                    const endOfDayTime = this.timeService.getEndOfDayByGivenTimezoneOffset(
+                        startDatetime,
+                        user.timezoneOffset
+                    );
+                    const endDatetime = this.timeService.getISOTimeWithZeroMilliseconds();
+
+                    if (
+                        !moment(startDatetime)
+                            .add(-(user.timezoneOffset / (1000 * 60 * 60)), 'h')
+                            .isSame(moment(endDatetime).add(-(user.timezoneOffset / (1000 * 60 * 60)), 'h'), 'day') &&
+                        !moment(endDatetime).isSame(
+                            moment(
+                                this.timeService.getStartOfDayByGivenTimezoneOffset(endDatetime, user.timezoneOffset)
+                            )
+                        )
+                    ) {
+                        const firstDayTimer = {
+                            issue,
+                            startDatetime,
+                            endDatetime: endOfDayTime,
+                            userId: user.id,
+                            projectId: project.id,
+                            title: decodeURI(issue),
+                        };
+                        const secondDayTimer = {
+                            issue,
+                            startDatetime: this.timeService.getStartOfDayByGivenTimezoneOffset(
+                                endDatetime,
+                                user.timezoneOffset
+                            ),
+                            endDatetime,
+                            userId: user.id,
+                            projectId: project.id,
+                            title: decodeURI(issue),
+                        };
+                        timers.push(firstDayTimer, secondDayTimer);
+                    } else {
+                        const timer = {
+                            issue,
+                            startDatetime,
+                            endDatetime,
+                            userId: user.id,
+                            projectId: project.id,
+                            title: decodeURI(issue),
+                        };
+                        timers.push(timer);
+                    }
+                    try {
+                        const addedTimersResponse = [];
+                        for (const timer of timers) {
+                            addedTimersResponse.push(await this.timerService.addTimer(timer));
+                        }
+                        return resolve({
+                            data: addedTimersResponse,
+                        });
+                    } catch (e) {
+                        return reject(null);
+                    }
+                },
+                () => reject(null)
+            );
         });
     }
 }

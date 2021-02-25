@@ -8,6 +8,7 @@ import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.
 import { InvoiceService } from '../invoice/invoice.service';
 import { TimerService } from '../timer/timer.service';
 import moment from 'moment';
+import { TeamService } from '../team/team.service';
 
 @Injectable()
 export class ScheduleService extends NestSchedule {
@@ -16,7 +17,8 @@ export class ScheduleService extends NestSchedule {
         private readonly timerCurrentV2Service: TimerCurrentV2Service,
         private readonly timeService: TimeService,
         private readonly invoiceService: InvoiceService,
-        private readonly timerService: TimerService
+        private readonly timerService: TimerService,
+        private readonly teamService: TeamService
     ) {
         super();
     }
@@ -132,6 +134,21 @@ export class ScheduleService extends NestSchedule {
     //                 .add({hours:23,minutes:59,seconds:59})
     //                 .toISOString();
     //             await this.invoiceService.setInvoicesDueDate(invoices[i].id, due_date);
+    //         }
+    //     } catch (error) {
+    //         console.log(error);
+    //     }
+    // }
+
+    // @Cron('00 00 * * *') // update user_team role_collaboration, based on owner_id
+    // async updateUserRole() {
+    //     try {
+    //         const teams = await this.teamService.getTeamsOwnersInfo();
+    //         for (let i = 0; i < teams.length; i++) {
+    //             console.log('UPDATE USER ROLE CRON', 'TEAMS AMOUNT', teams.length, 'TEAM INDEX', i, 'TEAM ID', teams[i].id, 'TEAM OWNER_ID', teams[i].owner_id);
+    //             const roleId = '00000000-0000-0000-0000-000000000002';
+    //
+    //             await this.teamService.setUserRole(teams[i].id, teams[i].owner_id, roleId);
     //         }
     //     } catch (error) {
     //         console.log(error);

@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
-
+import moment from 'moment';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { Timer } from './interfaces/timer.interface';
 import { TimeService } from '../time/time.service';
+import { UserService } from '../user/user.service';
+import { User } from '../user/interfaces/user.interface';
 
 @Injectable()
 export class TimerService {
-    constructor(private readonly httpRequestsService: HttpRequestsService, private readonly timeService: TimeService) {}
+    constructor(
+        private readonly httpRequestsService: HttpRequestsService,
+        private readonly timeService: TimeService,
+        private readonly userService: UserService
+    ) {}
 
     getTimer(userId: string, jiraWorklogId?: string): Promise<Timer | null> {
         let jiraQuery = ``;
@@ -19,13 +25,13 @@ export class TimerService {
 
         const query = `{
             timer_v2(
-                where: { 
-                    user_id: { _eq: "${userId}" } 
+                where: {
+                    user_id: { _eq: "${userId}" }
                     ${jiraQuery}
-                }, 
+                },
                 order_by: {
                     created_at: desc
-                }, 
+                },
                 limit: 1
             ) {
                 id
@@ -158,13 +164,12 @@ export class TimerService {
 
     getUserTimerList(
         userId: string,
-        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string },
-        plan?: string
+        params: { page?: string; limit?: string; startDateTime?: string; endDateTime?: string; searchValue?: string }
     ) {
         const getCurrentTeamQuery = `{
-            user_team(where: { 
-                user_id: { _eq: "${userId}" }, 
-                current_team: { _eq: true} 
+            user_team(where: {
+                user_id: { _eq: "${userId}" },
+                current_team: { _eq: true}
             }) {
                 team {
                     id
@@ -173,7 +178,7 @@ export class TimerService {
             }
         }`;
 
-        let { page, limit, startDateTime, endDateTime, searchValue } = params;
+        const { page, limit, startDateTime, endDateTime, searchValue } = params;
         let amountQuery = '';
         let dateRangeQuery = '';
         let searchQuery = '';
@@ -193,9 +198,6 @@ export class TimerService {
                 .trim()
                 .replace(/"/g, '\\"')}%"}`;
         }
-
-        // TODO: Expand with Free and Pro limited
-        const datelimit = plan ? this.timeService.getDonutDateLimited() : '';
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.request(getCurrentTeamQuery).subscribe(
@@ -238,13 +240,7 @@ export class TimerService {
                         };
                     }
 
-                    if (datelimit) {
-                        variables.where.start_datetime = {
-                            _gte: datelimit,
-                        };
-                    }
-
-                    const query = `query timer($where: timer_v2_bool_exp){ 
+                    const query = `query timer($where: timer_v2_bool_exp){
                         timer_v2( where: $where, order_by: {start_datetime: desc}, ${amountQuery})
                         {
                             id,
@@ -276,8 +272,7 @@ export class TimerService {
         userEmails: string[],
         projectNames: string[],
         startDate: string,
-        endDate: string,
-        plan?: string
+        endDate: string
     ) {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
@@ -304,16 +299,7 @@ export class TimerService {
 
         timerStatementArray.push(projectWhereStatement);
 
-        // TODO: Expand with Free and Pro limited
-        const datelimit = plan ? this.timeService.getDonutDateLimited() : '';
-
-        let where = `where: {${timerStatementArray.join(',')}}`;
-
-        if (datelimit) {
-            where = `where: {${timerStatementArray.join(',')}, 
-            start_datetime: {_gte: "${datelimit}"},
-        }`;
-        }
+        const where = `where: {${timerStatementArray.join(',')}}`;
 
         const query = `{
             timer_v2(${where}, order_by: {start_datetime: asc}) {
@@ -337,69 +323,130 @@ export class TimerService {
         });
     }
 
-    updateTimerById(userId: string, timerId: string, timer: Timer) {
+    async updateTimerById(userId: string, timerId: string, timer: Timer) {
         const { issue, projectId, startDatetime, endDatetime } = timer;
-
-        const setParams = [`issue: "${issue || ''}"`, `project_id: "${projectId}"`];
+        let isNextDayTimerNeed: boolean = false;
+        let timezoneOffset: any = null;
+        try {
+            const user: User | AxiosError = await this.userService.getUserById(userId);
+            if ('timezoneOffset' in user) {
+                timezoneOffset = user.timezoneOffset;
+            }
+        } catch (err) {
+            console.log(err);
+        }
+        const setParams: { [k: string]: any } = {
+            issue: `${issue || ''}`,
+            project_id: `${projectId}`,
+        };
 
         if (startDatetime) {
-            setParams.push(`start_datetime: "${startDatetime}"`);
+            setParams.start_datetime = `${startDatetime}`;
         }
 
         if (endDatetime) {
-            setParams.push(`end_datetime: "${endDatetime}"`);
-        }
-        if (issue) {
-            setParams.push(`title: "${decodeURI(issue).replace(/"/g, '\\"')}"`);
-        }
-
-        const getTimerQuery = `{
-            timer_v2(where: {id: {_eq: "${timerId}"}}) {
-                id
-                user {
-                    id
-                }
-            }
-        }
-        `;
-
-        const updateTimerQuery = `mutation {
-            update_timer_v2(
-                where: {id: {_eq: "${timerId}"}},
-                _set: {${setParams.join(', ')}}
+            const endOfDayTime = this.timeService.getEndOfDayByGivenTimezoneOffset(startDatetime, timezoneOffset);
+            if (
+                !moment(startDatetime)
+                    .add(-(timezoneOffset / (1000 * 60 * 60)), 'h')
+                    .isSame(moment(endDatetime).add(-(timezoneOffset / (1000 * 60 * 60)), 'h'), 'day') &&
+                !moment(endDatetime).isSame(
+                    moment(this.timeService.getStartOfDayByGivenTimezoneOffset(endDatetime, timezoneOffset))
+                )
             ) {
-                returning {
-                    id
-                }
+                isNextDayTimerNeed = true;
+                setParams.end_datetime = `${endOfDayTime}`;
+            } else {
+                setParams.end_datetime = `${endDatetime}`;
             }
         }
-        `;
+
+        if (issue) {
+            setParams.title = `${decodeURI(issue).replace(/"/g, '\\"')}`;
+        }
+
+        let timerData = null;
+        try {
+            timerData = await this.getTimerById(timerId);
+        } catch (error) {
+            return {
+                message: 'ERROR.TIMER.UPDATE_FAILED',
+            };
+        }
+
+        if (timerData.user.id !== userId) {
+            return {
+                message: 'ERROR.TIMER.UPDATE_FAILED',
+            };
+        }
+
+        const variables = {
+            where: {
+                id: {
+                    _eq: timerId,
+                },
+            },
+            set: setParams,
+        };
+
+        const updateTimerQuery = `mutation update_timer_v2(
+                                    $where:timer_v2_bool_exp!,
+                                    $set:timer_v2_set_input
+                                    ){
+                                        update_timer_v2: update_timer_v2(where: $where, _set:$set) {
+                                            returning {
+                                                id
+                                                issue
+                                                title
+                                                jira_worklog_id
+                                                start_datetime
+                                                end_datetime
+                                                sync_jira_status
+                                                user {
+                                                    id
+                                                }
+                                                project {
+                                                  id
+                                                }
+                                            }
+                                        }
+                                    }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(getTimerQuery).subscribe(
-                (getTimerQueryRes: AxiosResponse) => {
-                    const timer = getTimerQueryRes.data.timer_v2[0];
-                    if (!timer) {
-                        return reject({
-                            message: 'ERROR.TIMER.UPDATE_FAILED',
+            this.httpRequestsService.graphql(updateTimerQuery, variables).subscribe(
+                async (updateTimerQueryRes: AxiosResponse) => {
+                    const updatedTimer = updateTimerQueryRes.data.update_timer_v2.returning[0];
+                    if (!isNextDayTimerNeed) {
+                        return resolve({
+                            data: {
+                                updatedTimer: updatedTimer.id,
+                            },
                         });
                     }
-
-                    const timerUserId = timer.user.id;
-                    if (timerUserId !== userId) {
-                        return reject({
-                            message: 'ERROR.TIMER.UPDATE_FAILED',
-                        });
+                    const nextDayTimer = {
+                        issue: timerData.issue,
+                        userId: timerData.user.id,
+                        projectId: timerData.project.id,
+                        jiraWorklogId: timerData.jira_worklog_id,
+                        syncJiraStatus: timerData.sync_jira_status,
+                        title: timerData.title,
+                        startDatetime: this.timeService.getStartOfDayByGivenTimezoneOffset(endDatetime, timezoneOffset),
+                        endDatetime,
+                    };
+                    let addedTimer = null;
+                    try {
+                        addedTimer = await this.addTimer(nextDayTimer);
+                    } catch (error) {
+                        return reject({ message: 'ERROR.TIMER.UPDATE_FAILED' });
                     }
-
-                    this.httpRequestsService
-                        .request(updateTimerQuery)
-                        .subscribe(
-                            (updateTimerQueryRes: AxiosResponse) => resolve(updateTimerQueryRes),
-                            (updateTimerQueryError: AxiosError) => reject(updateTimerQueryError)
-                        );
+                    return resolve({
+                        data: {
+                            updatedTimer: { id: updatedTimer.id },
+                            addedTimer: { id: addedTimer.id },
+                        },
+                    });
                 },
-                (getTimerQueryError: AxiosError) => reject(getTimerQueryError)
+                (updateTimerQueryError: AxiosError) => reject(updateTimerQueryError)
             );
         });
     }
@@ -565,6 +612,40 @@ export class TimerService {
                     reject(error);
                 }
             );
+        });
+    }
+
+    async getTimerById(timerId): Promise<Timer | null> {
+        const variables = {
+            where: {
+                id: {
+                    _eq: timerId,
+                },
+            },
+        };
+
+        const query = `query timer_v2($where:timer_v2_bool_exp){
+              timer_v2: timer_v2(where: $where) {
+                  id
+                  issue
+                  title
+                  jira_worklog_id
+                  start_datetime
+                  end_datetime
+                  sync_jira_status
+                  user {
+                      id
+                  }
+                  project {
+                      id
+                  }
+              }
+          }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .graphql(query, variables)
+                .subscribe((res: AxiosResponse) => resolve(res.data.timer_v2[0]), (error: AxiosError) => reject(error));
         });
     }
 }

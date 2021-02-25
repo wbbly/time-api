@@ -39,6 +39,7 @@ export class InvoiceService {
                 summarySubtotal: 'Subtotal',
                 summaryTax: 'Tax',
                 summaryTotal: `Total (${invoice.currency})`,
+                comments: 'Comments',
             },
             ru: {
                 from: 'От',
@@ -56,6 +57,7 @@ export class InvoiceService {
                 summarySubtotal: 'Итог',
                 summaryTax: 'Налог',
                 summaryTotal: `Всего (${invoice.currency})`,
+                comments: 'Комментарии',
             },
             uk: {
                 from: 'Від',
@@ -73,6 +75,7 @@ export class InvoiceService {
                 summarySubtotal: 'Підсумок',
                 summaryTax: 'Податок',
                 summaryTotal: `Всього (${invoice.currency})`,
+                comments: 'Коментарі',
             },
             it: {
                 from: 'A partire dal',
@@ -90,6 +93,7 @@ export class InvoiceService {
                 summarySubtotal: 'Totale parziale',
                 summaryTax: 'Imposta',
                 summaryTotal: `Totale (${invoice.currency})`,
+                comments: 'Commenti',
             },
             de: {
                 from: 'Von',
@@ -107,6 +111,7 @@ export class InvoiceService {
                 summarySubtotal: 'Zwischensum',
                 summaryTax: 'MwSt',
                 summaryTotal: `Gesamt(${invoice.currency})`,
+                comments: 'Bemerkungen',
             },
         };
 
@@ -280,6 +285,26 @@ export class InvoiceService {
                     margin: [300, 10, 0, 0],
                 },
                 {
+                    style: 'dateHeaders',
+                    columns: [
+                        {
+                            text: `${docDefinitionLanguage.comments}:`,
+                        },
+                    ],
+                    margin: [0, 30, 0, 0],
+                    label: 'comment',
+                },
+                {
+                    style: 'text',
+                    columns: [
+                        {
+                            text: `${invoice.comment}`,
+                        },
+                    ],
+                    margin: [0, 8, 0, 0],
+                    label: 'comment',
+                },
+                {
                     style: 'fromTo',
                     fontSize: 9,
                     columns: [
@@ -326,6 +351,11 @@ export class InvoiceService {
 
         let orderNumber: number = 8;
 
+        if (!invoice.comment) {
+            const newContent = docDefinition.content.filter(item => item.label !== 'comment');
+            docDefinition.content = newContent;
+        }
+
         if (invoice.logo) {
             docDefinition.content.unshift(imageObj);
             orderNumber = 9;
@@ -363,7 +393,7 @@ export class InvoiceService {
             docDefinition.content.splice(orderNumber + i, 0, projectOnIteration);
         }
 
-        var fonts = {
+        let fonts = {
             Roboto: {
                 normal: 'fonts/Roboto-Regular.ttf',
                 bold: 'fonts/Roboto-Medium.ttf',
@@ -521,7 +551,7 @@ export class InvoiceService {
         const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects, discount);
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
-        let user: any = await this.userService.getUserById(userId);
+        const user: any = await this.userService.getUserById(userId);
 
         let invoiceStatus: string = 'draft';
         let overdueStatus: boolean = false;
@@ -534,16 +564,15 @@ export class InvoiceService {
             overdueStatus = true;
         }
 
-        let lastInvoiceNumber = user.lastInvoiceNumber;
-
-        let value: number | string = Number(lastInvoiceNumber) + 1 + '';
-        await this.updateLastInvoiceNumberOfUser(userId, value);
-        if (value.length === 1) {
-            value = '00' + value;
-        } else if (value.length === 2) {
-            value = '0' + value;
+        let invoiceNumberValue = null;
+        if (!invoiceNumber) {
+            try {
+                invoiceNumberValue = await this.generateInvoiceNumber(currentTeamId);
+            } catch (error) {
+                console.log(error);
+            }
         } else {
-            value = value + '';
+            invoiceNumberValue = invoiceNumber;
         }
 
         const variables = {
@@ -570,7 +599,7 @@ export class InvoiceService {
                     status: "${invoiceStatus}"
                     overdue : ${overdueStatus}
                     timezone_offset: "${timezoneOffset}"
-                    invoice_number: ${invoiceNumber ? '"' + invoiceNumber + '"' : '"' + value + '"'}
+                    invoice_number: "${invoiceNumberValue}"
                     vendor_id: "${vendorId}"
                     user_id: "${userId}"
                     team_id: "${currentTeamId}"
@@ -597,6 +626,55 @@ export class InvoiceService {
             this.httpRequestsService
                 .graphql(query, variables)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    private async generateInvoiceNumber(teamId) {
+        const newInvoiceNumber = (invoiceCount: number, prevNumbers: string[] = []): string => {
+            const invoiceNumber: string = ('00' + (invoiceCount + 1)).slice(-3);
+            if (prevNumbers.indexOf(invoiceNumber) === -1) {
+                return invoiceNumber;
+            } else {
+                return newInvoiceNumber(invoiceCount + 1, prevNumbers);
+            }
+        };
+
+        const variables = {
+            where: {
+                team_id: {
+                    _eq: teamId,
+                },
+            },
+        };
+
+        const query = `query team_invoice_count($where: invoice_bool_exp) {
+                            invoice_aggregate:invoice_aggregate(where: $where) {
+                                aggregate {
+                                    count(columns: id, distinct: true)
+                                }
+                                nodes {
+                                    invoice_number
+                                }
+                            }
+                        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.graphql(query, variables).subscribe(
+                (res: AxiosResponse) => {
+                    const {
+                        aggregate: { count: teamInvoiceCount },
+                        nodes: teamInvoicePrevNumbers,
+                    } = res.data.invoice_aggregate;
+
+                    return resolve(
+                        newInvoiceNumber(
+                            teamInvoiceCount,
+                            teamInvoicePrevNumbers.map(invoice => invoice.invoice_number)
+                        )
+                    );
+                },
+                (error: AxiosError) => reject(error)
+            );
         });
     }
 
@@ -1335,5 +1413,24 @@ export class InvoiceService {
                 }
             );
         });
+    }
+
+    async getFreeInvoiceNumber(userId) {
+        let currentTeamId = null;
+        try {
+            currentTeamId = ((await this.teamService.getCurrentTeam(userId)) as AxiosResponse).data.user_team[0].team
+                .id;
+        } catch (error) {
+            console.log(error);
+        }
+
+        let invoiceNumberValue = null;
+        try {
+            invoiceNumberValue = await this.generateInvoiceNumber(currentTeamId);
+        } catch (error) {
+            console.log(error);
+        }
+
+        return invoiceNumberValue;
     }
 }

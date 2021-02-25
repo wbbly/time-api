@@ -6,6 +6,8 @@ import slugify from 'slugify';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { ProjectColorService } from '../project-color/project-color.service';
+import { Invoice } from '../invoice/interfaces/invoice.interface';
+import { Team } from './interfaces/team.interface';
 
 @Injectable()
 export class TeamService {
@@ -72,7 +74,7 @@ export class TeamService {
                                     {
                                         user_id: "${userId}"
                                         team_id: "${teamId}"
-                                        role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN}"
+                                        role_collaboration_id: "${this.roleCollaborationService.ROLES_IDS.ROLE_OWNER}"
                                         is_active: true
                                         current_team: false
                                     }
@@ -158,9 +160,14 @@ export class TeamService {
 
             this.httpRequestsService.request(checkIfTeamAdminQuery).subscribe(
                 (checkResponse: AxiosResponse) => {
-                    let admin =
+                    const admin =
                         checkResponse.data.user_team[0].role_collaboration.id ===
                         this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+                    const owner =
+                        checkResponse.data.user_team[0].role_collaboration.id ===
+                        this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
                     let alreadyMember = false;
 
                     this.httpRequestsService.request(checkIfAlreadyMemberQuery).subscribe(
@@ -169,7 +176,7 @@ export class TeamService {
                                 alreadyMember = true;
                             }
 
-                            if (admin && !alreadyMember) {
+                            if ((admin && !alreadyMember) || (owner && !alreadyMember)) {
                                 this.httpRequestsService
                                     .request(insertUserTeamQuery)
                                     .subscribe(
@@ -252,17 +259,6 @@ export class TeamService {
                     name
                     slug
                     owner_id
-                    payments {
-                        id
-                        status
-                        from
-                        to
-                        subscription {
-                            id
-                            plan_id
-                            plan_name
-                        }
-                    }
                 }
                 is_active
                 role_collaboration_id
@@ -292,20 +288,7 @@ export class TeamService {
             ){
                 id
                 name
-                payments {
-                    id
-                    status
-                    from
-                    to
-                    contract_id
-                    subscription {
-                        id
-                        plan_id
-                        plan_name
-                        term
-                    }
-                }
-                team_users{
+                team_users {
                     user{
                         id
                         username
@@ -463,20 +446,29 @@ export class TeamService {
     }
 
     async renameTeam(userId: string, teamId: string, newName: string) {
-        const getUserTeamQuery = `{
-            user_team(where: {team_id: {_eq: "${teamId}"}, user_id: {_eq: "${userId}"}, role_collaboration_id: {_eq: "${
-            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
-        }"}}) {
-                team {
-                    id
-                    owner_id
-                }
+        const variables = {
+            where: {
+                team_id: { _eq: teamId },
+                user_id: { _eq: userId },
+                _or: [
+                    { role_collaboration_id: { _eq: this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN } },
+                    { role_collaboration_id: { _eq: this.roleCollaborationService.ROLES_IDS.ROLE_OWNER } },
+                ],
+            },
+        };
+        const getUserTeamQuery = `
+            query user_team ($where: user_team_bool_exp) {
+                user_team(where: $where){
+                    team {
+                        id
+                        owner_id
+                    }
+                }  
             }
-        }
         `;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(getUserTeamQuery).subscribe(
+            this.httpRequestsService.graphql(getUserTeamQuery, variables).subscribe(
                 (getUserTeamQueryRes: AxiosResponse) => {
                     const teamData = getUserTeamQueryRes.data.user_team[0];
                     if (!teamData) {
@@ -538,6 +530,56 @@ export class TeamService {
                     (checkRes: AxiosResponse) => resolve(checkRes),
                     (checkError: AxiosError) => reject(checkError)
                 );
+        });
+    }
+
+    async getTeamsOwnersInfo(): Promise<any[] | null> {
+        const query = `query teams {
+            teams: team {
+               owner_id
+               id
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .graphql(query)
+                .subscribe((res: AxiosResponse) => resolve(res.data.teams), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async setUserRole(teamId, userId, roleId): Promise<any | null> {
+        const variables = {
+            where: {
+                team_id: {
+                    _eq: teamId,
+                },
+                user_id: {
+                    _eq: userId,
+                },
+            },
+            _set: {
+                role_collaboration_id: roleId,
+            },
+        };
+        const mutation = `
+        mutation updateUserTeam($where: user_team_bool_exp!, $_set: user_team_set_input) {
+            update_user_team(_set: $_set, where: $where) {
+              returning {
+                id
+              }
+            }
+          }
+        `;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.graphql(mutation, variables).subscribe(
+                (res: AxiosResponse) => resolve(res.data.update_user_team.returning[0]),
+                (error: AxiosError) => {
+                    console.log(error.response.data);
+                    reject(error);
+                }
+            );
         });
     }
 }

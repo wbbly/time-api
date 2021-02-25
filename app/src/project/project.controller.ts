@@ -36,12 +36,17 @@ export class ProjectController {
         if (!userId) {
             throw new UnauthorizedException();
         }
-
+        let projectListRes: any = null;
+        const { withJiraProject, slugSync, withTimerList } = params;
         try {
-            const projectListRes = await this.projectService.getProjectList(
-                userId,
-                params.withTimerList === 'true' ? true : false
-            );
+            if (withJiraProject === 'true' && slugSync) {
+                projectListRes = await this.projectService.getProjectListWithJiraProject(userId, slugSync);
+            } else {
+                projectListRes = await this.projectService.getProjectList(
+                    userId,
+                    withTimerList === 'true' ? true : false
+                );
+            }
             return res.status(HttpStatus.OK).json(projectListRes);
         } catch (e) {
             const error: AxiosError = e;
@@ -84,7 +89,8 @@ export class ProjectController {
                 params.projectName,
                 params.userEmails || [],
                 params.startDate,
-                params.endDate
+                params.endDate,
+                params.searchValue
             );
             return res.status(HttpStatus.OK).json(reportsProjectRes);
         } catch (e) {

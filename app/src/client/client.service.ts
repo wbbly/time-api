@@ -13,14 +13,18 @@ export class ClientService {
         private readonly roleCollaborationService: RoleCollaborationService
     ) {}
 
-    async getClientList(userId: string) {
+    async getClientList(userId: string, orderBy: string = 'created_at', sort: string = 'asc') {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        if (isAdmin) {
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (isAdmin || isOwner) {
             const query = `{
                 client(
                     where: {
@@ -28,7 +32,7 @@ export class ClientService {
                             _eq: "${currentTeamId}"
                         }
                     }
-                    order_by: {created_at: asc}
+                    order_by: {${orderBy}: ${sort}}
                 ) {
                     id
                     name
@@ -68,32 +72,38 @@ export class ClientService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        if (isAdmin) {
-            const query = `mutation {
-                insert_client(
-                    objects: {
-                        name: ${name ? '"' + name + '"' : null}
-                        team_id: "${currentTeamId}"
-                        language: ${language ? '"' + language + '"' : null}
-                        avatar: ${avatar ? '"' + avatar + '"' : null}
-                        country: ${country ? '"' + country + '"' : null}
-                        city: ${city ? '"' + city + '"' : null}
-                        state: ${state ? '"' + state + '"' : null}
-                        phone: ${phone ? '"' + phone + '"' : null}
-                        email: ${email ? '"' + email + '"' : null}
-                        zip: ${zip ? '"' + zip + '"' : null}
-                        company_name: "${companyName}"
-                    }
-                ) {
-                    returning {
-                        id
-                    }
-                }
-            }`;
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (isAdmin || isOwner) {
+            const variables = {
+                object: {
+                    name: name || null,
+                    team_id: currentTeamId,
+                    language: language || null,
+                    avatar: avatar || null,
+                    country: country || null,
+                    city: city || null,
+                    state: state || null,
+                    phone: phone || null,
+                    email: email || null,
+                    zip: zip || null,
+                    company_name: companyName,
+                },
+            };
+
+            const query = `mutation insert_client($object: [client_insert_input!]!) {
+                            insert_client:insert_client(objects: $object) {
+                                returning {
+                                        id
+                                    }
+                                }
+                            }`;
 
             return new Promise((resolve, reject) => {
                 this.httpRequestsService
-                    .request(query)
+                    .graphql(query, variables)
                     .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
             });
         } else {
@@ -107,7 +117,11 @@ export class ClientService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        if (isAdmin) {
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (isAdmin || isOwner) {
             const query = `mutation {
                 delete_client(
                     where: {
@@ -150,7 +164,11 @@ export class ClientService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        if (isAdmin) {
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (isAdmin || isOwner) {
             const query = `mutation {
                 update_client(
                     where: {

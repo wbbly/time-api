@@ -44,26 +44,6 @@ export class TimerController {
             throw new UnauthorizedException();
         }
 
-        let currentTeam;
-
-        try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
-            currentTeam = (currentTeamRes as AxiosResponse).data.user_team[0];
-        } catch (err) {
-            const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
-        }
-
-        const lastTeamPayment = currentTeam.team.payments.length
-            ? currentTeam.team.payments[currentTeam.team.payments.length - 1]
-            : null;
-
-        let plan = '';
-
-        if (lastTeamPayment && lastTeamPayment.subscription) {
-            plan = lastTeamPayment.subscription.plan_name;
-        }
-
         if (Object.keys(params).length) {
             const { page, limit } = params;
             if (!Number.parseInt(page) || !Number.parseInt(limit) || +page <= 0 || +limit <= 0) {
@@ -72,7 +52,7 @@ export class TimerController {
         }
 
         try {
-            const userTimerListRes = await this.timerService.getUserTimerList(userId, params, plan);
+            const userTimerListRes = await this.timerService.getUserTimerList(userId, params);
             return res.status(HttpStatus.OK).json(userTimerListRes);
         } catch (err) {
             const error: AxiosError = err;
@@ -114,24 +94,13 @@ export class TimerController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
         }
 
-        const lastTeamPayment = currentTeam.team.payments.length
-            ? currentTeam.team.payments[currentTeam.team.payments.length - 1]
-            : null;
-
-        let plan = '';
-
-        if (lastTeamPayment && lastTeamPayment.subscription) {
-            plan = lastTeamPayment.subscription.plan_name;
-        }
-
         try {
             const userTimerListRes = await this.timerService.getReportsTimerList(
                 currentTeam.team.id,
                 params.userEmails || [],
                 params.projectNames || [],
                 params.startDate,
-                params.endDate,
-                plan
+                params.endDate
             );
             return res.status(HttpStatus.OK).json(userTimerListRes);
         } catch (err) {

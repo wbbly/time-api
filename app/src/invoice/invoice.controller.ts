@@ -364,21 +364,6 @@ export class InvoiceController {
         }
     }
 
-    @Get(':id')
-    async getInvoice(
-        @Headers() headers: any,
-        @Response() res: any,
-        @Param() param: { id: string },
-        @Query() params: { token: string }
-    ) {
-        try {
-            return res.status(HttpStatus.OK).json(await this.invoiceService.getInvoice(param.id));
-        } catch (err) {
-            const error: AxiosError = err;
-            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
-        }
-    }
-
     @Delete(':id')
     @UseGuards(AuthGuard())
     async deleteInvoice(@Headers() headers: any, @Response() res: any, @Param() param: { id: string }) {
@@ -437,5 +422,40 @@ export class InvoiceController {
         }
 
         return res.status(HttpStatus.OK).json({ message: 'Email sent!' });
+    }
+
+    @Get('free-invoice-number')
+    @UseGuards(AuthGuard())
+    async getFreeInvoiceNumber(@Headers() headers: any, @Response() res: any) {
+        const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
+
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            const invoiceNumber = await this.invoiceService.getFreeInvoiceNumber(userId);
+
+            return res.status(HttpStatus.OK).json(invoiceNumber);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Get(':id')
+    @UseGuards(AuthGuard())
+    async getInvoice(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Param() param: { id: string },
+        @Query() params: { token: string }
+    ) {
+        try {
+            return res.status(HttpStatus.OK).json(await this.invoiceService.getInvoice(param.id));
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
     }
 }

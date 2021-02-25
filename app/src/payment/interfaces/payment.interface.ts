@@ -5,5 +5,5 @@ export interface Payment {
     subscription_id?: string;
     from?: string;
     to?: string;
-    //contract_id
+    contract_id?: string;
 }

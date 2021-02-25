@@ -20,15 +20,31 @@ export class PaymentController {
 
     @Get('list')
     @UseGuards(AuthGuard())
-    async clientList(@Headers() headers: any, @Response() res: any) {
+    async getPaymentList(@Headers() headers: any, @Response() res: any) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
 
         try {
-            const clientList = await this.paymentService.getPaymentByUserId(userId);
-            return res.status(HttpStatus.OK).json(clientList);
+            const paymentList = await this.paymentService.getPaymentByUserId(userId);
+            return res.status(HttpStatus.OK).json(paymentList);
+        } catch (e) {
+            const error: AxiosError = e;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Get('customer-token')
+    @UseGuards(AuthGuard())
+    async getCustomerToken(@Headers() headers: any, @Response() res: any) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+        try {
+            const customerToken = await this.paymentService.getCustomerTokenByUserId(userId);
+            return res.status(HttpStatus.OK).json(customerToken);
         } catch (e) {
             const error: AxiosError = e;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);

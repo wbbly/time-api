@@ -5,6 +5,7 @@ import {
     Patch,
     Delete,
     Param,
+    Query,
     Response,
     HttpStatus,
     Body,
@@ -30,15 +31,19 @@ export class ClientController {
 
     @Get('list')
     @UseGuards(AuthGuard())
-    async clientList(@Headers() headers: any, @Response() res: any) {
+    async clientList(@Headers() headers: any, @Response() res: any, @Query() params) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
-
+        let clientList: any = null;
+        const { order_by, sort } = params;
         try {
-            const clientList = await this.clientService.getClientList(userId);
-
+            if (order_by) {
+                clientList = await this.clientService.getClientList(userId, order_by, sort);
+            } else {
+                clientList = await this.clientService.getClientList(userId);
+            }
             return res.status(HttpStatus.OK).json(clientList);
         } catch (e) {
             const error: AxiosError = e;
@@ -81,6 +86,7 @@ export class ClientController {
         },
         @UploadedFile() file
     ) {
+        const { name, language, country, city, state, phone, email, zip, companyName } = body;
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
@@ -93,17 +99,18 @@ export class ClientController {
         try {
             const clientRequest = {
                 userId,
-                name: body.name,
-                language: body.language,
-                country: body.country,
-                city: body.city,
-                state: body.state,
-                phone: body.phone,
-                email: body.email,
-                zip: body.zip,
+                name,
+                language,
+                country,
+                city,
+                state,
+                phone,
+                email,
+                zip,
                 avatar: (file && file.path) || null,
-                companyName: body.companyName.trim(),
+                companyName: companyName.trim(),
             };
+
             await this.clientService.addClient(clientRequest);
             const clientList = await this.clientService.getClientList(userId);
 
@@ -204,7 +211,7 @@ export class ClientController {
                 email: body.email,
                 zip: body.zip,
                 avatar: (file && file.path) || client.avatar,
-                companyName: body.companyName.trim(),
+                companyName: body.companyName.trim().replace(/\\([\s\S])|(")/g, '\\$1$2'),
             };
 
             await this.clientService.patchClient(clientRequest);

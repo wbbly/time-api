@@ -2,8 +2,8 @@ import { AxiosError, AxiosResponse } from 'axios';
 import { Injectable } from '@nestjs/common';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { UserService } from '../user/user.service';
-import { TeamService } from '../team/team.service';
 import BillwerkAPI from 'billwerk/dist';
+import { Payment } from './interfaces/payment.interface';
 
 @Injectable()
 export class PaymentService {
@@ -15,14 +15,14 @@ export class PaymentService {
         true
     );
 
-    constructor(
-        private readonly httpRequestsService: HttpRequestsService,
-        private readonly userService: UserService,
-        private readonly teamService: TeamService
-    ) {}
+    constructor(private readonly httpRequestsService: HttpRequestsService, private readonly userService: UserService) {}
 
     getCustomer(customerId: string) {
         return this.apiService.getCustomer(customerId);
+    }
+
+    getContractSelfServiceToken(contractId) {
+        return this.apiService.getContractSelfServiceToken(contractId);
     }
 
     getContract(contractId: string) {
@@ -46,6 +46,18 @@ export class PaymentService {
         return { LastBillingDate, NextBillingDate, EmailAddress, PlanVariantId, LifecycleStatus };
     }
 
+    async getCustomerTokenByUserId(userId) {
+        const paymentResponse = await this.getPaymentByUserId(userId);
+
+        const payments: Payment[] = paymentResponse.data.payment_history;
+
+        const result = payments.filter((payment: Payment) => payment.status === 'Active');
+
+        const token = await this.getContractSelfServiceToken(result[0].contract_id);
+
+        return token.Token;
+    }
+
     async sendPayment(data: {
         payment: {
             subscription_id: string;
@@ -53,7 +65,6 @@ export class PaymentService {
             to: string;
             status?: string;
             contract_id: string;
-            team_id: string;
         };
         userId: string;
     }): Promise<AxiosResponse | AxiosError> {
@@ -66,7 +77,6 @@ export class PaymentService {
                     from: data.payment.from,
                     to: data.payment.to,
                     contract_id: data.payment.contract_id,
-                    team_id: data.payment.team_id,
                 },
             ],
         };
@@ -107,14 +117,6 @@ export class PaymentService {
             }
 
             if (user.id) {
-                let team = null;
-
-                try {
-                    team = await this.teamService.getCurrentTeam(user.id);
-                } catch (error) {
-                    console.log(error);
-                }
-
                 await this.sendPayment({
                     payment: {
                         from: LastBillingDate,
@@ -122,8 +124,6 @@ export class PaymentService {
                         subscription_id: PlanVariantId,
                         status: LifecycleStatus === 'Active' ? 'Active' : 'Inactive',
                         contract_id: contractId,
-                        team_id:
-                            team.data.user_team && team.data.user_team.length ? team.data.user_team[0].team.id : null,
                     },
                     userId: user.id,
                 });
@@ -176,7 +176,7 @@ export class PaymentService {
         });
     }
 
-    async getPaymentByUserId(userId: string): Promise<AxiosResponse | AxiosError> {
+    async getPaymentByUserId(userId: string): Promise<AxiosResponse> {
         const variables = {
             where: {
                 user_id: {
@@ -193,7 +193,6 @@ export class PaymentService {
                     to
                     contract_id
                     user_id
-                    team_id
                     subscription {
                         id
                         plan_id
