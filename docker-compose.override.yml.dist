@@ -20,6 +20,10 @@ services:
             CLIENT_ID: 'CLIENT_ID'
             CLIENT_SECRET: 'CLIENT_SECRET'
             BILLWERK_HOST: 'BILLWERK_HOST'
+            CRM_URL: 'CRM_URL'
+            CRM_AUTH_LOGIN: 'CRM_AUTH_LOGIN'
+            CRM_AUTH_PASSWORD: 'CRM_AUTH_PASSWORD'
+            CRM_AUTH_DB: 'CRM_AUTH_DB'
         ports:
             - "127.0.0.1:3000:3000"
 

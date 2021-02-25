@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { UserService } from '../user/user.service';
 import BillwerkAPI from 'billwerk/dist';
+import { Payment } from './interfaces/payment.interface';
 
 @Injectable()
 export class PaymentService {
@@ -18,6 +19,10 @@ export class PaymentService {
 
     getCustomer(customerId: string) {
         return this.apiService.getCustomer(customerId);
+    }
+
+    getContractSelfServiceToken(contractId) {
+        return this.apiService.getContractSelfServiceToken(contractId);
     }
 
     getContract(contractId: string) {
@@ -39,6 +44,18 @@ export class PaymentService {
         const { EmailAddress } = await this.getCustomer(contract.CustomerId);
 
         return { LastBillingDate, NextBillingDate, EmailAddress, PlanVariantId, LifecycleStatus };
+    }
+
+    async getCustomerTokenByUserId(userId) {
+        const paymentResponse = await this.getPaymentByUserId(userId);
+
+        const payments: Payment[] = paymentResponse.data.payment_history;
+
+        const result = payments.filter((payment: Payment) => payment.status === 'Active');
+
+        const token = await this.getContractSelfServiceToken(result[0].contract_id);
+
+        return token.Token;
     }
 
     async sendPayment(data: {
@@ -159,7 +176,7 @@ export class PaymentService {
         });
     }
 
-    async getPaymentByUserId(userId: string): Promise<AxiosResponse | AxiosError> {
+    async getPaymentByUserId(userId: string): Promise<AxiosResponse> {
         const variables = {
             where: {
                 user_id: {

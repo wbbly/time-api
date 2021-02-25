@@ -256,8 +256,12 @@ export class UserController {
             }
 
             if (await this.userService.compareHash(body.password, user.password)) {
+                try {
+                    await this.userService.updateUserTimezoneOffset(user.id, body.timezoneOffset);
+                } catch (error) {
+                    console.log(error);
+                }
                 const token = await this.userService.signIn(user);
-
                 return res.status(HttpStatus.OK).json({ token });
             }
         }
@@ -322,6 +326,7 @@ export class UserController {
                     email: userEmail,
                     password: userPassword,
                     language: body.language,
+                    timezoneOffset: body.timezoneOffset,
                 });
                 newUserFb = await this.userService.getUserByEmail(userEmail);
             } catch (error) {
@@ -413,6 +418,7 @@ export class UserController {
                 username: this.mailService.emailStandardize(body.email),
                 email: this.mailService.emailStandardize(body.email),
                 password: userPassword,
+                timezoneOffset: 0,
             });
 
             // Get created user ID from createdData and process inviteRequest from Team Service
@@ -473,6 +479,7 @@ export class UserController {
                 email: this.mailService.emailStandardize(body.email),
                 password: body.password,
                 language: body.language,
+                timezoneOffset: body.timezoneOffset,
             });
         } catch (error) {
             console.log(error);
@@ -745,12 +752,15 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
-        // Check the user who what to update is ADMIN and ACTIVE
+        // Check the user who what to update is ADMIN or OWNER and ACTIVE
         const checkAdminIsAdmin =
             (currentUserTeamData.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
         const checkAdminIsActive = currentUserTeamData.is_active || false;
 
-        if (!checkAdminIsAdmin || !checkAdminIsActive) {
+        const checkAdminIsOwner =
+            (currentUserTeamData.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_OWNER;
+
+        if ((!checkAdminIsAdmin && !checkAdminIsOwner) || !checkAdminIsActive) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
@@ -767,9 +777,12 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
-        const userIsAdmin =
+        const isUserAdmin =
             (userTeam.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
         const userIsActive = userTeam.is_active || false;
+
+        const isUserOwner =
+            (userTeam.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_OWNER;
 
         // Retreive all the user information of the user who will be updated
         let user = null;
@@ -783,23 +796,57 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
-        const newUserData: any = {
+        let newUserData: any = {
             username: body.username,
             email: this.mailService.emailStandardize(body.email),
-            isActive: body.isActive,
-            roleName: body.roleName,
             technologies: body.technologies || [],
+            roleName: body.roleName,
+            isActive: body.isActive,
         };
 
-        const userData = {
+        let userData = {
             username: user.username,
             email: this.mailService.emailStandardize(user.email),
             isActive: userIsActive,
-            roleName: userIsAdmin
+            roleName: isUserAdmin
                 ? this.roleCollaborationService.ROLES.ROLE_ADMIN
                 : this.roleCollaborationService.ROLES.ROLE_MEMBER,
             technologies: user.userTechnologies.length ? user.userTechnologies.map(el => el.technology.id) : [],
         };
+
+        //OWNER can update ADMIN or MEMBER, partly himself
+        if (checkAdminIsOwner && checkAdminIsActive) {
+            const ownerRole = this.roleCollaborationService.ROLES.ROLE_OWNER;
+
+            if (isUserOwner && !(body.isActive === userData.isActive)) {
+                let errorMessage = !(body.isActive === userData.isActive)
+                    ? 'ERROR.USER.UPDATE_TEAM_OWNER_ACTIVE_STATUS_FAILED'
+                    : 'ERROR.USER.UPDATE_USER_FAILED';
+
+                return res.status(HttpStatus.BAD_REQUEST).json({ message: errorMessage });
+            }
+
+            if (isUserOwner && !(body.roleName === ownerRole)) {
+                const errorMessage = !(body.roleName === ownerRole)
+                    ? 'ERROR.USER.UPDATE_TEAM_OWNER_ROLE_FAILED'
+                    : 'ERROR.USER.UPDATE_USER_FAILED';
+
+                return res.status(HttpStatus.BAD_REQUEST).json({ message: errorMessage });
+            }
+
+            if (isUserOwner) {
+                newUserData.isActive = userData.isActive;
+                newUserData.roleName = this.roleCollaborationService.ROLES.ROLE_OWNER;
+            }
+        }
+
+        //ADMIN can update member, but not another ADMIN or OWNER or himself
+        if (checkAdminIsAdmin && checkAdminIsActive && !isUserOwner && !isUserAdmin) {
+            userData.roleName = this.roleCollaborationService.ROLES.ROLE_MEMBER;
+            newUserData.isActive = body.isActive;
+            newUserData.roleName = body.roleName;
+        }
+
         Object.keys(userData).forEach(prop => {
             const newValue = newUserData[prop];
             userData[prop] = typeof newValue === 'undefined' || newValue === null ? userData[prop] : newValue;
@@ -819,7 +866,6 @@ export class UserController {
                 if (!userUpdated) {
                     return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
                 }
-
                 return res.status(HttpStatus.OK).json(this.userService.getPublicUserData(userUpdated));
             }
 
@@ -861,10 +907,10 @@ export class UserController {
     @Post(':id/team/remove-from-team')
     @UseGuards(AuthGuard())
     async deleteUserInTeam(@Headers() headers: any, @Param() param: any, @Response() res: any, @Body() body: any) {
-        // The user id to update
+        // The user id to delete
         const userId = param.id;
 
-        // The admin id who want to update the user
+        // The admin id who want to delete the user
         const adminId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!adminId) {
             throw new UnauthorizedException();
@@ -890,21 +936,25 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.DELETE_USER_FROM_TEAM_FAILED' });
         }
 
-        // Check the user who what to update is ADMIN and ACTIVE
+        // Check the user who want to delete is ADMIN and ACTIVE
         const checkAdminIsAdmin =
             (currentUserTeamData.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_ADMIN;
         const checkAdminIsActive = currentUserTeamData.is_active || false;
+
         const checkAdminIsOwner =
             (currentUserTeamData.role_collaboration || {}).title === this.roleCollaborationService.ROLES.ROLE_OWNER;
 
-        if (!checkAdminIsAdmin || !checkAdminIsActive) {
+        if ((!checkAdminIsAdmin && !checkAdminIsOwner) || !checkAdminIsActive) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.DELETE_USER_FROM_TEAM_FAILED' });
         }
+
+        let current = null;
 
         // Retrieve all the team information of the user who will be deleted
         let userTeam = null;
         try {
             const userDataByTeamData = await this.userService.getUserDataByTeam(userId, adminTeamId);
+            current = userDataByTeamData.data.user[0].user_teams[0].current_team;
             userTeam = ((userDataByTeamData.data.user[0] || {}).user_teams || [])[0] || null;
         } catch (err) {
             console.log(err);
@@ -922,13 +972,22 @@ export class UserController {
 
         try {
             //If admin is OWNER and ACTIVE, he can delete ADMIN and MEMBER, but not himself
-            if (checkAdminIsOwner && !userIsOwner) {
+            if (checkAdminIsOwner && !userIsOwner && checkAdminIsActive) {
+                if (current) {
+                    const userOwnerTeams = await this.teamService.getOwnerUserTeams(userId);
+                    await this.teamService.switchTeam(userId, userOwnerTeams.data.team[0].id);
+                }
+
                 await this.userService.deleteUserFromTeam(adminTeamId, userId);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.DELETE_USER_FROM_TEAM_SUCCEED' });
             }
 
             //If admin is ADMIN and ACTIVE, he can delete only MEMBER, but can`t delete another ADMIN and OWNER
-            if (checkAdminIsAdmin && !userIsOwner && !userIsAdmin) {
+            if (checkAdminIsAdmin && !userIsOwner && !userIsAdmin && checkAdminIsActive) {
+                if (current) {
+                    const userOwnerTeams = await this.teamService.getOwnerUserTeams(userId);
+                    await this.teamService.switchTeam(userId, userOwnerTeams.data.team[0].id);
+                }
                 await this.userService.deleteUserFromTeam(adminTeamId, userId);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.DELETE_USER_FROM_TEAM_SUCCEED' });
             }

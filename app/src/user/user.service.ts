@@ -9,6 +9,7 @@ import { RoleCollaborationService } from '../role-collaboration/role-collaborati
 import { TeamService } from '../team/team.service';
 import { SocialService } from '../social/social.service';
 import { AuthService } from '../auth/auth.service';
+import { CrmService } from '../core/sync/crm/crm.service';
 import { User } from './interfaces/user.interface';
 
 const APP_VERSION = 'v1.0.7';
@@ -29,7 +30,8 @@ export class UserService {
         private readonly roleCollaborationService: RoleCollaborationService,
         private readonly teamService: TeamService,
         private readonly socialService: SocialService,
-        private readonly authService: AuthService
+        private readonly authService: AuthService,
+        private readonly crmService: CrmService
     ) {}
 
     getUserList() {
@@ -272,6 +274,7 @@ export class UserService {
             user(where: {id: {_eq: "${id}"}}) {
                 user_teams(where: {team_id: {_eq: "${teamId}"}}) {
                     is_active
+                    current_team
                     role_collaboration_id
                     role_collaboration {
                         title
@@ -293,8 +296,9 @@ export class UserService {
         email: string;
         password: string;
         language?: string;
+        timezoneOffset: number;
     }): Promise<AxiosResponse | AxiosError> {
-        const { username, email, password, language } = data;
+        const { username, email, password, language, timezoneOffset } = data;
         const passwordHash = await this.getHash(password);
         const socialId = await this.socialService.createSocialTable();
 
@@ -305,9 +309,10 @@ export class UserService {
                         username: "${username}"
                         email: "${email}",
                         password: "${passwordHash}",
-                        social_id: "${socialId}"
+                        social_id: "${socialId}",
                         language: "${language || DEFAULT_LANGUAGE}",
-                        is_active: true
+                        is_active: true,
+                        timezone_offset: "${timezoneOffset}"
                     }
                 ]
             ){
@@ -324,8 +329,15 @@ export class UserService {
                     const returningRows = insertUserRes.data.insert_user.returning;
                     if (returningRows.length) {
                         const userId = insertUserRes.data.insert_user.returning[0].id;
+
                         try {
                             await this.teamService.createTeam(userId);
+                        } catch (error) {
+                            console.log(error);
+                        }
+
+                        try {
+                            await this.crmService.addUserEmailToCRM(email);
                         } catch (error) {
                             console.log(error);
                         }
@@ -490,10 +502,7 @@ export class UserService {
     ): Promise<AxiosResponse | AxiosError> {
         const { username, email, isActive, roleName, technologies } = userData;
 
-        const roleId =
-            roleName === this.roleCollaborationService.ROLES.ROLE_ADMIN
-                ? this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
-                : this.roleCollaborationService.ROLES_IDS.ROLE_MEMBER;
+        const roleId = this.roleCollaborationService.ROLES_IDS[roleName];
 
         const query = `mutation {
             update_user(
@@ -768,5 +777,28 @@ export class UserService {
 
     async compareHash(password: string | undefined, hash: string | undefined): Promise<boolean> {
         return bcrypt.compare(password, hash);
+    }
+
+    async updateUserTimezoneOffset(userId: string, timezoneOffset: number): Promise<AxiosResponse | AxiosError> {
+        const query = `mutation {
+            update_user(
+                where: {
+                    id: {_eq: "${userId}"}
+                },
+                _set: {
+                    timezone_offset: "${timezoneOffset}"
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
     }
 }

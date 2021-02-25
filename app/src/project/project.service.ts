@@ -27,15 +27,24 @@ export class ProjectService {
         private readonly userService: UserService
     ) {}
 
-    async getProjectList(userId: string, withTimerList: boolean) {
+    async getProjectList(userId: string, withTimerList: boolean, withJiraID: boolean = false) {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
         const isAdmin =
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        const clientQueryParam = isAdmin ? `client { id, name }` : '';
-        const timerWhereStatement = isAdmin ? '' : `(where: {user_id: {_eq: "${userId}"}})`;
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        let clientQueryParam = '';
+        let timerWhereStatement = `(where: {user_id: {_eq: "${userId}"}})`;
+
+        if (isOwner || isAdmin) {
+            clientQueryParam = `client { id, name, company_name }`;
+            timerWhereStatement = '';
+        }
 
         const query = `{
             project_v2(
@@ -50,6 +59,7 @@ export class ProjectService {
                 project_color {
                     name
                 }
+                ${withJiraID ? `jira_project_id` : ''}
                 ${clientQueryParam}
                 ${
                     withTimerList
@@ -97,7 +107,14 @@ export class ProjectService {
         });
     }
 
-    getReportsProject(teamId: string, projectName: string, userEmails: string[], startDate: string, endDate: string) {
+    getReportsProject(
+        teamId: string,
+        projectName: string,
+        userEmails: string[],
+        startDate: string,
+        endDate: string,
+        taskName?: string
+    ) {
         const timerStatementArray = [
             `_or: [
             {start_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
@@ -109,11 +126,19 @@ export class ProjectService {
         const userWhereStatement = userEmails.length
             ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
             : '';
+
         if (userWhereStatement) {
             timerStatementArray.push(userWhereStatement);
         }
 
+        const taskWhereStatement = taskName ? `title: {_ilike: "%${taskName}%"}` : '';
+
+        if (taskWhereStatement) {
+            timerStatementArray.push(taskWhereStatement);
+        }
+
         const timerStatementString = timerStatementArray.join(', ');
+
         const timerWhereStatement = timerStatementString
             ? `(where: {${timerStatementString}}, order_by: {end_datetime: desc})`
             : '(order_by: {end_datetime: desc})';
@@ -200,6 +225,11 @@ export class ProjectService {
                 id
                 name
                 timer ${timerWhereStatement} {
+                    user {
+                        id
+                        email
+                        username
+                    }
                     start_datetime
                     end_datetime
                 }
@@ -234,8 +264,24 @@ export class ProjectService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (jiraProjectId) {
+            const projectList: any = await this.getProjectListWithJiraProject(userId, 'jira');
+            const filteredProjects = projectList.data.project_v2.filter(
+                item => item.jira_project_id === +jiraProjectId
+            );
+            if (!!filteredProjects.length) {
+                return new Promise((resolve, reject) => {
+                    reject({ message: 'ERROR.PROJECT.SYNC_FAILED', project: filteredProjects[0].name });
+                });
+            }
+        }
+
         let clientQueryParam = '';
-        if (isAdmin) {
+        if (isAdmin || isOwner) {
             if (clientId) {
                 clientQueryParam = `client_id: "${clientId}"`;
             } else if (clientId === null) {
@@ -276,7 +322,11 @@ export class ProjectService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
-        const clientQueryParam = isAdmin ? `client { id, name }` : '';
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        const clientQueryParam = isAdmin || isOwner ? `client { id, name, company_name }` : '';
 
         const query = `{
             project_v2(where: {id: {_eq: "${projectId}"}, team: {team_users: {user_id: {_eq: "${userId}"}}}}) {
@@ -311,8 +361,13 @@ export class ProjectService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
 
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
         let clientQueryParam = '';
-        if (isAdmin) {
+
+        if (isAdmin || isOwner) {
             if (clientId) {
                 clientQueryParam = `client_id: "${clientId}"`;
             } else if (clientId === null) {
@@ -320,11 +375,27 @@ export class ProjectService {
             }
         }
 
+        if (jiraProjectId) {
+            const projectList: any = await this.getProjectListWithJiraProject(userId, 'jira');
+            const filteredProjects = projectList.data.project_v2.filter(
+                item => item.jira_project_id === +jiraProjectId && item.id !== id
+            );
+            if (!!filteredProjects.length) {
+                return new Promise((resolve, reject) => {
+                    reject({ message: 'ERROR.PROJECT.SYNC_FAILED', project: filteredProjects[0].name });
+                });
+            }
+        }
+
+        let role = this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        if (isOwner) {
+            role = this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+        }
+
         const query = `mutation {
             update_project_v2(
-                where: {id: {_eq: "${id}"}, team: {team_users: {user_id: {_eq: "${userId}"}, role_collaboration_id: {_eq: "${
-            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN
-        }"}}}},
+                where: {id: {_eq: "${id}"}, team: {team_users: {user_id: {_eq: "${userId}"}, role_collaboration_id: {_eq: "${role}"}}}},
                 _set: {
                     name: "${name}",
                     slug: "${slug}",
@@ -434,5 +505,17 @@ export class ProjectService {
             default:
                 return [];
         }
+    }
+
+    async getProjectListWithJiraProject(userID: string, slugSync: string) {
+        const projectList: any = await this.getProjectList(userID, false, true);
+        const jiraProjectList = await this.getProjectsBySync(userID, slugSync);
+        projectList.data.project_v2 = projectList.data.project_v2.map(item => {
+            if (item.jira_project_id) {
+                item.jira_project = jiraProjectList.filter(itemJira => item.jira_project_id == itemJira.id)[0];
+            }
+            return item;
+        });
+        return projectList;
     }
 }

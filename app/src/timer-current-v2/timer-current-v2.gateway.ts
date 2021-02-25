@@ -175,7 +175,7 @@ export class TimerCurrentV2Gateway {
     private async endTimerFlow(data: { userId: string }) {
         const { userId } = data;
 
-        let timer: Timer = null;
+        let timer = null;
         try {
             timer = await this.timerCurrentV2Service.deleteTimerCurrent(userId);
         } catch (error) {

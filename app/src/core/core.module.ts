@@ -6,6 +6,8 @@ import { MailService } from './mail/mail.service';
 import { EncryptionService } from './encryption/encryption.service';
 import { JiraAuthService } from './jira-auth/jira-auth.service';
 import { JiraService } from './sync/jira/jira.service';
+import { CrmService } from './sync/crm/crm.service';
+import { CrmAuthService } from './crm-auth/crm-auth.service';
 import { CurrencyService } from './currency/currency.service';
 
 @Module({
@@ -18,7 +20,25 @@ import { CurrencyService } from './currency/currency.service';
             },
         }),
     ],
-    providers: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService, CurrencyService],
-    exports: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService, CurrencyService],
+    providers: [
+        HttpRequestsService,
+        MailService,
+        EncryptionService,
+        JiraAuthService,
+        JiraService,
+        CurrencyService,
+        CrmService,
+        CrmAuthService,
+    ],
+    exports: [
+        HttpRequestsService,
+        MailService,
+        EncryptionService,
+        JiraAuthService,
+        JiraService,
+        CurrencyService,
+        CrmService,
+        CrmAuthService,
+    ],
 })
 export class CoreModule {}

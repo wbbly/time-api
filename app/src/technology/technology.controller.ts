@@ -48,9 +48,11 @@ export class TechnologyController {
     @UseGuards(AuthGuard())
     async getTechnology(@Headers() headers: any, @Response() res: any, @Query() query: { title: string }) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
+
         if (!userId) {
             throw new UnauthorizedException();
         }
+
         const { title } = query;
         const technologyTitle = title.trim();
 
