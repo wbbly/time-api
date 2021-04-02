@@ -20,14 +20,18 @@ import { TeamService } from '../team/team.service';
 import { AuthService } from '../auth/auth.service';
 import { Timer } from './interfaces/timer.interface';
 import { PaymentService } from '../payment/payment.service';
+import {RoleCollaborationService} from "../role-collaboration/role-collaboration.service";
+import {UserService} from "../user/user.service";
 
 @Controller('timer')
 export class TimerController {
     constructor(
+        private readonly userService: UserService,
         private readonly timerService: TimerService,
         private readonly teamService: TeamService,
         private readonly authService: AuthService,
-        private readonly paymentService: PaymentService
+        private readonly paymentService: PaymentService,
+        private readonly roleCollaborationService: RoleCollaborationService,
     ) {}
 
     @Get('user-list')
@@ -80,10 +84,10 @@ export class TimerController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        let currentTeam;
-
+        let currentTeam = null;
+        let currentTeamRes = null;
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
+            currentTeamRes = await this.teamService.getCurrentTeam(userId);
             currentTeam = (currentTeamRes as AxiosResponse).data.user_team[0];
         } catch (err) {
             const error: AxiosError = err;
@@ -94,6 +98,22 @@ export class TimerController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
         }
 
+        const isAdmin =
+            currentTeamRes.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        const isOwner =
+            currentTeamRes.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (!isOwner && !isAdmin) {
+            try {
+                const user: any = await this.userService.getUserById(userId);
+                params.userEmails = [user.email];
+            } catch (error) {
+                console.log(error);
+            }
+        }
         try {
             const userTimerListRes = await this.timerService.getReportsTimerList(
                 currentTeam.team.id,

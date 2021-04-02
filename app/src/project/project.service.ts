@@ -113,59 +113,76 @@ export class ProjectService {
         userEmails: string[],
         startDate: string,
         endDate: string,
-        taskName?: string
+        taskName?: string,
     ) {
-        const timerStatementArray = [
-            `_or: [
-            {start_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
-            {end_datetime: {_gte: "${startDate}", _lt: "${endDate}"}},
-            {start_datetime: {_lt: "${startDate}"}, end_datetime: {_gt: "${endDate}"}}
-        ]`,
-        ];
+        const projectWhereStatement: any = {
+                team_id: {
+                    _eq: teamId,
+                },
+                name: {
+                    _eq: projectName,
+                },
+        };
 
-        const userWhereStatement = userEmails.length
-            ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
-            : '';
+        const timerWhereStatement: any = {
+            _or: [
+                {
+                    start_datetime: {
+                        _gte: startDate,
+                        _lt: endDate,
+                    },
+                },
+                {
+                    end_datetime: {
+                        _gte: startDate,
+                        _lt: endDate,
+                    },
+                },
+                {
+                    start_datetime: {
+                        _lt: startDate,
+                    },
+                    end_datetime: {
+                        _gt: endDate,
+                    },
+                },
+            ],
+            user: userEmails.length ?
+                {email: { _in : userEmails }}
+                : null,
+            title: taskName ?
+                {_ilike : taskName.toLowerCase().trim().replace(/%/g, '\\%')}
+                : null,
+        };
 
-        if (userWhereStatement) {
-            timerStatementArray.push(userWhereStatement);
-        }
+        const variables = {
+            projectWhere: projectWhereStatement,
+            timerWhere: timerWhereStatement,
+        };
 
-        const taskWhereStatement = taskName ? `title: {_ilike: "%${taskName}%"}` : '';
-
-        if (taskWhereStatement) {
-            timerStatementArray.push(taskWhereStatement);
-        }
-
-        const timerStatementString = timerStatementArray.join(', ');
-
-        const timerWhereStatement = timerStatementString
-            ? `(where: {${timerStatementString}}, order_by: {end_datetime: desc})`
-            : '(order_by: {end_datetime: desc})';
-
-        const query = `{
-            project_v2(where: {team_id: {_eq: "${teamId}"}, name: {_eq: "${projectName}"}}) {
-                timer ${timerWhereStatement} {
+        const query = `query project_v2($projectWhere:project_v2_bool_exp, $timerWhere:timer_v2_bool_exp) {
+            project_v2:project_v2(where:$projectWhere){
+                timer:timer(where:$timerWhere, order_by:{end_datetime: desc}) {
                     issue
                     project {
                         name
                     }
                     user {
+                        id
                         email
                         username
                     }
                     start_datetime
                     end_datetime
                 }
+                id
             }
-        }
-        `;
+        }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     this.prepareReportsProjectData(res.data.project_v2, startDate, endDate);
-
                     return resolve(res);
                 },
                 (error: AxiosError) => reject(error)
@@ -180,51 +197,61 @@ export class ProjectService {
         startDate: string,
         endDate: string
     ) {
-        const projectWhereStatement = projectNames.length
-            ? `(
-                where: {
-                    team_id: {_eq: "${teamId}"},
-                    name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}
-                },
-                order_by: {name: asc}
-            )`
-            : `(
-                where: {
-                    team_id: {_eq: "${teamId}"}
-                },
-                order_by: {name: asc}
-            )`;
+        const projectWhereStatement: any = {
+            team_id: {
+                _eq: teamId,
+            },
+            name: projectNames.length
+                ? {_in: projectNames}
+                : null,
+        };
 
-        const userWhereStatement = userEmails.length
-            ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
-            : '';
-        let dateStatement = '';
-
+        let timerWhereStatement: any = null;
         if (startDate) {
             endDate = endDate ? endDate : startDate;
-
-            dateStatement = `_or: [
-                {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
-                {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
-                {start_datetime: {_lt: "${startDate}"}, end_datetime: {_gt: "${endDate}"}}
-            ]`;
+            timerWhereStatement = {
+                _or: [
+                    {
+                        start_datetime: {
+                            _gte: startDate,
+                            _lte: endDate,
+                        },
+                    },
+                    {
+                        end_datetime: {
+                            _gte: startDate,
+                            _lte: endDate,
+                        },
+                    },
+                    {
+                        start_datetime: {
+                            _lt: startDate,
+                        },
+                        end_datetime: {
+                            _gt: endDate,
+                        },
+                    },
+                ],
+                user: userEmails.length
+                    ? {email: {_in: userEmails}}
+                    : null,
+            };
         }
+        const variables = {
+            projectWhere: projectWhereStatement,
+            timerWhere: timerWhereStatement,
+        };
 
-        let timerStatementArray = [];
-        if (userWhereStatement) {
-            timerStatementArray.push(userWhereStatement);
-        }
-        if (dateStatement) {
-            timerStatementArray.push(dateStatement);
-        }
-        const timerStatementString = timerStatementArray.join(', ');
-        const timerWhereStatement = timerStatementString ? `(where: {${timerStatementString}})` : '';
-
-        const query = `{
-            project_v2 ${projectWhereStatement} {
+      const query = `query project_v2($projectWhere:project_v2_bool_exp, $timerWhere:timer_v2_bool_exp){
+            project_v2 (
+                where: $projectWhere,
+                order_by: {name: asc}
+        ) {
                 id
                 name
-                timer ${timerWhereStatement} {
+                timer (
+                    where: $timerWhere
+            ) {
                     user {
                         id
                         email
@@ -237,13 +264,12 @@ export class ProjectService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     for (let i = 0; i < res.data.project_v2.length; i++) {
                         const project = res.data.project_v2[i];
                         this.timerService.limitTimeEntriesByStartEndDates(project.timer, startDate, endDate);
                     }
-
                     return resolve(res);
                 },
                 (error: AxiosError) => reject(error)
@@ -280,38 +306,32 @@ export class ProjectService {
             }
         }
 
-        let clientQueryParam = '';
-        if (isAdmin || isOwner) {
-            if (clientId) {
-                clientQueryParam = `client_id: "${clientId}"`;
-            } else if (clientId === null) {
-                clientQueryParam = `client_id: null`;
-            }
-        }
-
-        const query = `mutation {
-            insert_project_v2(
-                objects: [
-                    {
-                        name: "${name}",
-                        slug: "${slug}",
-                        project_color_id: "${projectColorId}",
-                        team_id: "${currentTeamId}"
-                        ${clientQueryParam}
-                        jira_project_id: ${jiraProjectId}
+        const query = `mutation insert_project_v2($objects:[project_v2_insert_input!]!){
+                insert_project_v2:insert_project_v2(
+                    objects: $objects
+                ){
+                    returning {
+                        id
                     }
-                ]
-            ){
-                returning {
-                    id
                 }
-            }
-        }
-        `;
+            }`;
+
+        const variables: any  = {
+            objects: [
+                {
+                    name,
+                    slug,
+                    project_color_id: projectColorId,
+                    team_id: currentTeamId,
+                    client_id: isAdmin || isOwner ? clientId ? clientId : null : null,
+                    jira_project_id: jiraProjectId,
+                }
+            ],
+        };
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService
-                .request(query)
+                .graphql(query, variables)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
@@ -365,16 +385,6 @@ export class ProjectService {
             currentTeamData.data.user_team[0].role_collaboration_id ===
             this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
 
-        let clientQueryParam = '';
-
-        if (isAdmin || isOwner) {
-            if (clientId) {
-                clientQueryParam = `client_id: "${clientId}"`;
-            } else if (clientId === null) {
-                clientQueryParam = `client_id: null`;
-            }
-        }
-
         if (jiraProjectId) {
             const projectList: any = await this.getProjectListWithJiraProject(userId, 'jira');
             const filteredProjects = projectList.data.project_v2.filter(
@@ -393,26 +403,44 @@ export class ProjectService {
             role = this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
         }
 
-        const query = `mutation {
-            update_project_v2(
-                where: {id: {_eq: "${id}"}, team: {team_users: {user_id: {_eq: "${userId}"}, role_collaboration_id: {_eq: "${role}"}}}},
-                _set: {
-                    name: "${name}",
-                    slug: "${slug}",
-                    project_color_id: "${projectColorId}"
-                    ${clientQueryParam}
-                    jira_project_id: ${jiraProjectId}
-                }
+        const query = `mutation update_project_v2($where: project_v2_bool_exp!,$_set: project_v2_set_input){
+                update_project_v2:update_project_v2(
+                    where:$where,
+                    _set: $_set
             ) {
-                returning {
-                    id
+                    returning {
+                        id
+                    }
                 }
-            }
-        }
-        `;
+            }`;
+
+        const variables: any = {
+            where: {
+                id: {
+                    _eq: id,
+                },
+                team: {
+                    team_users: {
+                        user_id: {
+                            _eq: userId,
+                        },
+                        role_collaboration_id: {
+                            _eq: role,
+                        },
+                    },
+                },
+            },
+            _set: {
+                name,
+                slug,
+                project_color_id: projectColorId,
+                client_id: isAdmin || isOwner ? clientId ? clientId : null : null,
+                jira_project_id: jiraProjectId,
+            },
+        };
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     if (!res.data.update_project_v2.returning[0]) {
                         return reject({
@@ -452,7 +480,7 @@ export class ProjectService {
                 const timeEntry = projectV2.timer[j];
                 const { issue, start_datetime: startDatetime, end_datetime: endDatetime, project, user } = timeEntry;
                 const { name: projectName } = project;
-                const { email: userEmail, username } = user;
+                const { email: userEmail, username, id } = user;
 
                 const uniqueTimeEntryKey = `${issue}-${projectName}-${userEmail}-${j}`;
                 const previousDuration = projectV2Report[uniqueTimeEntryKey]
@@ -464,6 +492,8 @@ export class ProjectService {
                 projectV2Report[uniqueTimeEntryKey] = {
                     user: {
                         username,
+                        email: userEmail,
+                        id,
                     },
                     issue,
                     durationTimestamp: previousDuration + currentDuration,

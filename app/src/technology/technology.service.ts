@@ -47,6 +47,7 @@ export class TechnologyService {
             where: {
                 title: {
                     _ilike: title,
+
                 },
             },
         };

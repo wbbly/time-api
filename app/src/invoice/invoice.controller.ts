@@ -70,6 +70,7 @@ export class InvoiceController {
             originalLogo?: string;
             invoiceNumber?: string;
             discount?: number;
+            reference?: string;
         },
         @UploadedFile() file
     ) {
@@ -129,6 +130,7 @@ export class InvoiceController {
                 timezoneOffset: body.timezoneOffset,
                 logo: file && file.path ? file.path : newFileLogo ? newFileLogo : null,
                 discount: body.discount,
+                reference: body.reference,
             };
 
             const invoice = await this.invoiceService.createInvoice(invoiceRequest);
@@ -248,6 +250,7 @@ export class InvoiceController {
             invoiceNumber: string;
             timezoneOffset: number;
             discount?: number;
+            reference?: string;
         },
         @UploadedFile() file
     ) {
@@ -299,6 +302,7 @@ export class InvoiceController {
             timezoneOffset: body.timezoneOffset,
             logo: file && file.path ? file.path : body.removeFile ? '' : null,
             discount: body.discount,
+            reference: body.reference,
         };
 
         const invoiceData = {
@@ -316,6 +320,7 @@ export class InvoiceController {
             timezoneOffset: invoice.timezone_offset,
             logo: invoice.logo,
             discount: invoice.discount,
+            reference: invoice.reference,
         };
 
         Object.keys(invoiceData).forEach(prop => {

@@ -10,5 +10,5 @@ export interface Client {
     zip?: string;
     email?: string;
     avatar?: string;
-    companyName?: string;
+    company_name?: string;
 }
