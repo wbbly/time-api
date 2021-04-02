@@ -34,7 +34,7 @@
         "@nestjs/platform-socket.io": "6.3.0",
         "@nestjs/websockets": "6.3.0",
         "apollo-server-express": "2.14.2",
-        "axios": "0.19.0",
+        "axios": "0.21.1",
         "bcrypt": "5.0.0",
         "billwerk": "2.1.2",
         "crypto": "1.0.1",
