@@ -6,3 +6,5 @@ export interface IAuthCrm {
         db: string;
     };
 }
+
+

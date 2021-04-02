@@ -34,4 +34,5 @@ export interface Invoice {
     overdue?: boolean;
     to?: Client;
     projects?: InvoiceProject[];
+    reference?: string;
 }

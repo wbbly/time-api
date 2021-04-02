@@ -7,7 +7,7 @@ import { TeamModule } from '../team/team.module';
 import { TimerController } from './timer.controller';
 import { TimerService } from './timer.service';
 import { PaymentModule } from '../payment/payment.module';
-import { UserModule } from '../user/user.module';
+import {UserModule} from '../user/user.module';
 
 @Module({
     imports: [CoreModule, AuthModule, TimeModule, TeamModule, PaymentModule, UserModule],

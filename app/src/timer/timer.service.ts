@@ -12,7 +12,7 @@ export class TimerService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly timeService: TimeService,
-        private readonly userService: UserService
+        private readonly userService: UserService,
     ) {}
 
     getTimer(userId: string, jiraWorklogId?: string): Promise<Timer | null> {
@@ -274,42 +274,54 @@ export class TimerService {
         startDate: string,
         endDate: string
     ) {
-        const userWhereStatement = userEmails.length
-            ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
-            : '';
 
-        const projectWhereStatement = projectNames.length
-            ? `project: {
-                team_id: {_eq: "${teamId}"},
-                name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}
-            }`
-            : `project: {team_id: {_eq: "${teamId}"}}`;
-
-        const timerStatementArray = [
-            `_or: [
-            {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
-            {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
-            {start_datetime: {_lt: "${startDate}"}, end_datetime: {_gt: "${endDate}"}}
-        ]`,
-        ];
-
-        if (userWhereStatement) {
-            timerStatementArray.push(userWhereStatement);
-        }
-
-        timerStatementArray.push(projectWhereStatement);
-
-        const where = `where: {${timerStatementArray.join(',')}}`;
-
-        const query = `{
-            timer_v2(${where}, order_by: {start_datetime: asc}) {
+        const query =  `query timer_v2($where: timer_v2_bool_exp){
+            timer_v2(where: $where,
+                order_by: {start_datetime: asc}) {
                 start_datetime
                 end_datetime
             }
         }`;
+        const variables = {
+               where: {
+                   _or: [
+                    {
+                        start_datetime: {
+                            _gte: startDate,
+                            _lte: endDate,
+                        },
+                    },
+                    {
+                        end_datetime: {
+                            _gte: startDate,
+                            _lte: endDate,
+                        },
+                    },
+                    {
+                        start_datetime: {
+                            _lt: startDate,
+                        },
+                        end_datetime: {
+                            _gt: endDate,
+                        },
+                    },
+                    ],
+                   user: userEmails.length
+                       ? {email: {_in: userEmails}}
+                       : null,
+                   project: {
+                       team_id: {
+                           _eq: teamId,
+                       },
+                       name: projectNames.length
+                           ? {_in: projectNames}
+                           : null,
+                   },
+               },
+        };
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     this.limitTimeEntriesByStartEndDates(res.data.timer_v2, startDate, endDate);
 
@@ -318,7 +330,7 @@ export class TimerService {
 
                     return resolve(res);
                 },
-                (error: AxiosError) => reject(error)
+                (error: AxiosError) =>  reject(error),
             );
         });
     }
@@ -333,7 +345,7 @@ export class TimerService {
                 timezoneOffset = user.timezoneOffset;
             }
         } catch (err) {
-            console.log(err);
+            console.log(err)
         }
         const setParams: { [k: string]: any } = {
             issue: `${issue || ''}`,

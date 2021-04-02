@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AxiosResponse, AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TeamService } from '../team/team.service';
@@ -8,6 +8,7 @@ import PdfPrinter from 'pdfmake';
 import { Invoice } from './interfaces/invoice.interface';
 import moment, { Moment } from 'moment';
 import { CurrencyService } from '../core/currency/currency.service';
+import {RoleCollaborationService} from "../role-collaboration/role-collaboration.service";
 
 @Injectable()
 export class InvoiceService {
@@ -15,21 +16,22 @@ export class InvoiceService {
         private readonly httpRequestsService: HttpRequestsService,
         private readonly teamService: TeamService,
         private readonly userService: UserService,
-        private readonly currencyService: CurrencyService
+        private readonly currencyService: CurrencyService,
+        private readonly roleCollaborationService: RoleCollaborationService,
     ) {}
 
     async createPdfDocument(invoice: Invoice) {
         const user: any = await this.userService.getUserById(invoice.user_id);
         const defaultLanguage = 'en';
-        let language = user.language ? user.language : defaultLanguage;
+        const language = user.language ? user.language : defaultLanguage;
         const languageVariables = {
             en: {
                 from: 'From',
                 to: 'To',
                 invoiceNumber: 'Invoice No: ',
-                date: 'Invoice Date:',
-                dueDate: 'Due:',
-                project: 'Project',
+                date: 'Issued:',
+                dueDate: 'Due Date:',
+                description: 'Description',
                 hours: 'QTY',
                 tax: 'Tax',
                 rate: 'Rate',
@@ -40,6 +42,7 @@ export class InvoiceService {
                 summaryTax: 'Tax',
                 summaryTotal: `Total (${invoice.currency})`,
                 comments: 'Comments',
+                reference: 'Reference:',
             },
             ru: {
                 from: 'От',
@@ -47,7 +50,7 @@ export class InvoiceService {
                 invoiceNumber: 'Номер счета: ',
                 date: 'Дата счета:',
                 dueDate: 'Дата платежа:',
-                project: 'Проект',
+                description: 'Описание',
                 hours: 'Кол-во',
                 tax: 'Налог',
                 rate: 'Ставка',
@@ -58,6 +61,7 @@ export class InvoiceService {
                 summaryTax: 'Налог',
                 summaryTotal: `Всего (${invoice.currency})`,
                 comments: 'Комментарии',
+                reference: 'Пометки:',
             },
             uk: {
                 from: 'Від',
@@ -65,7 +69,7 @@ export class InvoiceService {
                 invoiceNumber: 'Номер Рахунку: ',
                 date: 'Дата рахунку:',
                 dueDate: 'Дата платежу:',
-                project: 'Проект',
+                description: 'Опис',
                 hours: 'К-сть',
                 tax: 'Податок',
                 rate: 'Ставка',
@@ -76,6 +80,7 @@ export class InvoiceService {
                 summaryTax: 'Податок',
                 summaryTotal: `Всього (${invoice.currency})`,
                 comments: 'Коментарі',
+                reference: 'Вiдмiтки:',
             },
             it: {
                 from: 'A partire dal',
@@ -83,7 +88,7 @@ export class InvoiceService {
                 invoiceNumber: 'Numero di fattura No: ',
                 date: 'Data Fattura:',
                 dueDate: 'Dovuto:',
-                project: 'Progetto',
+                description: 'Descrizione',
                 hours: 'QTY',
                 tax: 'Imposta',
                 rate: 'Vota',
@@ -94,6 +99,7 @@ export class InvoiceService {
                 summaryTax: 'Imposta',
                 summaryTotal: `Totale (${invoice.currency})`,
                 comments: 'Commenti',
+                reference: 'Riferimento:',
             },
             de: {
                 from: 'Von',
@@ -101,7 +107,7 @@ export class InvoiceService {
                 invoiceNumber: 'Rechnung Nr: ',
                 date: 'Rechnungsdatum:',
                 dueDate: 'Fällig:',
-                project: 'Projekt',
+                description: 'Beschreibung',
                 hours: 'QTY',
                 tax: 'MwSt',
                 rate: 'Bewertung',
@@ -112,10 +118,11 @@ export class InvoiceService {
                 summaryTax: 'MwSt',
                 summaryTotal: `Gesamt(${invoice.currency})`,
                 comments: 'Bemerkungen',
+                reference: 'Referenz:',
             },
         };
 
-        let docDefinitionLanguage = languageVariables[language] || languageVariables[defaultLanguage];
+        const docDefinitionLanguage = languageVariables[language] || languageVariables[defaultLanguage];
 
         const imageObj: any = {
             image: `${invoice.logo}`,
@@ -135,9 +142,20 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.to.toUpperCase()}`,
                         },
                     ],
-                    margin: [0, 10, 0, 8],
+                    margin: [0, 10, 100, 8],
                 },
-
+                {
+                    style: 'text',
+                    columns: [
+                        {
+                            text: `${invoice.invoice_vendor.company_name ? invoice.invoice_vendor.company_name : ' '}`,
+                        },
+                        {
+                            text: `${invoice.to.company_name ? invoice.to.company_name : ' '}`,
+                        },
+                    ],
+                    margin: [0, 6, 100, 6],
+                },
                 {
                     style: 'text',
                     columns: [
@@ -148,21 +166,8 @@ export class InvoiceService {
                             text: `${invoice.to.name ? invoice.to.name : ' '}`,
                         },
                     ],
-                    margin: [0, 6, 0, 6],
+                    margin: [0, 6, 100, 6],
                 },
-                {
-                    style: 'text',
-                    columns: [
-                        {
-                            text: `${invoice.invoice_vendor.city ? invoice.invoice_vendor.city : ' '}`,
-                        },
-                        {
-                            text: `${invoice.to.city ? invoice.to.city : ' '}`,
-                        },
-                    ],
-                    margin: [0, 6, 0, 6],
-                },
-
                 {
                     style: 'text',
                     columns: [
@@ -173,7 +178,7 @@ export class InvoiceService {
                             text: `${invoice.to.email ? invoice.to.email : ' '}`,
                         },
                     ],
-                    margin: [0, 6, 0, 0],
+                    margin: [0, 6, 100, 0],
                 },
                 {
                     style: 'text',
@@ -185,7 +190,33 @@ export class InvoiceService {
                             text: `${invoice.to.phone ? invoice.to.phone : ' '}`,
                         },
                     ],
-                    margin: [0, 6, 0, 0],
+                    margin: [0, 6, 100, 0],
+                },
+                {
+                    style: 'text',
+                    columns: [
+                        {
+                            text: `${[
+                                invoice.invoice_vendor.country,
+                                invoice.invoice_vendor.state,
+                                invoice.invoice_vendor.city,
+                                invoice.invoice_vendor.zip,
+                            ]
+                                .filter(n => n)
+                                .join(', ')} `,
+                        },
+                        {
+                            text: `${[
+                                invoice.to.country,
+                                invoice.to.state,
+                                invoice.to.city,
+                                invoice.to.zip,
+                            ]
+                                .filter(n => n)
+                                .join(', ')}`,
+                        },
+                    ],
+                    margin: [0, 6, 100, 6],
                 },
                 {
                     style: 'dateHeaders',
@@ -194,10 +225,10 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.invoiceNumber} ${invoice.invoice_number}`,
                         },
                         {
-                            text: `${docDefinitionLanguage.dueDate} ${moment(invoice.due_date).format('MMM Do, YYYY')}`,
+                            text: `${docDefinitionLanguage.reference} ${invoice.reference || ` - `}`,
                         },
                     ],
-                    margin: [0, 25, 0, 0],
+                    margin: [0, 25, 100, 0],
                 },
                 {
                     style: 'dateHeaders',
@@ -207,8 +238,11 @@ export class InvoiceService {
                                 'MMM Do, YYYY'
                             )}`,
                         },
+                        {
+                            text: `${docDefinitionLanguage.dueDate} ${moment(invoice.due_date).format('MMM Do, YYYY')}`,
+                        },
                     ],
-                    margin: [0, 10, 0, 10],
+                    margin: [0, 10, 100, 10],
                 },
                 {
                     style: 'tableMain',
@@ -219,7 +253,7 @@ export class InvoiceService {
                         body: [
                             [
                                 ``,
-                                `${docDefinitionLanguage.project}`,
+                                `${docDefinitionLanguage.description}`,
                                 `${docDefinitionLanguage.hours}`,
                                 `${docDefinitionLanguage.rate}`,
                                 `${docDefinitionLanguage.tax}`,
@@ -257,7 +291,12 @@ export class InvoiceService {
                             text: `${docDefinitionLanguage.discount}`,
                         },
                         {
-                            text: `${invoice.discount} %`,
+                            text: `${invoice.discount} % (${
+                                this.currencyService.getFormattedValue(
+                                    invoice.sub_total * invoice.discount / 100,
+                                    invoice.currency,
+                                )
+                            })`,
                         },
                     ],
                     margin: [300, 10, 0, 0],
@@ -349,7 +388,7 @@ export class InvoiceService {
             },
         };
 
-        let orderNumber: number = 8;
+        let orderNumber: number = 9;
 
         if (!invoice.comment) {
             const newContent = docDefinition.content.filter(item => item.label !== 'comment');
@@ -358,7 +397,7 @@ export class InvoiceService {
 
         if (invoice.logo) {
             docDefinition.content.unshift(imageObj);
-            orderNumber = 9;
+            orderNumber = 10;
         }
 
         for (let i = 0; i < invoice.projects.length; i++) {
@@ -369,7 +408,7 @@ export class InvoiceService {
                 tax = '-';
             }
 
-            let projectOnIteration = {
+            const projectOnIteration = {
                 style: 'tableProject',
                 fillColor: '#ffffff',
                 layout: 'noBorders',
@@ -393,7 +432,7 @@ export class InvoiceService {
             docDefinition.content.splice(orderNumber + i, 0, projectOnIteration);
         }
 
-        let fonts = {
+        const fonts = {
             Roboto: {
                 normal: 'fonts/Roboto-Regular.ttf',
                 bold: 'fonts/Roboto-Medium.ttf',
@@ -547,6 +586,7 @@ export class InvoiceService {
         invoiceNumber,
         timezoneOffset,
         discount,
+        reference,
     }): Promise<AxiosResponse> {
         const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(invoiceProjects, discount);
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
@@ -590,16 +630,18 @@ export class InvoiceService {
                 },
             },
             invoiceComment: comment ? comment : '',
+            invoiceNumber: invoiceNumberValue ? invoiceNumberValue : '',
+            invoiceReference: reference ? reference : '',
         };
 
         const query = `mutation 
-        addVendorData($invoice_vendor: invoice_vendor_obj_rel_insert_input, $invoiceComment: String) {
+        addVendorData($invoice_vendor: invoice_vendor_obj_rel_insert_input, $invoiceComment: String, $invoiceNumber: String, $invoiceReference: String) {
             insert_invoice(
                 objects: {
                     status: "${invoiceStatus}"
                     overdue : ${overdueStatus}
                     timezone_offset: "${timezoneOffset}"
-                    invoice_number: "${invoiceNumberValue}"
+                    invoice_number: $invoiceNumber
                     vendor_id: "${vendorId}"
                     user_id: "${userId}"
                     team_id: "${currentTeamId}"
@@ -614,7 +656,9 @@ export class InvoiceService {
                     discount: ${discount ? discount : 0}
                     sub_total: ${sumSubTotal}
                     tax_total: ${sumTaxTotal}
-                    invoice_vendor: $invoice_vendor}
+                    invoice_vendor: $invoice_vendor
+                    reference: $invoiceReference
+                    }
                      ) {
               returning {
                 id
@@ -630,14 +674,7 @@ export class InvoiceService {
     }
 
     private async generateInvoiceNumber(teamId) {
-        const newInvoiceNumber = (invoiceCount: number, prevNumbers: string[] = []): string => {
-            const invoiceNumber: string = ('00' + (invoiceCount + 1)).slice(-3);
-            if (prevNumbers.indexOf(invoiceNumber) === -1) {
-                return invoiceNumber;
-            } else {
-                return newInvoiceNumber(invoiceCount + 1, prevNumbers);
-            }
-        };
+        const newInvoiceNumber = (invoiceCount: number): string => ('00' + (invoiceCount + 1)).slice(-3);
 
         const variables = {
             where: {
@@ -666,12 +703,7 @@ export class InvoiceService {
                         nodes: teamInvoicePrevNumbers,
                     } = res.data.invoice_aggregate;
 
-                    return resolve(
-                        newInvoiceNumber(
-                            teamInvoiceCount,
-                            teamInvoicePrevNumbers.map(invoice => invoice.invoice_number)
-                        )
-                    );
+                    return resolve(newInvoiceNumber(teamInvoiceCount));
                 },
                 (error: AxiosError) => reject(error)
             );
@@ -691,17 +723,40 @@ export class InvoiceService {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
 
+        const { ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
+
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
+
+        const isInvoicesManager =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
+
+        const invoiceAdmins = [];
+        if (isInvoicesManager || isOwner) {
+            const [{user_id: ownerId}] = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_OWNER,
+            )) as AxiosResponse).data.user_team;
+
+            const invoiceManagers = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_INVOICES_MANAGER,
+            )) as AxiosResponse).data.user_team;
+
+            invoiceAdmins.push(ownerId, ...invoiceManagers.map(({user_id}) => user_id));
+        }
+
         const variables = {
             where: {
                 user_id: {
-                    _eq: userId,
+                    _in: invoiceAdmins,
                 },
                 team_id: {
                     _eq: currentTeamId,
                 },
             },
             limit: pageSize,
-            offset: offset,
+            offset,
         };
 
         if (search) {
@@ -785,6 +840,7 @@ export class InvoiceService {
               sending_status
               status
               overdue
+              reference
             }
             invoicesAmount: invoice_aggregate( where: $where) {
                 aggregate {
@@ -821,10 +877,33 @@ export class InvoiceService {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
 
+        const { ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
+
+        const isInvoicesManager =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
+
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
+
+        const invoiceAdmins = [];
+        if (isInvoicesManager || isOwner) {
+            const [{user_id: ownerId}] = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_OWNER,
+            )) as AxiosResponse).data.user_team;
+
+            const invoiceManagers = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_INVOICES_MANAGER,
+            )) as AxiosResponse).data.user_team;
+
+            invoiceAdmins.push(ownerId, ...invoiceManagers.map(({user_id}) => user_id));
+        }
+
         const variables = {
             where: {
                 user_id: {
-                    _eq: userId,
+                    _in: invoiceAdmins,
                 },
                 team_id: {
                     _eq: currentTeamId,
@@ -947,18 +1026,60 @@ export class InvoiceService {
               sending_status
               payment_status
               status
+              reference
             }
         }`;
 
         return new Promise((resolve, reject) => {
             this.httpRequestsService.graphql(query, variables).subscribe(
-                (res: AxiosResponse) => {
+                async (res: AxiosResponse) => {
                     const resp = res.data.invoice;
+                    if (!resp) {
+                        return reject({
+                            message: 'ERROR.INVOICE.GET_FAILED',
+                        });
+                    }
+
                     if (userId) {
-                        if (!resp || (resp.user_id && resp.user_id !== userId)) {
-                            return reject({
-                                message: 'ERROR.INVOICE.GET_FAILED',
-                            });
+                        try {
+                            const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+                            const currentTeamId = currentTeamData.data.user_team[0].team.id;
+
+                            const { ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
+
+                            const isOwner =
+                                currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
+
+                            const isInvoicesManager =
+                                currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
+
+                            const invoiceAdmins = [];
+                            if (isInvoicesManager || isOwner) {
+                                const [{user_id: ownerId}] = ((await this.userService.getUserByRoleInTeam(
+                                    currentTeamId,
+                                    ROLE_OWNER,
+                                )) as AxiosResponse).data.user_team;
+
+                                const invoiceManagers = ((await this.userService.getUserByRoleInTeam(
+                                    currentTeamId,
+                                    ROLE_INVOICES_MANAGER,
+                                )) as AxiosResponse).data.user_team;
+
+                                invoiceAdmins.push(ownerId, ...invoiceManagers.map(({user_id}) => user_id));
+                            } else {
+                                return reject({
+                                    message: 'ERROR.INVOICE.GET_FAILED',
+                                });
+                            }
+
+                            if (resp.user_id && !invoiceAdmins.includes(resp.user_id)) {
+                                return reject({
+                                    message: 'ERROR.INVOICE.GET_FAILED',
+                                });
+                            }
+                            return resolve(resp);
+                        } catch (error) {
+                            return reject(error)
                         }
                     }
                     return resolve(resp);
@@ -973,7 +1094,13 @@ export class InvoiceService {
         id: string,
         paymentStatus: boolean
     ): Promise<AxiosResponse | AxiosError> {
-        const invoice: Invoice = await this.getInvoice(id, userId);
+        let invoice: Invoice | any = null;
+        try {
+            invoice = await this.getInvoice(id, userId);
+        } catch (error) {
+            return Promise.reject(error);
+        }
+
         let invoiceStatus = 'draft';
         if (paymentStatus) {
             invoiceStatus = 'paid';
@@ -987,13 +1114,31 @@ export class InvoiceService {
             }
         }
 
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+
+        const { ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
+
+        const invoiceAdmins = [];
+        const [{user_id: ownerId}] = ((await this.userService.getUserByRoleInTeam(
+            currentTeamId,
+            ROLE_OWNER,
+        )) as AxiosResponse).data.user_team;
+
+        const invoiceManagers = ((await this.userService.getUserByRoleInTeam(
+            currentTeamId,
+            ROLE_INVOICES_MANAGER,
+        )) as AxiosResponse).data.user_team;
+
+        invoiceAdmins.push(ownerId, ...invoiceManagers.map(({user_id}) => user_id));
+
         const variables = {
             where: {
                 id: {
                     _eq: id,
                 },
                 user_id: {
-                    _eq: userId,
+                    _in: invoiceAdmins,
                 },
             },
             set: {
@@ -1152,6 +1297,7 @@ export class InvoiceService {
         invoiceNumber,
         timezoneOffset,
         discount,
+        reference,
     }): Promise<AxiosResponse> {
         const { total, sumSubTotal, sumTaxTotal, projects } = this.getInvoiceProjectTotals(
             invoiceProjects,
@@ -1181,24 +1327,57 @@ export class InvoiceService {
 
         const previousInvoiceNumber: string = invoice.invoice_number;
 
+        const { ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
+
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
+
+        const isInvoicesManager =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
+
+        const invoiceAdmins = [];
+        if (isInvoicesManager || isOwner) {
+            const [{user_id: ownerId}] = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_OWNER,
+            )) as AxiosResponse).data.user_team;
+
+            const invoiceManagers = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_INVOICES_MANAGER,
+            )) as AxiosResponse).data.user_team;
+
+            invoiceAdmins.push(ownerId, ...invoiceManagers.map(({user_id}) => user_id));
+        }
+
         const variables = {
             invoiceComment: comment,
+            invoiceReference: reference,
+            invoiceNumber: invoiceNumber || previousInvoiceNumber,
+            invoiceAdmins,
         };
 
-        const query = `mutation updateInvoice($invoiceComment: String){
+        const query = `mutation updateInvoice(
+        $invoiceComment: String, 
+        $invoiceReference: String, 
+        $invoiceNumber: String,
+        $invoiceAdmins: [uuid!]){
             update_invoice(
                 where: {
                     id: {
                         _eq: "${invoiceId}"
                     },
                     user_id: {
-                        _eq: "${userId}"
+                        _in: $invoiceAdmins
                     }
                 },
                 _set: {
                     status: "${invoiceStatus}",
                     timezone_offset: ${timezoneOffset},
-                    invoice_number: ${invoiceNumber ? '"' + invoiceNumber + '"' : '"' + previousInvoiceNumber + '"'},
+                    invoice_number: $invoiceNumber,
                     client_id: "${clientId}",
                     comment: $invoiceComment,
                     currency: "${currency ? currency : `usd`}",
@@ -1210,7 +1389,8 @@ export class InvoiceService {
                     discount: ${discount},
                     sub_total: ${sumSubTotal},
                     tax_total: ${sumTaxTotal},
-                    overdue : ${overdueStatus}
+                    overdue : ${overdueStatus},
+                    reference: $invoiceReference
                 }
             ) {
               returning {
@@ -1311,13 +1491,39 @@ export class InvoiceService {
     }
 
     async deleteInvoice(userId: string, id: string): Promise<void> {
+        const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
+        const currentTeamId = currentTeamData.data.user_team[0].team.id;
+
+        const { ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
+
+        const isOwner =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
+
+        const isInvoicesManager =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
+
+        const invoiceAdmins = [];
+        if (isInvoicesManager || isOwner) {
+            const [{user_id: ownerId}] = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_OWNER,
+            )) as AxiosResponse).data.user_team;
+
+            const invoiceManagers = ((await this.userService.getUserByRoleInTeam(
+                currentTeamId,
+                ROLE_INVOICES_MANAGER,
+            )) as AxiosResponse).data.user_team;
+
+            invoiceAdmins.push(ownerId, ...invoiceManagers.map(({user_id}) => user_id));
+        }
+
         const variables = {
             where: {
                 id: {
                     _eq: id,
                 },
                 user_id: {
-                    _eq: userId,
+                    _in: invoiceAdmins,
                 },
             },
         };

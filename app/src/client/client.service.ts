@@ -16,15 +16,19 @@ export class ClientService {
     async getClientList(userId: string, orderBy: string = 'created_at', sort: string = 'asc') {
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
+
+        const { ROLE_ADMIN, ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
+
         const isAdmin =
-            currentTeamData.data.user_team[0].role_collaboration_id ===
-            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_ADMIN;
 
         const isOwner =
-            currentTeamData.data.user_team[0].role_collaboration_id ===
-            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
 
-        if (isAdmin || isOwner) {
+        const isInvoicesManager =
+            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
+
+        if (isAdmin || isOwner || isInvoicesManager) {
             const query = `{
                 client(
                     where: {

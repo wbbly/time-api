@@ -20,13 +20,17 @@ import { ProjectService, PROJECT_TYPES_TO_SYNC } from './project.service';
 import { TeamService } from '../team/team.service';
 import { AuthService } from '../auth/auth.service';
 import { Project } from './interfaces/project.interface';
+import {RoleCollaborationService} from "../role-collaboration/role-collaboration.service";
+import {UserService} from "../user/user.service";
 
 @Controller('project')
 export class ProjectController {
     constructor(
+        private readonly userService: UserService,
         private readonly projectService: ProjectService,
         private readonly teamService: TeamService,
-        private readonly authService: AuthService
+        private readonly authService: AuthService,
+        private readonly roleCollaborationService: RoleCollaborationService,
     ) {}
 
     @Get('list')
@@ -70,9 +74,10 @@ export class ProjectController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        let teamId;
+        let teamId = null;
+        let currentTeamRes = null;
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
+            currentTeamRes = await this.teamService.getCurrentTeam(userId);
             teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
         } catch (err) {
             const error: AxiosError = err;
@@ -81,6 +86,23 @@ export class ProjectController {
 
         if (!teamId) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
+        }
+
+        const isAdmin =
+            currentTeamRes.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        const isOwner =
+            currentTeamRes.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (!isOwner && !isAdmin) {
+            try {
+                const user: any = await this.userService.getUserById(userId);
+                params.userEmails = [user.email];
+            } catch (error) {
+                console.log(error);
+            }
         }
 
         try {
@@ -115,9 +137,10 @@ export class ProjectController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
         }
 
-        let teamId;
+        let teamId = null;
+        let currentTeamRes = null;
         try {
-            const currentTeamRes = await this.teamService.getCurrentTeam(userId);
+            currentTeamRes = await this.teamService.getCurrentTeam(userId);
             teamId = (currentTeamRes as AxiosResponse).data.user_team[0].team.id;
         } catch (err) {
             const error: AxiosError = err;
@@ -126,6 +149,22 @@ export class ProjectController {
 
         if (!teamId) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.NOT_MEMBER' });
+        }
+        const isAdmin =
+            currentTeamRes.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_ADMIN;
+
+        const isOwner =
+            currentTeamRes.data.user_team[0].role_collaboration_id ===
+            this.roleCollaborationService.ROLES_IDS.ROLE_OWNER;
+
+        if (!isOwner && !isAdmin) {
+            try {
+                const user: any = await this.userService.getUserById(userId);
+                params.userEmails = [user.email];
+            } catch (error) {
+                console.log(error);
+            }
         }
 
         try {

@@ -23,12 +23,16 @@ export class TeamService {
 
     async createTeam(userId: string, teamName: string = this.DEFAULT_TEAMS.MY_TEAM) {
         const teamSlug = slugify(`${userId}-${teamName}`, { lower: true });
-        const insertTeamQuery = `mutation {
+        const variables = {
+            teamName,
+            teamSlug
+        };
+        const insertTeamQuery = `mutation addTeam($teamName: String, $teamSlug: String){
             insert_team(
                 objects: [
                     {
-                        name: "${teamName}",
-                        slug: "${teamSlug}",
+                        name: $teamName,
+                        slug: $teamSlug,
                         owner_id: "${userId}"
                     }
                 ]
@@ -40,7 +44,7 @@ export class TeamService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(insertTeamQuery).subscribe(
+            this.httpRequestsService.graphql(insertTeamQuery, variables).subscribe(
                 (insertTeamRes: AxiosResponse) => {
                     const returningRows = insertTeamRes.data.insert_team.returning;
 
@@ -479,14 +483,20 @@ export class TeamService {
 
                     const ownerId = teamData.team.owner_id;
                     const newSlug = slugify(`${ownerId}-${newName}`, { lower: true });
-                    const renameTeamQuery = `mutation{
+
+                    const variables = {
+                        teamName: newName,
+                        teamSlug: newSlug,
+                    };
+
+                    const renameTeamQuery = `mutation renameTeam($teamName: String, $teamSlug: String){
                             update_team(
                                 where: {
                                     id: { _eq: "${teamId}" }
                                 }
                                 _set: {
-                                    name: "${newName}"
-                                    slug: "${newSlug}"
+                                    name: $teamName
+                                    slug: $teamSlug
                                 }
                             ) {
                                 returning {
@@ -498,7 +508,7 @@ export class TeamService {
                         `;
 
                     this.httpRequestsService
-                        .request(renameTeamQuery)
+                        .graphql(renameTeamQuery, variables)
                         .subscribe(
                             (renameTeamRes: AxiosResponse) => resolve(renameTeamRes),
                             (renameTeamError: AxiosError) => reject(renameTeamError)

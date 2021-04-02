@@ -11,8 +11,7 @@ export class CrmAuthService {
     async authenticate(): Promise<any | { message: string }> {
         const URL: string = `${process.env.CRM_URL}/web/session/authenticate/`;
 
-        if (
-            !Boolean(process.env.CRM_AUTH_LOGIN) ||
+        if (!Boolean(process.env.CRM_AUTH_LOGIN) ||
             !Boolean(process.env.CRM_AUTH_PASSWORD) ||
             !Boolean(process.env.CRM_AUTH_DB)
         ) {
@@ -44,7 +43,7 @@ export class CrmAuthService {
                     return reject({
                         message: 'ERROR.AUTHENTICATE.CRM',
                     });
-                }
+                },
             );
         });
     }

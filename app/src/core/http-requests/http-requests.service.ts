@@ -62,11 +62,12 @@ export class HttpRequestsService {
             .post(url, data, {
                 headers: {
                     'Content-Type': 'application/json',
-                    Cookie: cookies,
+                    'Cookie': cookies,
                 },
             })
             .pipe(response => {
                 return response;
             });
     }
+
 }

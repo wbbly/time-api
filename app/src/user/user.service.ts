@@ -53,10 +53,16 @@ export class UserService {
     }
 
     async getUserById(id: string): Promise<User | AxiosError> {
-        const whereStatements = [`id: { _eq: "${id}" }`];
+        const whereStatements = {
+            where: {
+                id: {
+                    _eq: id,
+                },
+            },
+        };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements.join(',')).then(
+            this.getUserData(whereStatements).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
@@ -64,10 +70,16 @@ export class UserService {
     }
 
     async getUserByEmail(email: string): Promise<User | AxiosError> {
-        const whereStatements = [`email: { _eq: "${email}" }`];
+        const whereStatements = {
+            where: {
+                email: {
+                    _eq: email,
+                },
+            },
+        };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements.join(',')).then(
+            this.getUserData(whereStatements).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
@@ -75,10 +87,18 @@ export class UserService {
     }
 
     async getUserBySocial(socialKey: string, socialId: string): Promise<User | AxiosError> {
-        const whereStatements = [`social: {${socialKey}: {_eq: "${socialId}"}}`];
+        const whereStatements = {
+            where: {
+                social: {
+                    [socialKey]: {
+                        _eq: socialId,
+                    },
+                },
+            },
+        };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements.join(',')).then(
+            this.getUserData(whereStatements).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
@@ -86,19 +106,25 @@ export class UserService {
     }
 
     async getUserByResetPasswordHash(token: string): Promise<User | AxiosError> {
-        const whereStatements = [`reset_password_hash: { _eq: "${token}" }`];
+        const whereStatements = {
+            where: {
+                reset_password_hash: {
+                    _eq: token,
+                },
+            },
+        };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements.join(',')).then(
+            this.getUserData(whereStatements).then(
                 (res: User) => resolve(res),
                 (error: AxiosError) => reject(error)
             );
         });
     }
 
-    async getUserData(whereStatement: string): Promise<any | null | AxiosError> {
-        const query = `{
-            user(where: {${whereStatement}}) {
+    async getUserData(whereStatement: any): Promise<any | null | AxiosError> {
+        const query = `query getUser($where: user_bool_exp){
+            user(where: $where) {
                 id
                 username
                 email
@@ -132,10 +158,14 @@ export class UserService {
         }
         `;
 
+        const variables = {
+            ...whereStatement,
+        };
+
         let user: any = null;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     const data = res.data.user.shift();
                     if (data) {
@@ -196,7 +226,7 @@ export class UserService {
 
                     return resolve(user);
                 },
-                (error: AxiosError) => reject(error)
+                (error: AxiosError) => reject(error),
             );
         });
     }
@@ -302,12 +332,12 @@ export class UserService {
         const passwordHash = await this.getHash(password);
         const socialId = await this.socialService.createSocialTable();
 
-        const insertUserQuery = `mutation {
+        const insertUserQuery = `mutation insert_user($userName: String, $email: String){
             insert_user(
                 objects: [
                     {
-                        username: "${username}"
-                        email: "${email}",
+                        username: $userName
+                        email: $email,
                         password: "${passwordHash}",
                         social_id: "${socialId}",
                         language: "${language || DEFAULT_LANGUAGE}",
@@ -323,8 +353,13 @@ export class UserService {
         }
         `;
 
+        const variables = {
+            userName: username,
+            email,
+        };
+
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(insertUserQuery).subscribe(
+            this.httpRequestsService.graphql(insertUserQuery, variables).subscribe(
                 async (insertUserRes: AxiosResponse) => {
                     const returningRows = insertUserRes.data.insert_user.returning;
                     if (returningRows.length) {
@@ -392,14 +427,27 @@ export class UserService {
 
         const tokenJiraEncrypted = this.jiraAuthService.encrypt(tokenJira);
 
-        const query = `mutation {
-            update_user(
+        const variables = {
+            username,
+            companyName,
+            state: state ? state : null,
+            city: city ? city : null,
+            email,
+        };
+        const query = `mutation updateUser(
+        $username: String,
+        $companyName: String,
+        $state: String,
+        $city: String,
+        $email: String
+        ) {
+                update_user(
                 where: {
                     id: {_eq: "${userId}"}
                 },
                 _set: {
-                    username: "${username}"
-                    email: "${email}"
+                    username: $username
+                    email: $email
                     language: "${language}"
                     token_jira: ${tokenJiraEncrypted ? '"' + tokenJiraEncrypted + '"' : null}
                     url_jira: ${tokenJira ? (urlJira ? '"' + urlJira.replace(/\/$/, '') + '"' : null) : null}
@@ -414,10 +462,10 @@ export class UserService {
                     phone: ${phone ? '"' + phone + '"' : null},
                     onboarding_mobile: ${onboardingMobile === true ? true : false},
                     country: ${country ? '"' + country + '"' : null},
-                    city: ${city ? '"' + city + '"' : null},
-                    state: ${state ? '"' + state + '"' : null},
+                    city: $city,
+                    state: $state,
                     zip: ${zip ? '"' + zip + '"' : null},
-                    company_name: "${companyName}"
+                    company_name: $companyName
                 }
             ) {
                 returning {
@@ -427,7 +475,7 @@ export class UserService {
         }`;
 
         return new Promise(async (resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 async (res: AxiosResponse) => {
                     await this.updateUserTechnologies(userId, technologies);
 
@@ -504,15 +552,15 @@ export class UserService {
 
         const roleId = this.roleCollaborationService.ROLES_IDS[roleName];
 
-        const query = `mutation {
+        const query = `mutation updateUser($userName: String, $email: String){
             update_user(
                 where: {
                     id: {_eq: "${userId}"},
                     user_teams: {team_id: {_eq: "${adminTeamId}"}}
                 },
                 _set: {
-                    username: "${username}"
-                    email: "${email}"
+                    username: $userName
+                    email: $email
                 }
             ) {
                 returning {
@@ -520,6 +568,11 @@ export class UserService {
                 }
             }
         }`;
+
+        const updateUserVariables = {
+            userName: username,
+            email,
+        };
 
         const updateTeamRoleQuery = `mutation{
             update_user_team(
@@ -573,7 +626,7 @@ export class UserService {
                 return reject(error);
             }
 
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, updateUserVariables).subscribe(
                 async (res: AxiosResponse) => {
                     await this.updateUserTechnologies(userId, technologies);
 
@@ -796,6 +849,58 @@ export class UserService {
         }`;
 
         return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async updateUserLastLogin(userId: string, date: string): Promise<AxiosResponse | AxiosError> {
+        const query = `mutation {
+            update_user(
+                where: {
+                    id: {_eq: "${userId}"}
+                },
+                _set: {
+                    last_login: "${date}"
+                }
+            ) {
+                returning {
+                    id
+                }
+            }
+        }`;
+
+        return new Promise(async (resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async getUserByRoleInTeam(teamId: string, roleId: string): Promise<AxiosResponse | AxiosError> {
+        const query = `{
+            user_team(where: {
+                is_active: {
+                    _eq: true
+                },
+                role_collaboration_id: {
+                    _eq: "${roleId}"
+                },
+                team_id: {
+                    _eq: "${teamId}"
+                }
+            }) {
+                is_active
+                user_id
+                role_collaboration_id
+                role_collaboration {
+                    title
+                }
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
             this.httpRequestsService
                 .request(query)
                 .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
