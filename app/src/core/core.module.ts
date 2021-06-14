@@ -20,7 +20,25 @@ import { CurrencyService } from './currency/currency.service';
             },
         }),
     ],
-    providers: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService, CurrencyService, CrmService, CrmAuthService],
-    exports: [HttpRequestsService, MailService, EncryptionService, JiraAuthService, JiraService, CurrencyService, CrmService, CrmAuthService],
+    providers: [
+        HttpRequestsService,
+        MailService,
+        EncryptionService,
+        JiraAuthService,
+        JiraService,
+        CurrencyService,
+        CrmService,
+        CrmAuthService,
+    ],
+    exports: [
+        HttpRequestsService,
+        MailService,
+        EncryptionService,
+        JiraAuthService,
+        JiraService,
+        CurrencyService,
+        CrmService,
+        CrmAuthService,
+    ],
 })
 export class CoreModule {}

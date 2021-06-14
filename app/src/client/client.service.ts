@@ -1,32 +1,63 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { AxiosResponse, AxiosError } from 'axios';
 
 import { HttpRequestsService } from '../core/http-requests/http-requests.service';
 import { TeamService } from '../team/team.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { ProjectService } from '../project/project.service';
 
 @Injectable()
 export class ClientService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
         private readonly teamService: TeamService,
-        private readonly roleCollaborationService: RoleCollaborationService
+        private readonly roleCollaborationService: RoleCollaborationService,
+        @Inject(forwardRef(() => ProjectService))
+        private readonly projectService: ProjectService
     ) {}
 
-    async getClientList(userId: string, orderBy: string = 'created_at', sort: string = 'asc') {
+    async getClientList(
+        userId: string,
+        filterParams?: {
+            order_by?: string;
+            sort?: string;
+            isActive?: string;
+            search?: string;
+        }
+    ) {
+        let orderBy: string = 'created_at';
+        let sort: string = 'asc';
+        let isActive: string | null = null;
+        let search: string | null = null;
+
+        if (typeof filterParams !== 'undefined') {
+            orderBy = filterParams.order_by || orderBy;
+            sort = filterParams.sort || sort;
+            isActive =
+                filterParams.isActive === 'true' || filterParams.isActive === 'false'
+                    ? filterParams.isActive
+                    : isActive;
+            search = filterParams.search || search;
+        }
+
+        let searchQuery: string = '';
+        if (search) {
+            searchQuery = `company_name: {_ilike: "%${search
+                .toLowerCase()
+                .trim()
+                .replace(/"/g, '\\"')}%"}`;
+        }
+
         const currentTeamData: any = await this.teamService.getCurrentTeam(userId);
         const currentTeamId = currentTeamData.data.user_team[0].team.id;
 
         const { ROLE_ADMIN, ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
 
-        const isAdmin =
-            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_ADMIN;
+        const isAdmin = currentTeamData.data.user_team[0].role_collaboration_id === ROLE_ADMIN;
 
-        const isOwner =
-            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
+        const isOwner = currentTeamData.data.user_team[0].role_collaboration_id === ROLE_OWNER;
 
-        const isInvoicesManager =
-            currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
+        const isInvoicesManager = currentTeamData.data.user_team[0].role_collaboration_id === ROLE_INVOICES_MANAGER;
 
         if (isAdmin || isOwner || isInvoicesManager) {
             const query = `{
@@ -35,6 +66,10 @@ export class ClientService {
                         team_id: {
                             _eq: "${currentTeamId}"
                         }
+                        is_active: {
+                            _eq: ${isActive}
+                        }
+                        ${searchQuery}
                     }
                     order_by: {${orderBy}: ${sort}}
                 ) {
@@ -49,6 +84,7 @@ export class ClientService {
                     email
                     zip
                     company_name
+                    is_active
                     project {
                         id
                         name
@@ -232,6 +268,7 @@ export class ClientService {
                 phone
                 email
                 company_name
+                is_active
             }
         }`;
 
@@ -246,6 +283,60 @@ export class ClientService {
                     }
 
                     return resolve(client);
+                },
+                (error: AxiosError) => reject(error)
+            );
+        });
+    }
+
+    async updateClientActiveStatus(clientId: string, isActive: boolean, withClientProjects: boolean = true) {
+        const query = `mutation update_client($where: client_bool_exp!, $_set: client_set_input) {
+            update_client(where: $where, _set: $_set) {
+                returning {
+                    id
+                    team_id
+                    is_active
+                }
+            }
+        }`;
+
+        const variables = {
+            where: {
+                id: {
+                    _eq: clientId,
+                },
+            },
+            _set: {
+                is_active: isActive,
+            },
+        };
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService.graphql(query, variables).subscribe(
+                async (res: AxiosResponse) => {
+                    if (withClientProjects) {
+                        const [client] = res.data.update_client.returning;
+                        const { id, team_id: teamId } = client;
+                        try {
+                            const clientProjects = ((await this.projectService.getTeamProjectByClientId(
+                                teamId,
+                                id
+                            )) as AxiosResponse).data.project_v2;
+
+                            if (clientProjects.length) {
+                                await this.projectService.updateProjectActiveStatus(
+                                    clientProjects.map(project => project.id),
+                                    isActive,
+                                    false
+                                );
+                            }
+                            return resolve(res);
+                        } catch (error) {
+                            return Promise.reject(error);
+                        }
+                    } else {
+                        return resolve(res);
+                    }
                 },
                 (error: AxiosError) => reject(error)
             );

@@ -9,6 +9,7 @@ import { UserService, JIRA_TYPES } from '../user/user.service';
 import { JiraService } from '../core/sync/jira/jira.service';
 import { ProjectService } from '../project/project.service';
 import { TimerService } from '../timer/timer.service';
+import { User } from '../user/interfaces/user.interface';
 
 @Injectable()
 export class SyncService {
@@ -58,8 +59,8 @@ export class SyncService {
             );
         }
 
-        let { fields = {} } = issue;
-        let { project = {}, timetracking } = fields;
+        const { fields = {} } = issue;
+        const { project = {}, timetracking } = fields;
 
         const { originalEstimateSeconds, originalEstimate } = timetracking;
 
@@ -105,35 +106,118 @@ export class SyncService {
                     if (findProjects.data.project_v2.length > 0) {
                         const findProject = findProjects.data.project_v2.shift();
                         for (const work of item.worklog) {
+                            let timezoneOffset: null | number = null;
                             const findTimer: any = await this.timerService.getTimer(userId, work.id);
                             const issueDecode = this.appendIssueTitleWithEstimate(
                                 `${item.project.issue} ${work.comment}`,
                                 item.estimate
                             );
-                            const startDatetime = moment(work.started).format('YYYY-MM-DDTHH:mm:ssZ');
-                            const endDatetime = moment(work.started)
+
+                            let startDatetime = moment(work.started).format('YYYY-MM-DDTHH:mm:ssZ');
+                            let endDatetime = moment(work.started)
                                 .add(work.timeSpentSeconds, 'seconds')
                                 .format('YYYY-MM-DDTHH:mm:ssZ');
 
-                            if (!findTimer) {
-                                const newTimer = {
-                                    issue: issueDecode,
-                                    startDatetime: startDatetime,
-                                    endDatetime: endDatetime,
-                                    userId: userId,
-                                    projectId: findProject.id,
-                                    jiraWorklogId: work.id,
-                                    syncJiraStatus: true,
-                                    title: decodeURI(issueDecode),
-                                };
+                            const jiraUserTimezoneOffset = this.timeService.getTimezoneOffsetByGivenTimezoneName(
+                                startDatetime,
+                                work.author.timeZone
+                            );
+                            timezoneOffset = jiraUserTimezoneOffset;
 
-                                await this.timerService.addTimer(newTimer);
+                            let userTimezoneOffset = null;
+                            const user: User | AxiosError = await this.userService.getUserById(userId);
+                            if ('timezoneOffset' in user) {
+                                userTimezoneOffset = user.timezoneOffset;
+                            }
+
+                            if (userTimezoneOffset && userTimezoneOffset !== jiraUserTimezoneOffset) {
+                                startDatetime = moment(startDatetime)
+                                    .add(-(jiraUserTimezoneOffset / (1000 * 60 * 60)), 'h')
+                                    .add(userTimezoneOffset / (1000 * 60 * 60), 'h')
+                                    .format('YYYY-MM-DDTHH:mm:ssZ');
+
+                                endDatetime = moment(endDatetime)
+                                    .add(-(jiraUserTimezoneOffset / (1000 * 60 * 60)), 'h')
+                                    .add(userTimezoneOffset / (1000 * 60 * 60), 'h')
+                                    .format('YYYY-MM-DDTHH:mm:ssZ');
+
+                                timezoneOffset = userTimezoneOffset;
+                            }
+
+                            if (!findTimer) {
+                                const timers = [];
+                                const endOfDayTime = this.timeService.getEndOfDayByGivenTimezoneOffset(
+                                    startDatetime,
+                                    timezoneOffset
+                                );
+
+                                if (
+                                    !moment(startDatetime)
+                                        .add(-(timezoneOffset / (1000 * 60 * 60)), 'h')
+                                        .isSame(
+                                            moment(endDatetime).add(-(timezoneOffset / (1000 * 60 * 60)), 'h'),
+                                            'day'
+                                        ) &&
+                                    !moment(endDatetime).isSame(
+                                        moment(
+                                            this.timeService.getStartOfDayByGivenTimezoneOffset(
+                                                endDatetime,
+                                                timezoneOffset
+                                            )
+                                        )
+                                    )
+                                ) {
+                                    const firstDayTimer = {
+                                        issue: issueDecode,
+                                        startDatetime,
+                                        endDatetime: endOfDayTime,
+                                        userId,
+                                        projectId: findProject.id,
+                                        jiraWorklogId: work.id,
+                                        syncJiraStatus: true,
+                                        title: decodeURI(issueDecode),
+                                        timezoneOffset,
+                                    };
+                                    const secondDayTimer = {
+                                        issue: issueDecode,
+                                        startDatetime: this.timeService.getStartOfDayByGivenTimezoneOffset(
+                                            endDatetime,
+                                            timezoneOffset
+                                        ),
+                                        endDatetime,
+                                        userId,
+                                        projectId: findProject.id,
+                                        jiraWorklogId: work.id,
+                                        syncJiraStatus: true,
+                                        title: decodeURI(issueDecode),
+                                        timezoneOffset,
+                                    };
+                                    timers.push(firstDayTimer, secondDayTimer);
+                                } else {
+                                    const newTimer = {
+                                        issue: issueDecode,
+                                        startDatetime,
+                                        endDatetime,
+                                        userId,
+                                        projectId: findProject.id,
+                                        jiraWorklogId: work.id,
+                                        syncJiraStatus: true,
+                                        title: decodeURI(issueDecode),
+                                        timezoneOffset,
+                                    };
+                                    timers.push(newTimer);
+                                }
+
+                                for (const timer of timers) {
+                                    await this.timerService.addTimer(timer);
+                                }
                             } else {
                                 const updateTimer = {
                                     issue: issueDecode,
-                                    startDatetime: startDatetime,
-                                    endDatetime: endDatetime,
+                                    startDatetime,
+                                    endDatetime,
                                     projectId: findProject.id,
+                                    timezoneOffset,
                                 };
 
                                 await this.timerService.updateTimerById(userId, findTimer.id, updateTimer);

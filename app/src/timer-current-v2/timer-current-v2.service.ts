@@ -302,7 +302,10 @@ export class TimerCurrentV2Service {
                 async () => {
                     const { issue, startDatetime, user, project } = timerCurrent;
                     const timers = [];
-                    const endOfDayTime = this.timeService.getEndOfDayByGivenTimezoneOffset(startDatetime, user.timezoneOffset);
+                    const endOfDayTime = this.timeService.getEndOfDayByGivenTimezoneOffset(
+                        startDatetime,
+                        user.timezoneOffset
+                    );
                     const endDatetime = this.timeService.getISOTimeWithZeroMilliseconds();
 
                     if (
@@ -322,14 +325,19 @@ export class TimerCurrentV2Service {
                             userId: user.id,
                             projectId: project.id,
                             title: decodeURI(issue),
+                            timezoneOffset: user.timezoneOffset,
                         };
                         const secondDayTimer = {
                             issue,
-                            startDatetime: this.timeService.getStartOfDayByGivenTimezoneOffset(endDatetime, user.timezoneOffset),
+                            startDatetime: this.timeService.getStartOfDayByGivenTimezoneOffset(
+                                endDatetime,
+                                user.timezoneOffset
+                            ),
                             endDatetime,
                             userId: user.id,
                             projectId: project.id,
                             title: decodeURI(issue),
+                            timezoneOffset: user.timezoneOffset,
                         };
                         timers.push(firstDayTimer, secondDayTimer);
                     } else {
@@ -340,6 +348,7 @@ export class TimerCurrentV2Service {
                             userId: user.id,
                             projectId: project.id,
                             title: decodeURI(issue),
+                            timezoneOffset: user.timezoneOffset,
                         };
                         timers.push(timer);
                     }

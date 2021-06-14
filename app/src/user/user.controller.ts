@@ -28,6 +28,7 @@ import { SocialService } from '../social/social.service';
 import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
 import { MailService } from '../core/mail/mail.service';
 import { User } from './interfaces/user.interface';
+import { ProjectService } from '../project/project.service';
 
 @Controller('user')
 export class UserController {
@@ -37,7 +38,8 @@ export class UserController {
         private readonly teamService: TeamService,
         private readonly socialService: SocialService,
         private readonly roleCollaborationService: RoleCollaborationService,
-        private readonly mailService: MailService
+        private readonly mailService: MailService,
+        private readonly projectService: ProjectService
     ) {}
 
     @Get('')
@@ -789,12 +791,10 @@ export class UserController {
         const { ROLE_OWNER, ROLE_ADMIN, ROLE_MEMBER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES;
 
         // Check the user who what to update is ADMIN or OWNER and ACTIVE
-        const checkAdminIsAdmin =
-            (currentUserTeamData.role_collaboration || {}).title === ROLE_ADMIN;
+        const checkAdminIsAdmin = (currentUserTeamData.role_collaboration || {}).title === ROLE_ADMIN;
         const checkAdminIsActive = currentUserTeamData.is_active || false;
 
-        const checkAdminIsOwner =
-            (currentUserTeamData.role_collaboration || {}).title === ROLE_OWNER;
+        const checkAdminIsOwner = (currentUserTeamData.role_collaboration || {}).title === ROLE_OWNER;
 
         if ((!checkAdminIsAdmin && !checkAdminIsOwner) || !checkAdminIsActive) {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
@@ -813,12 +813,9 @@ export class UserController {
             return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.USER.UPDATE_USER_FAILED' });
         }
 
-        const isUserAdmin =
-            (userTeam.role_collaboration || {}).title === ROLE_ADMIN;
-        const isUserInvoiceManager =
-            (userTeam.role_collaboration || {}).title === ROLE_INVOICES_MANAGER;
-        const isUserOwner =
-            (userTeam.role_collaboration || {}).title === ROLE_OWNER;
+        const isUserAdmin = (userTeam.role_collaboration || {}).title === ROLE_ADMIN;
+        const isUserInvoiceManager = (userTeam.role_collaboration || {}).title === ROLE_INVOICES_MANAGER;
+        const isUserOwner = (userTeam.role_collaboration || {}).title === ROLE_OWNER;
 
         const userIsActive = userTeam.is_active || false;
 
@@ -838,17 +835,15 @@ export class UserController {
             username: body.username,
             email: this.mailService.emailStandardize(body.email),
             technologies: body.technologies || [],
+            roleName: body.roleName,
+            isActive: body.isActive,
         };
 
         const userData = {
             username: user.username,
             email: this.mailService.emailStandardize(user.email),
             isActive: userIsActive,
-            roleName: isUserAdmin
-                ? ROLE_ADMIN
-                : isUserInvoiceManager
-                    ? ROLE_INVOICES_MANAGER
-                    : ROLE_MEMBER,
+            roleName: isUserAdmin ? ROLE_ADMIN : isUserInvoiceManager ? ROLE_INVOICES_MANAGER : ROLE_MEMBER,
             technologies: user.userTechnologies.length ? user.userTechnologies.map(el => el.technology.id) : [],
         };
 
@@ -882,9 +877,10 @@ export class UserController {
         // ADMIN can update only member, not another ADMIN, OWNER, MANAGER or himself
         if (checkAdminIsAdmin && checkAdminIsActive) {
             if (isUserInvoiceManager || body.roleName === ROLE_INVOICES_MANAGER) {
-                const errorMessage = body.roleName === ROLE_INVOICES_MANAGER
-                    ? 'ERROR.USER.UPDATE_TEAM_ROLE_INVOICES_MANAGER_ROLE_FAILED'
-                    : 'ERROR.USER.UPDATE_USER_FAILED';
+                const errorMessage =
+                    body.roleName === ROLE_INVOICES_MANAGER
+                        ? 'ERROR.USER.UPDATE_TEAM_ROLE_INVOICES_MANAGER_ROLE_FAILED'
+                        : 'ERROR.USER.UPDATE_USER_FAILED';
 
                 return res.status(HttpStatus.BAD_REQUEST).json({ message: errorMessage });
             }
@@ -904,6 +900,27 @@ export class UserController {
             userData[prop] = typeof newValue === 'undefined' || newValue === null ? userData[prop] : newValue;
         });
 
+        try {
+            const teamProjectsData = ((await this.projectService.getProjectTeam(
+                currentUserTeamData.team.id
+            )) as AxiosResponse).data.project_v2;
+            const teamProjects = teamProjectsData.map(project => project.id);
+
+            if (
+                (isUserAdmin && body.roleName === ROLE_MEMBER) ||
+                (isUserAdmin && !body.isActive) ||
+                ((body.roleName === ROLE_ADMIN || body.roleName === ROLE_MEMBER) && !body.isActive)
+            ) {
+                await this.projectService.deleteProjectUserQuery(teamProjects, [userId]);
+            }
+
+            if (!isUserOwner && body.roleName === ROLE_ADMIN && body.isActive) {
+                await this.projectService.deleteProjectUserQuery(teamProjects, [userId]);
+                await this.projectService.addProjectUserQuery(teamProjects, [userId]);
+            }
+        } catch (err) {
+            console.log(err);
+        }
         try {
             await this.userService.updateUserInTeam(adminId, adminTeamId, userId, userData);
 
@@ -1024,11 +1041,17 @@ export class UserController {
 
         try {
             //If admin is OWNER and ACTIVE, he can delete ADMIN and MEMBER, but not himself
-            if (checkAdminIsOwner && !userIsOwner && checkAdminIsActive) {
+            if (checkAdminIsOwner && !userIsOwner && userIsActive && checkAdminIsActive) {
                 if (current) {
                     const userOwnerTeams = await this.teamService.getOwnerUserTeams(userId);
                     await this.teamService.switchTeam(userId, userOwnerTeams.data.team[0].id);
                 }
+
+                const teamProjectsData = ((await this.projectService.getProjectTeam(
+                    currentUserTeamData.team.id
+                )) as AxiosResponse).data.project_v2;
+                const teamProjects = teamProjectsData.map(project => project.id);
+                await this.projectService.deleteProjectUserQuery(teamProjects, [userId]);
 
                 await this.userService.deleteUserFromTeam(adminTeamId, userId);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.DELETE_USER_FROM_TEAM_SUCCEED' });
@@ -1040,6 +1063,13 @@ export class UserController {
                     const userOwnerTeams = await this.teamService.getOwnerUserTeams(userId);
                     await this.teamService.switchTeam(userId, userOwnerTeams.data.team[0].id);
                 }
+
+                const teamProjectsData = ((await this.projectService.getProjectTeam(
+                    currentUserTeamData.team.id
+                )) as AxiosResponse).data.project_v2;
+                const teamProjects = teamProjectsData.map(project => project.id);
+                await this.projectService.deleteProjectUserQuery(teamProjects, [userId]);
+
                 await this.userService.deleteUserFromTeam(adminTeamId, userId);
                 return res.status(HttpStatus.OK).json({ message: 'SUCCESS.USER.DELETE_USER_FROM_TEAM_SUCCEED' });
             }

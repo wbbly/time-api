@@ -35,4 +35,6 @@ export interface Invoice {
     to?: Client;
     projects?: InvoiceProject[];
     reference?: string;
+    reviewed?: boolean;
+    pdf?: string;
 }

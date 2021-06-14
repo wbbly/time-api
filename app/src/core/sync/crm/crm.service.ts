@@ -10,7 +10,7 @@ import { ISyncMail } from './interfaces/sync-mail.iterface';
 export class CrmService {
     constructor(
         private readonly httpRequestsService: HttpRequestsService,
-        private readonly crmAuthService: CrmAuthService,
+        private readonly crmAuthService: CrmAuthService
     ) {}
 
     async addUserEmailToCRM(email: string): Promise<any | { message: string }> {
@@ -29,8 +29,9 @@ export class CrmService {
             return Promise.reject(error);
         }
 
-        const sessionIdCookies: string = authResponseCRM.headers['set-cookie']
-            .find(header => header.startsWith('session_id='));
+        const sessionIdCookies: string = authResponseCRM.headers['set-cookie'].find(header =>
+            header.startsWith('session_id=')
+        );
 
         const emailData: ISyncMail = {
             params: {
@@ -54,7 +55,7 @@ export class CrmService {
                     return reject({
                         message: 'ERROR.ADD.EMAIL.CRM',
                     });
-                },
+                }
             );
         });
     }

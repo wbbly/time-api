@@ -62,10 +62,7 @@ export class UserService {
         };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements).then(
-                (res: User) => resolve(res),
-                (error: AxiosError) => reject(error)
-            );
+            this.getUserData(whereStatements).then((res: User) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
@@ -79,10 +76,7 @@ export class UserService {
         };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements).then(
-                (res: User) => resolve(res),
-                (error: AxiosError) => reject(error)
-            );
+            this.getUserData(whereStatements).then((res: User) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
@@ -98,10 +92,7 @@ export class UserService {
         };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements).then(
-                (res: User) => resolve(res),
-                (error: AxiosError) => reject(error)
-            );
+            this.getUserData(whereStatements).then((res: User) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
@@ -115,10 +106,7 @@ export class UserService {
         };
 
         return new Promise((resolve, reject) => {
-            this.getUserData(whereStatements).then(
-                (res: User) => resolve(res),
-                (error: AxiosError) => reject(error)
-            );
+            this.getUserData(whereStatements).then((res: User) => resolve(res), (error: AxiosError) => reject(error));
         });
     }
 
@@ -226,7 +214,7 @@ export class UserService {
 
                     return resolve(user);
                 },
-                (error: AxiosError) => reject(error),
+                (error: AxiosError) => reject(error)
             );
         });
     }
@@ -428,51 +416,45 @@ export class UserService {
         const tokenJiraEncrypted = this.jiraAuthService.encrypt(tokenJira);
 
         const variables = {
-            username,
-            companyName,
-            state: state ? state : null,
-            city: city ? city : null,
-            email,
-        };
-        const query = `mutation updateUser(
-        $username: String,
-        $companyName: String,
-        $state: String,
-        $city: String,
-        $email: String
-        ) {
-                update_user(
-                where: {
-                    id: {_eq: "${userId}"}
+            where: {
+                id: {
+                    _eq: userId,
                 },
-                _set: {
-                    username: $username
-                    email: $email
-                    language: "${language}"
-                    token_jira: ${tokenJiraEncrypted ? '"' + tokenJiraEncrypted + '"' : null}
-                    url_jira: ${tokenJira ? (urlJira ? '"' + urlJira.replace(/\/$/, '') + '"' : null) : null}
-                    type_jira: ${
-                        tokenJira
-                            ? typeJira
-                                ? '"' + (typeJira === JIRA_TYPES.SELF ? JIRA_TYPES.SELF : JIRA_TYPES.CLOUD) + '"'
-                                : null
-                            : null
+            },
+            set: {
+                username,
+                email,
+                language,
+                token_jira: tokenJiraEncrypted || null,
+                url_jira: tokenJira ? (urlJira ? urlJira.replace(/\/$/, '') : null) : null,
+                type_jira: tokenJira
+                    ? typeJira
+                        ? typeJira === JIRA_TYPES.SELF
+                            ? JIRA_TYPES.SELF
+                            : JIRA_TYPES.CLOUD
+                        : null
+                    : null,
+                login_jira: loginJira || null,
+                phone: phone || null,
+                onboarding_mobile: onboardingMobile === true ? true : false,
+                country: country || null,
+                city: city || null,
+                state: state || null,
+                zip: zip || null,
+                company_name: companyName,
+            },
+        };
+
+        const query = `mutation updateUser($where:user_bool_exp!, $set: user_set_input) {
+                update_user(
+                    where: $where,
+                    _set: $set
+                ) {
+                    returning {
+                        id
                     }
-                    login_jira: ${loginJira ? '"' + loginJira + '"' : null}
-                    phone: ${phone ? '"' + phone + '"' : null},
-                    onboarding_mobile: ${onboardingMobile === true ? true : false},
-                    country: ${country ? '"' + country + '"' : null},
-                    city: $city,
-                    state: $state,
-                    zip: ${zip ? '"' + zip + '"' : null},
-                    company_name: $companyName
                 }
-            ) {
-                returning {
-                    id
-                }
-            }
-        }`;
+            }`;
 
         return new Promise(async (resolve, reject) => {
             this.httpRequestsService.graphql(query, variables).subscribe(
@@ -887,6 +869,47 @@ export class UserService {
                 role_collaboration_id: {
                     _eq: "${roleId}"
                 },
+                team_id: {
+                    _eq: "${teamId}"
+                }
+            }) {
+                is_active
+                user_id
+                role_collaboration_id
+                role_collaboration {
+                    title
+                }
+            }
+        }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async getUserListByProjectId(projectId: string): Promise<AxiosResponse | AxiosError> {
+        const query = `{
+                        user(where: {
+                            projects: {
+                                project_id: {_eq: "${projectId}"}
+                            }
+                        }) {
+                            id
+                        }
+                    }`;
+
+        return new Promise((resolve, reject) => {
+            this.httpRequestsService
+                .request(query)
+                .subscribe((res: AxiosResponse) => resolve(res), (error: AxiosError) => reject(error));
+        });
+    }
+
+    async getTeamUserList(teamId: string): Promise<AxiosResponse | AxiosError> {
+        const query = `{
+            user_team(where: {
                 team_id: {
                     _eq: "${teamId}"
                 }

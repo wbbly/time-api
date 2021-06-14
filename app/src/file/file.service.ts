@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { json2csv } from 'json-2-csv-ts';
 import * as fs from 'fs-extra';
+import { Stream } from 'stream';
 
 @Injectable()
 export class FileService {
@@ -29,5 +30,32 @@ export class FileService {
         }
 
         return csv;
+    }
+
+    async storePdfFile(pdfDoc, filePath: string): Promise<Stream | Error> {
+        const dir = `${filePath.split('/', 2).join('/')}`;
+
+        fs.ensureDirSync(dir);
+
+        const writePdfFile = fs.createWriteStream(filePath);
+        pdfDoc.pipe(writePdfFile);
+        pdfDoc.end();
+
+        writePdfFile.on('error', error => console.error(error));
+
+        return Promise.resolve(pdfDoc);
+    }
+
+    async readPdfFile(filePath: string): Promise<Stream | Error> {
+        try {
+            fs.readFileSync(filePath);
+        } catch (error) {
+            return Promise.reject(error);
+        }
+
+        const pdfFile = fs.createReadStream(filePath);
+        pdfFile.on('error', error => console.error(error));
+
+        return Promise.resolve(pdfFile);
     }
 }

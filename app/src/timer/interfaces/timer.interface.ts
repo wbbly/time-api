@@ -14,4 +14,5 @@ export interface Timer {
     project?: Project;
     user?: User;
     title?: string;
+    timezoneOffset?: number;
 }

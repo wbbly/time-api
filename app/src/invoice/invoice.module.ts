@@ -6,11 +6,12 @@ import { InvoiceController } from './invoice.controller';
 import { InvoiceService } from './invoice.service';
 import { TeamModule } from '../team/team.module';
 import { UserModule } from '../user/user.module';
+import { FileService } from '../file/file.service';
 
 @Module({
-    imports: [CoreModule, AuthModule, TeamModule, UserModule],
+    imports: [CoreModule, AuthModule, TeamModule, UserModule, FileService],
     controllers: [InvoiceController],
-    providers: [InvoiceService],
+    providers: [InvoiceService, FileService],
     exports: [InvoiceService],
 })
 export class InvoiceModule {}

@@ -20,8 +20,8 @@ import { TeamService } from '../team/team.service';
 import { AuthService } from '../auth/auth.service';
 import { Timer } from './interfaces/timer.interface';
 import { PaymentService } from '../payment/payment.service';
-import {RoleCollaborationService} from "../role-collaboration/role-collaboration.service";
-import {UserService} from "../user/user.service";
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { UserService } from '../user/user.service';
 
 @Controller('timer')
 export class TimerController {
@@ -31,7 +31,7 @@ export class TimerController {
         private readonly teamService: TeamService,
         private readonly authService: AuthService,
         private readonly paymentService: PaymentService,
-        private readonly roleCollaborationService: RoleCollaborationService,
+        private readonly roleCollaborationService: RoleCollaborationService
     ) {}
 
     @Get('user-list')

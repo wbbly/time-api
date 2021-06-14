@@ -28,14 +28,16 @@ export class ReportController {
     async reportExport(
         @Headers() headers: any,
         @Response() res: any,
-        @Query() params: {
-            startDate?: string,
-            endDate?: string,
-            userEmails?: string[],
-            projectNames?: string[],
-            timezoneOffset?: number,
-            detailed?: string,
-        }) {
+        @Query()
+        params: {
+            startDate?: string;
+            endDate?: string;
+            userEmails?: string[];
+            projectNames?: string[];
+            timezoneOffset?: number;
+            detailed?: string;
+        }
+    ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
@@ -74,7 +76,7 @@ export class ReportController {
                 params.startDate,
                 params.endDate,
                 params.timezoneOffset,
-                params.detailed === 'true',
+                params.detailed === 'true'
             );
 
             return res.status(HttpStatus.OK).json(reportExportRes);
