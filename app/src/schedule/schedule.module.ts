@@ -7,9 +7,10 @@ import { ScheduleService } from './schedule.service';
 import { InvoiceModule } from '../invoice/invoice.module';
 import { TimerModule } from '../timer/timer.module';
 import { TeamModule } from '../team/team.module';
+import { ProjectModule } from '../project/project.module';
 
 @Module({
-    imports: [CoreModule, TimerCurrentV2Module, TimeModule, InvoiceModule, TimerModule, TeamModule],
+    imports: [CoreModule, TimerCurrentV2Module, TimeModule, InvoiceModule, TimerModule, TeamModule, ProjectModule],
     providers: [ScheduleService],
 })
 export class ScheduleModule {}

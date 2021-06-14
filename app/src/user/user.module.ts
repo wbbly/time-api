@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 
 import { CoreModule } from '../core/core.module';
 import { AuthModule } from '../auth/auth.module';
@@ -7,9 +7,17 @@ import { TeamModule } from '../team/team.module';
 import { SocialModule } from '../social/social.module';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
+import { ProjectModule } from '../project/project.module';
 
 @Module({
-    imports: [CoreModule, AuthModule, RoleCollaborationModule, TeamModule, SocialModule],
+    imports: [
+        CoreModule,
+        AuthModule,
+        RoleCollaborationModule,
+        TeamModule,
+        SocialModule,
+        forwardRef(() => ProjectModule),
+    ],
     controllers: [UserController],
     providers: [UserService],
     exports: [UserService],

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as humanizeDuration from 'humanize-duration';
 import moment from 'moment';
+import momentTimezone from 'moment-timezone';
 
 @Injectable()
 export class TimeService {
@@ -134,5 +135,13 @@ export class TimeService {
             .startOf('day')
             .add(timezoneOffsetToHours, 'h')
             .format();
+    }
+
+    getTimezoneOffsetByGivenTimezoneName(value: string, timezoneName: string): number {
+        return (
+            -momentTimezone(value)
+                .tz(timezoneName)
+                .utcOffset() * 60000
+        );
     }
 }

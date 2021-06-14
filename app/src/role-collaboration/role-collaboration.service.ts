@@ -6,7 +6,7 @@ export class RoleCollaborationService {
         ROLE_ADMIN: 'ROLE_ADMIN',
         ROLE_MEMBER: 'ROLE_MEMBER',
         ROLE_OWNER: 'ROLE_OWNER',
-        ROLE_INVOICES_MANAGER: 'INVOICES_MANAGER',
+        ROLE_INVOICES_MANAGER: 'ROLE_INVOICES_MANAGER',
     };
 
     ROLES_IDS = {

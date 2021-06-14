@@ -22,37 +22,45 @@ export class ReportService {
         startDate: string,
         endDate: string,
         timezoneOffset: number = 0,
-        detailed: boolean = true,
+        detailed: boolean = true
     ): Promise<{ path: string } | AxiosError> {
-        const userWhereStatement = userEmails.length
-            ? `user: {email: {_in: [${userEmails.map(userEmail => `"${userEmail}"`).join(',')}]}}`
-            : '';
+        const timerWhereStatement = {
+            _or: [
+                {
+                    start_datetime: {
+                        _gte: startDate,
+                        _lte: endDate,
+                    },
+                },
+                {
+                    end_datetime: {
+                        _gte: startDate,
+                        _lte: endDate,
+                    },
+                },
+                {
+                    start_datetime: {
+                        _lt: startDate,
+                    },
+                    end_datetime: {
+                        _gt: endDate,
+                    },
+                },
+            ],
+            ...(userEmails.length && { user: { email: { _in: userEmails } } }),
+            project: {
+                team_id: {
+                    _eq: teamId,
+                },
+                ...(projectNames.length && { name: { _in: projectNames } }),
+            },
+        };
+        const variables = {
+            timerWhere: timerWhereStatement,
+        };
 
-        const projectWhereStatement = projectNames.length
-            ? `project: {
-                team_id: {_eq: "${teamId}"},
-                name: {_in: [${projectNames.map(projectName => `"${projectName}"`).join(',')}]}
-            }`
-            : `project: {team_id: {_eq: "${teamId}"}}`;
-
-        const timerStatementArray = [
-            `_or: [
-            {start_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
-            {end_datetime: {_gte: "${startDate}", _lte: "${endDate}"}},
-            {start_datetime: {_lt: "${startDate}"}, end_datetime: {_gt: "${endDate}"}}
-        ]`,
-        ];
-
-        if (userWhereStatement) {
-            timerStatementArray.push(userWhereStatement);
-        }
-
-        if (projectWhereStatement) {
-            timerStatementArray.push(projectWhereStatement);
-        }
-
-        const query = `{
-            timer_v2(where: {${timerStatementArray.join(',')}}, order_by: {end_datetime: desc}) {
+        const query = `query timer_v2($timerWhere: timer_v2_bool_exp){
+            timer_v2(where: $timerWhere, order_by: {end_datetime: desc}) {
                 issue
                 start_datetime
                 end_datetime
@@ -67,7 +75,7 @@ export class ReportService {
         }`;
 
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 (res: AxiosResponse) => {
                     const reportData = detailed
                         ? this.prepareReportData(res.data, startDate, endDate, timezoneOffset)
@@ -92,11 +100,9 @@ export class ReportService {
             const { name: projectName } = project;
             const { email: userEmail, username } = user;
 
-            const decodedIssue = issue
-                ? decodeURI(issue).replace(/(\r\n|\n|\r)/g, '')
-                : '';
+            const decodedIssue = issue ? decodeURI(issue).replace(/(\r\n|\n|\r)/g, '') : '';
 
-            const re = /[\d]+[a-z]+(\s*)+\|+(\s*)/; // match pattern "2h | WOB-1252" when before issue located estimate from Jira
+            const re = /[\d*.,\d]+(\s*)+[a-z|\p{L}.]+(\s*)+\|+(\s*)/gu; // match pattern "2.5h | WOB-1252", "6,5 시간 | WOB-1252" when before issue located estimate from Jira
             const findEstimateFromJira = decodedIssue.match(re);
 
             const issueWithoutEstimateFromJira = Array.isArray(findEstimateFromJira)
@@ -113,8 +119,8 @@ export class ReportService {
             timerEntriesReport[uniqueTimeEntryKey] = {
                 'User name': username.replace(/,/g, ';'),
                 'Project name': projectName.replace(/,/g, ';'),
-                'Issue': issueWithoutEstimateFromJira,
-                'Time': previousDuration + currentDuration,
+                Issue: issueWithoutEstimateFromJira,
+                Time: previousDuration + currentDuration,
                 'Start date': this.timeService.getTimestampByGivenValue(startDatetime),
                 'End date': timerEntriesReport[uniqueTimeEntryKey]
                     ? timerEntriesReport[uniqueTimeEntryKey]['End date']
@@ -140,21 +146,23 @@ export class ReportService {
             const timerEntry = timerV2[i];
             this.timerService.limitTimeEntryByStartEndDates(timerEntry, startDate, endDate);
 
-            const { issue, start_datetime: startDatetime, end_datetime: endDatetime, project } = timerEntry;
+            const { issue, start_datetime: startDatetime, end_datetime: endDatetime, project, user } = timerEntry;
             const { name: projectName } = project;
+            const { email: userEmail, username: userName } = user;
 
-            const decodedIssue = issue
-                ? decodeURI(issue).replace(/(\r\n|\n|\r)/g, '')
-                : '';
+            const decodedIssue = issue ? decodeURI(issue).replace(/(\r\n|\n|\r)/g, '') : '';
 
-            const re = /[\d]+[a-z]+(\s*)+\|+(\s*)/; // match pattern "2h | WOB-1252" when before issue located estimate from Jira
+            const re = /[\d*.,\d]+(\s*)+[a-z|\p{L}.]+(\s*)+\|+(\s*)/gu; // match pattern "2.5h | WOB-1252", "6,5 시간 | WOB-1252" when before issue located estimate from Jira
             const findEstimateFromJira = decodedIssue.match(re);
 
             const issueName = Array.isArray(findEstimateFromJira)
-                ? decodedIssue.replace(re, '').split(' ', 1).join()
+                ? decodedIssue
+                      .replace(re, '')
+                      .split(' ', 1)
+                      .join()
                 : decodedIssue.split(' ', 1).join();
 
-            const uniqueTimeEntryKey = `${issueName}-${projectName}`;
+            const uniqueTimeEntryKey = `${issueName}-${projectName}-${userEmail}`;
             const previousDuration = timerEntriesReport[uniqueTimeEntryKey]
                 ? timerEntriesReport[uniqueTimeEntryKey]['Time']
                 : 0;
@@ -162,14 +170,15 @@ export class ReportService {
                 this.timeService.getTimestampByGivenValue(endDatetime) -
                 this.timeService.getTimestampByGivenValue(startDatetime);
             timerEntriesReport[uniqueTimeEntryKey] = {
+                'User name': userName.replace(/,/g, ';'),
                 'Project name': projectName.replace(/,/g, ';'),
-                'Issue': issueName,
-                'Time': previousDuration + currentDuration,
+                Issue: issueName,
+                Time: previousDuration + currentDuration,
             };
         }
 
         const timerEntriesReportValues = Object.values(timerEntriesReport);
-        timerEntriesReportValues.sort((a, b) => (a['Project name'] > b['Project name']) ? 1 : -1);
+        timerEntriesReportValues.sort((a, b) => (a['Project name'] > b['Project name'] ? 1 : -1));
 
         for (let i = 0, timerEntriesReportLength = timerEntriesReportValues.length; i < timerEntriesReportLength; i++) {
             const timeEntry = timerEntriesReportValues[i];

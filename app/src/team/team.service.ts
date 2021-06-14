@@ -25,7 +25,7 @@ export class TeamService {
         const teamSlug = slugify(`${userId}-${teamName}`, { lower: true });
         const variables = {
             teamName,
-            teamSlug
+            teamSlug,
         };
         const insertTeamQuery = `mutation addTeam($teamName: String, $teamSlug: String){
             insert_team(
@@ -92,15 +92,34 @@ export class TeamService {
 
                         this.httpRequestsService.request(insertDefaultProject).subscribe(
                             (insertProjectRes: AxiosResponse) => {
-                                this.httpRequestsService.request(insertUserTeamQuery).subscribe(
-                                    async (insertUserTeamRes: AxiosResponse) => {
-                                        try {
-                                            await this.switchTeam(userId, teamId);
-
-                                            return resolve(insertUserTeamRes);
-                                        } catch (switchTeamError) {
-                                            return reject(switchTeamError);
+                                const insertCreatorToProjectQuery = `mutation {
+                                    insert_user_project(
+                                        objects: [
+                                            {
+                                                user_id: "${userId}"
+                                                project_id: "${insertProjectRes.data.insert_project_v2.returning[0].id}"
+                                            }
+                                        ]
+                                    ) {
+                                        returning {
+                                            id
                                         }
+                                    }
+                                }`;
+                                this.httpRequestsService.request(insertCreatorToProjectQuery).subscribe(
+                                    (insertProjectUserRes: AxiosResponse) => {
+                                        this.httpRequestsService.request(insertUserTeamQuery).subscribe(
+                                            async (insertUserTeamRes: AxiosResponse) => {
+                                                try {
+                                                    await this.switchTeam(userId, teamId);
+
+                                                    return resolve(insertUserTeamRes);
+                                                } catch (switchTeamError) {
+                                                    return reject(switchTeamError);
+                                                }
+                                            },
+                                            (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
+                                        );
                                     },
                                     (insertUserTeamError: AxiosError) => reject(insertUserTeamError)
                                 );
@@ -264,6 +283,7 @@ export class TeamService {
                     slug
                     owner_id
                 }
+                team_id
                 is_active
                 role_collaboration_id
                 role_collaboration {

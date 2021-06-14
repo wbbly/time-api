@@ -7,8 +7,12 @@ import { TimeService } from '../time/time.service';
 import { TimerCurrentV2 } from '../timer-current-v2/interfaces/timer-current-v2.interface';
 import { InvoiceService } from '../invoice/invoice.service';
 import { TimerService } from '../timer/timer.service';
-import moment from 'moment';
 import { TeamService } from '../team/team.service';
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { ProjectService } from '../project/project.service';
+import { UserService } from '../user/user.service';
+import { AxiosResponse } from 'axios';
+import moment from 'moment';
 
 @Injectable()
 export class ScheduleService extends NestSchedule {
@@ -18,7 +22,10 @@ export class ScheduleService extends NestSchedule {
         private readonly timeService: TimeService,
         private readonly invoiceService: InvoiceService,
         private readonly timerService: TimerService,
-        private readonly teamService: TeamService
+        private readonly teamService: TeamService,
+        private readonly userService: UserService,
+        private readonly roleCollaborationService: RoleCollaborationService,
+        private readonly projectService: ProjectService
     ) {
         super();
     }
@@ -154,4 +161,74 @@ export class ScheduleService extends NestSchedule {
     //         console.log(error);
     //     }
     // }
+    /*
+    @Cron('02 * * * *') // add owner and admins to all team projects and all user in team to public projects
+    async updateUserProject() {
+        const { ROLE_OWNER, ROLE_ADMIN, ROLE_INVOICES_MANAGER, ROLE_MEMBER } = this.roleCollaborationService.ROLES_IDS;
+        try {
+            const teams = ((await this.teamService.getTeamList()) as AxiosResponse).data.team;
+            for (let i = 0; i < teams.length; i++) {
+                console.log('i: ' + i);
+
+                let teamOwner =
+                    ((await this.userService.getUserByRoleInTeam(teams[i].id, ROLE_OWNER)) as AxiosResponse).data.user_team;
+                if (!teamOwner.length) { continue; }
+                teamOwner = teamOwner[0].user_id;
+
+                let teamAdmins =
+                    ((await this.userService.getUserByRoleInTeam(teams[i].id, ROLE_ADMIN)) as AxiosResponse).data.user_team;
+                teamAdmins = teamAdmins.map(admin => admin.user_id);
+
+                let teamProjects =
+                    ((await this.projectService.getProjectTeam(teams[i].id)) as AxiosResponse).data.project_v2;
+                teamProjects = teamProjects.map(project => project.id);
+
+                if (teams[i].id === '00000000-0000-0000-0000-000000000000') {  // if team is Lazy Ants we need to add all team user's to public projects.
+                    const anyProject = 'f339b6b6-d044-44f3-8887-684e112f7cfd';
+                    const dayOffProject = '8f4da3bf-dc2f-46bb-b168-fa148780693e';
+                    const lazyAntsProject = '9b971abf-a396-4a07-be64-258cb5235bdb';
+                    const selfLearningProject = 'c9777b9f-8e98-4a32-98d3-60f6d71d6887';
+                    const sickLeaveProject = '28179eec-8790-4930-9281-4b6a36a019bc';
+                    const vacationProject = '5ce65068-570b-4389-b47d-1b1d3f07da55';
+
+                    const publicProjects = [
+                        anyProject,
+                        dayOffProject,
+                        lazyAntsProject,
+                        selfLearningProject,
+                        sickLeaveProject,
+                        vacationProject,
+                    ];
+
+                    let teamInvoiceManagers =
+                        ((await this.userService.getUserByRoleInTeam(teams[i].id, ROLE_INVOICES_MANAGER)) as AxiosResponse).data.user_team;
+                    teamInvoiceManagers = teamInvoiceManagers.map(manager => manager.user_id);
+
+                    let teamMembers =
+                        ((await this.userService.getUserByRoleInTeam(teams[i].id, ROLE_MEMBER)) as AxiosResponse).data.user_team;
+                    teamMembers = teamMembers.map(member => member.user_id);
+
+                    for (const publicProject of publicProjects) {
+                        if (teamProjects.includes(publicProject)) {
+                            await this.projectService.addProjectUserQuery(
+                                [publicProject],
+                                [...teamInvoiceManagers, ...teamMembers],
+                            );
+                        }
+                    }
+
+                }
+
+                console.log('TEAM: ' + teams[i].name);
+                console.log('TEAM_OWNER: ' + JSON.stringify(teamOwner));
+                console.log('TEAM_ADMINS: ' + JSON.stringify(teamAdmins));
+                console.log('TEAM_PROJECTS: ' + JSON.stringify(teamProjects));
+
+                await this.projectService.addProjectUserQuery(teamProjects, [teamOwner, ...teamAdmins]);
+            }
+        } catch (e) {
+            console.log(e)
+        }
+    }
+*/
 }

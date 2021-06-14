@@ -6,6 +6,7 @@ import { Timer } from './interfaces/timer.interface';
 import { TimeService } from '../time/time.service';
 import { UserService } from '../user/user.service';
 import { User } from '../user/interfaces/user.interface';
+import { ProjectService } from '../project/project.service';
 
 @Injectable()
 export class TimerService {
@@ -13,6 +14,7 @@ export class TimerService {
         private readonly httpRequestsService: HttpRequestsService,
         private readonly timeService: TimeService,
         private readonly userService: UserService,
+        private readonly projectService: ProjectService,
     ) {}
 
     getTimer(userId: string, jiraWorklogId?: string): Promise<Timer | null> {
@@ -110,6 +112,7 @@ export class TimerService {
         jiraWorklogId?: number;
         syncJiraStatus?: boolean;
         title?: string;
+        timezoneOffset?: number;
     }): Promise<Timer | null> {
         let { issue } = data;
         issue = issue || 'Untitled issue';
@@ -122,20 +125,22 @@ export class TimerService {
             jiraWorklogId = null,
             syncJiraStatus = false,
             title,
+            timezoneOffset,
         } = data;
 
-        const query = `mutation {
+        const query = `mutation insert_timer_v2($title: String, $issue: String) {
             insert_timer_v2(
                 objects: [
                     {
-                        issue: "${issue}",
-                        title: "${title.replace(/"/g, '\\"')}",
+                        issue: $issue,
+                        title: $title,
                         start_datetime: "${startDatetime}",
                         end_datetime: "${endDatetime}",
                         user_id: "${userId}"
                         project_id: "${projectId}"
                         sync_jira_status: "${syncJiraStatus}"
                         jira_worklog_id: ${jiraWorklogId ? '"' + jiraWorklogId + '"' : null}
+                        timezone_offset: ${timezoneOffset}
                     }
                 ]
             ){
@@ -146,8 +151,12 @@ export class TimerService {
         }
         `;
 
+        const variables = {
+            title,
+            issue,
+        };
         return new Promise((resolve, reject) => {
-            this.httpRequestsService.request(query).subscribe(
+            this.httpRequestsService.graphql(query, variables).subscribe(
                 _ => {
                     this.getTimer(userId)
                         .then((res: Timer) => resolve(res), _ => reject(null))
@@ -274,8 +283,7 @@ export class TimerService {
         startDate: string,
         endDate: string
     ) {
-
-        const query =  `query timer_v2($where: timer_v2_bool_exp){
+        const query = `query timer_v2($where: timer_v2_bool_exp){
             timer_v2(where: $where,
                 order_by: {start_datetime: asc}) {
                 start_datetime
@@ -283,8 +291,8 @@ export class TimerService {
             }
         }`;
         const variables = {
-               where: {
-                   _or: [
+            where: {
+                _or: [
                     {
                         start_datetime: {
                             _gte: startDate,
@@ -305,19 +313,15 @@ export class TimerService {
                             _gt: endDate,
                         },
                     },
-                    ],
-                   user: userEmails.length
-                       ? {email: {_in: userEmails}}
-                       : null,
-                   project: {
-                       team_id: {
-                           _eq: teamId,
-                       },
-                       name: projectNames.length
-                           ? {_in: projectNames}
-                           : null,
-                   },
-               },
+                ],
+                user: userEmails.length ? { email: { _in: userEmails } } : null,
+                project: {
+                    team_id: {
+                        _eq: teamId,
+                    },
+                    name: projectNames.length ? { _in: projectNames } : null,
+                },
+            },
         };
 
         return new Promise((resolve, reject) => {
@@ -330,26 +334,34 @@ export class TimerService {
 
                     return resolve(res);
                 },
-                (error: AxiosError) =>  reject(error),
+                (error: AxiosError) => reject(error),
             );
         });
     }
 
     async updateTimerById(userId: string, timerId: string, timer: Timer) {
-        const { issue, projectId, startDatetime, endDatetime } = timer;
+        let { issue, projectId, startDatetime, endDatetime, timezoneOffset } = timer;
         let isNextDayTimerNeed: boolean = false;
-        let timezoneOffset: any = null;
-        try {
+
+        const userProject = ((await this.projectService.getProjectUserQuery(
+            projectId,
+            userId,
+        )) as AxiosResponse).data.user_project;
+
+        if (!userProject.length) {
+            return Promise.reject({message: 'ERROR.TIMER.UPDATE_FAILED'});
+        }
+
+        if (!timezoneOffset) {
             const user: User | AxiosError = await this.userService.getUserById(userId);
             if ('timezoneOffset' in user) {
                 timezoneOffset = user.timezoneOffset;
             }
-        } catch (err) {
-            console.log(err)
         }
         const setParams: { [k: string]: any } = {
             issue: `${issue || ''}`,
             project_id: `${projectId}`,
+            timezone_offset: timezoneOffset,
         };
 
         if (startDatetime) {
@@ -374,7 +386,7 @@ export class TimerService {
         }
 
         if (issue) {
-            setParams.title = `${decodeURI(issue).replace(/"/g, '\\"')}`;
+            setParams.title = `${decodeURI(issue)}`;
         }
 
         let timerData = null;
@@ -414,6 +426,7 @@ export class TimerService {
                                                 start_datetime
                                                 end_datetime
                                                 sync_jira_status
+                                                timezone_offset
                                                 user {
                                                     id
                                                 }
@@ -444,6 +457,7 @@ export class TimerService {
                         title: timerData.title,
                         startDatetime: this.timeService.getStartOfDayByGivenTimezoneOffset(endDatetime, timezoneOffset),
                         endDatetime,
+                        timezoneOffset,
                     };
                     let addedTimer = null;
                     try {

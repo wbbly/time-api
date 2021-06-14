@@ -31,19 +31,19 @@ export class ClientController {
 
     @Get('list')
     @UseGuards(AuthGuard())
-    async clientList(@Headers() headers: any, @Response() res: any, @Query() params) {
+    async clientList(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Query() params: { order_by?: string; sort?: string; isActive?: string; search?: string }
+    ) {
         const userId = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
             throw new UnauthorizedException();
         }
         let clientList: any = null;
-        const { order_by, sort } = params;
         try {
-            if (order_by) {
-                clientList = await this.clientService.getClientList(userId, order_by, sort);
-            } else {
-                clientList = await this.clientService.getClientList(userId);
-            }
+            clientList = await this.clientService.getClientList(userId, params);
+
             return res.status(HttpStatus.OK).json(clientList);
         } catch (e) {
             const error: AxiosError = e;
@@ -229,6 +229,32 @@ export class ClientController {
 
             const error: AxiosError = e;
 
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Patch(':id/active-status')
+    @UseGuards(AuthGuard())
+    async updateProjectActiveStatus(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Param() param: { id: string },
+        @Body()
+        body: {
+            isActive: boolean;
+        }
+    ) {
+        const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            return res
+                .status(HttpStatus.OK)
+                .json(await this.clientService.updateClientActiveStatus(param.id, body.isActive));
+        } catch (err) {
+            const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
         }
     }

@@ -17,7 +17,7 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -27,13 +27,19 @@ import { Invoice } from './interfaces/invoice.interface';
 import { InvoiceService } from './invoice.service';
 import { AuthService } from '../auth/auth.service';
 import { MailService } from '../core/mail/mail.service';
+import { TeamService } from '../team/team.service';
+import { RoleCollaborationService } from '../role-collaboration/role-collaboration.service';
+import { UserService } from '../user/user.service';
 
 @Controller('invoice')
 export class InvoiceController {
     constructor(
         private readonly invoiceService: InvoiceService,
         private readonly authService: AuthService,
-        private readonly mailService: MailService
+        private readonly mailService: MailService,
+        private readonly teamService: TeamService,
+        private readonly roleCollaborationService: RoleCollaborationService,
+        private readonly userService: UserService
     ) {}
 
     @Post('add')
@@ -148,7 +154,7 @@ export class InvoiceController {
     async getInvoices(
         @Headers() headers: any,
         @Response() res: any,
-        @Query() query: { page?: string; limit?: string; search?: string }
+        @Query() query: { page?: string; limit?: string; search?: string; status?: string }
     ) {
         const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
         if (!userId) {
@@ -173,8 +179,11 @@ export class InvoiceController {
 
     @Get('total')
     @UseGuards(AuthGuard())
-    async getTotal(@Headers() headers: any, @Response() res: any, @Query() query: { search?: string }) {
-        let { search } = query;
+    async getTotal(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Query() query: { search?: string; status?: string }
+    ) {
         const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
 
         if (!userId) {
@@ -182,7 +191,7 @@ export class InvoiceController {
         }
 
         try {
-            const invoiceList = await this.invoiceService.getGrandTotal(userId, search);
+            const invoiceList = await this.invoiceService.getGrandTotal(userId, query);
 
             return res.status(HttpStatus.OK).json(invoiceList);
         } catch (err) {
@@ -191,8 +200,27 @@ export class InvoiceController {
         }
     }
 
-    @Get(':id/generatePDF')
-    async generatePDF(@Response() res: any, @Param() param: { id: string }) {
+    @Get('total-by-status')
+    @UseGuards(AuthGuard())
+    async getTotalByStatus(@Headers() headers: any, @Response() res: any, @Query() query: { search?: string }) {
+        const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
+
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            const invoiceTotalByStatusResponse = await this.invoiceService.getTotalByStatus(userId);
+
+            return res.status(HttpStatus.OK).json(invoiceTotalByStatusResponse);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Get(':id/pdf')
+    async getPdfFile(@Response() res: any, @Param() param: { id: string }) {
         let invoice: Invoice = null;
         try {
             invoice = await this.invoiceService.getInvoice(param.id);
@@ -200,7 +228,8 @@ export class InvoiceController {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'CHECK_REQUEST_PARAMS' });
         }
         try {
-            const pdfDoc = await this.invoiceService.createPdfDocument(invoice);
+            const pdfDoc = await this.invoiceService.getPdfDocument(invoice);
+
             // res.setHeader('Content-Length',  stat.size);
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', 'attachment; filename=invoice.pdf');
@@ -208,7 +237,6 @@ export class InvoiceController {
                 res,
                 'utf8'
             );
-            pdfDoc.end();
         } catch (error) {
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'INTERNAL_SERVER_ERROR' });
         }
@@ -342,7 +370,7 @@ export class InvoiceController {
         }
     }
 
-    @Patch(':id/payment')
+    @Patch(':id/payment-status')
     @UseGuards(AuthGuard())
     async checkInvoicePayment(
         @Headers() headers: any,
@@ -363,6 +391,53 @@ export class InvoiceController {
 
             const invoiceId = await this.invoiceService.updatePaymentStatusInvoice(userId, param.id, paymentStatus);
             return res.status(HttpStatus.OK).json(invoiceId);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Post(':id/payment')
+    @UseGuards(AuthGuard())
+    async createInvoicePayment(
+        @Headers() headers: any,
+        @Response() res: any,
+        @Param() param: { id: string },
+        @Body()
+        body: {
+            sum: string;
+            date: Date;
+            comments?: string;
+        }
+    ) {
+        const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+        if (!body.sum || !body.date) {
+            return res.status(HttpStatus.FORBIDDEN).json({ message: 'ERROR.CHECK_REQUEST_PARAMS' });
+        }
+
+        try {
+            const invoicePayment = await this.invoiceService.addInvoicePayment(userId, param.id, body);
+            return res.status(HttpStatus.OK).json(invoicePayment);
+        } catch (err) {
+            const error: AxiosError = err;
+            return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
+        }
+    }
+
+    @Get(':id/payment-list')
+    @UseGuards(AuthGuard())
+    async getInvoicePaymentList(@Headers() headers: any, @Response() res: any, @Param() param: { id: string }) {
+        const userId: string = await this.authService.getVerifiedUserId(headers.authorization);
+        if (!userId) {
+            throw new UnauthorizedException();
+        }
+
+        try {
+            const invoicePaymentList = await this.invoiceService.getInvoicePaymentList(param.id, userId);
+            return res.status(HttpStatus.OK).json(invoicePaymentList);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
@@ -409,8 +484,6 @@ export class InvoiceController {
         let invoice = null;
         try {
             invoice = await this.invoiceService.getInvoice(param.id, userId);
-
-            await this.invoiceService.updateSendingStatusInvoice(param.id, body.sendingStatus);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);
@@ -419,9 +492,13 @@ export class InvoiceController {
         const subject: string = 'Invoice #' + invoice.invoice_number + ' from - ' + invoice.from.email;
         const { message: html } = body;
         const to = invoice.to.email;
+        if (!to) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "The client's email is not filled" });
+        }
 
         try {
             await this.mailService.send(to, subject, html);
+            await this.invoiceService.updateSendingStatusInvoice(param.id, body.sendingStatus);
         } catch (e) {
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Mail did not send' });
         }
@@ -449,15 +526,35 @@ export class InvoiceController {
     }
 
     @Get(':id')
-    @UseGuards(AuthGuard())
     async getInvoice(
         @Headers() headers: any,
         @Response() res: any,
         @Param() param: { id: string },
         @Query() params: { token: string }
     ) {
+        const userId = await this.authService.getVerifiedUserId(headers.authorization);
+        const { ROLE_OWNER, ROLE_INVOICES_MANAGER } = this.roleCollaborationService.ROLES_IDS;
         try {
-            return res.status(HttpStatus.OK).json(await this.invoiceService.getInvoice(param.id));
+            const invoice: Invoice = await this.invoiceService.getInvoice(param.id);
+            const { team_id: invoiceTeamId } = invoice;
+
+            const invoiceTeamOwner = ((await this.userService.getUserByRoleInTeam(
+                invoiceTeamId,
+                ROLE_OWNER
+            )) as AxiosResponse).data.user_team;
+            const { user_id: invoiceTeamOwnerId } = invoiceTeamOwner[0];
+
+            const invoiceManagers = ((await this.userService.getUserByRoleInTeam(
+                invoiceTeamId,
+                ROLE_INVOICES_MANAGER
+            )) as AxiosResponse).data.user_team;
+            const invoiceManagersId = invoiceManagers.map(manager => manager.user_id);
+
+            if ((userId && invoiceTeamOwnerId !== userId && !invoiceManagersId.includes(userId)) || !userId) {
+                await this.invoiceService.updateInvoiceReviewedStatus(invoice.id, true);
+            }
+
+            return res.status(HttpStatus.OK).json(invoice);
         } catch (err) {
             const error: AxiosError = err;
             return res.status(HttpStatus.BAD_REQUEST).json(error.response ? error.response.data.errors : error);

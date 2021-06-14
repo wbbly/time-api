@@ -5,4 +5,3 @@ export interface ISyncMail {
         };
     };
 }
-
