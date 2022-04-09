@@ -44,7 +44,7 @@
         "graphql-tools": "4.0.4",
         "humanize-duration": "3.18.0",
         "json-2-csv-ts": "1.1.2",
-        "moment": "2.25.3",
+        "moment": "2.29.2",
         "moment-timezone": "0.5.33",
         "multer": "1.4.2",
         "mysql2": "1.6.5",
