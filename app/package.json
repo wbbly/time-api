@@ -31,7 +31,7 @@
         "@nestjs/jwt": "6.1.1",
         "@nestjs/passport": "6.1.0",
         "@nestjs/platform-express": "6.3.0",
-        "@nestjs/platform-socket.io": "6.3.0",
+        "@nestjs/platform-socket.io": "9.2.0",
         "@nestjs/websockets": "6.3.0",
         "apollo-server-express": "2.14.2",
         "axios": "0.21.1",
