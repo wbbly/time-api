@@ -80,9 +80,9 @@
         "prettier": "1.16.4",
         "supertest": "4.0.2",
         "ts-jest": "24.0.0",
-        "ts-loader": "5.3.3",
+        "ts-loader": "9.4.2",
         "ts-node": "8.0.3",
-        "tsconfig-paths": "3.8.0",
+        "tsconfig-paths": "3.10.1",
         "tslint": "5.14.0"
     },
     "jest": {
